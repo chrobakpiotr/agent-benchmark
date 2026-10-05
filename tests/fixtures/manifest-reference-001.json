@@ -1,26 +1,85 @@
 {
-  "schema_version": "agent-benchmark/manifest/v1",
+  "schema_version": "agent-benchmark/manifest/v2",
   "experiment_id": "reference-001-offline",
-  "task": {"path": "../../tasks/reference-001/task.json", "digest": "sha256:6e5c2dd1a8d5321d0793ea43f1aec95afed438184a6eaca3770cd0b183e2d5e7"},
+  "task": {
+    "path": "../../tasks/reference-001/task.json",
+    "digest": "sha256:6e5c2dd1a8d5321d0793ea43f1aec95afed438184a6eaca3770cd0b183e2d5e7"
+  },
   "configs": [
-    {"config_id": "cfg-a", "model_requested": "fake-model-alpha", "model_resolved": null, "cli": null,
-     "cli_version": null, "prompt_digest": null, "reasoning": null, "sampling": null, "tool_permissions": [],
-     "workflow": "single-agent", "budget": null, "isolation_track": "fake-offline"},
-    {"config_id": "cfg-b", "model_requested": "fake-model-beta", "model_resolved": null, "cli": null,
-     "cli_version": null, "prompt_digest": null, "reasoning": null, "sampling": null, "tool_permissions": [],
-     "workflow": "single-agent", "budget": null, "isolation_track": "fake-offline"}
+    {
+      "config_id": "cfg-a",
+      "model_requested": "fake-model-alpha",
+      "model_resolved": null,
+      "cli": null,
+      "cli_version": null,
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 60
+      },
+      "isolation_track": "fake-offline"
+    },
+    {
+      "config_id": "cfg-b",
+      "model_requested": "fake-model-beta",
+      "model_resolved": null,
+      "cli": null,
+      "cli_version": null,
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 60
+      },
+      "isolation_track": "fake-offline"
+    }
   ],
   "repetitions": 2,
   "seed": 11,
-  "retry_policy": {"max_attempts": 1},
+  "retry_policy": {
+    "max_attempts": 1
+  },
   "exclusions": [],
   "executor": {
     "kind": "fake",
     "script": [
-      {"config_id": "cfg-a", "repetition": 1, "outcome": "completed", "candidate": "good", "harness_completion": "success", "usage": null},
-      {"config_id": "cfg-a", "repetition": 2, "outcome": "completed", "candidate": "hardcoded", "harness_completion": "success", "usage": null},
-      {"config_id": "cfg-b", "repetition": 1, "outcome": "completed", "candidate": "wrong", "harness_completion": "success", "usage": null},
-      {"config_id": "cfg-b", "repetition": 2, "outcome": "completed", "candidate": "test_deletion", "harness_completion": "success", "usage": null}
+      {
+        "config_id": "cfg-a",
+        "repetition": 1,
+        "outcome": "completed",
+        "candidate": "good",
+        "usage": null,
+        "completion": "accepted"
+      },
+      {
+        "config_id": "cfg-a",
+        "repetition": 2,
+        "outcome": "completed",
+        "candidate": "hardcoded",
+        "usage": null,
+        "completion": "accepted"
+      },
+      {
+        "config_id": "cfg-b",
+        "repetition": 1,
+        "outcome": "completed",
+        "candidate": "wrong",
+        "usage": null,
+        "completion": "accepted"
+      },
+      {
+        "config_id": "cfg-b",
+        "repetition": 2,
+        "outcome": "completed",
+        "candidate": "test_deletion",
+        "usage": null,
+        "completion": "accepted"
+      }
     ]
   }
 }

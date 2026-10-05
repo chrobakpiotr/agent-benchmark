@@ -7,7 +7,10 @@ name = "agent-benchmark"
 version = "0.1.0"
 description = "Offline-first benchmark comparing agent configurations on identical tasks"
 requires-python = ">=3.9"
-dependencies = []
+dependencies = [
+    # execution contract v1, tag v0.1.0 pinned by commit SHA (tags can move)
+    "agent-harness @ git+https://github.com/chrobakpiotr/agent-harness.git@e57fda8477675fd0722878e4993b19651a6aedc4",
+]
 
 [project.scripts]
 agent-benchmark = "agent_benchmark.cli:main"

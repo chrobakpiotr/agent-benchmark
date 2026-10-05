@@ -1,32 +1,39 @@
 """Manifest, task bundle and event record validation. Rejects instead of guessing; unknown stays null."""
 import hashlib
 import json
+import re
 from pathlib import Path
 
-MANIFEST_VERSION = "agent-benchmark/manifest/v1"
-TASK_VERSION = "agent-benchmark/task/v1"
-EVENT_VERSION = "agent-benchmark/event/v2"
+from agent_harness.contract import ERROR_CODES, OUTCOMES
 
-OUTCOMES = ("completed", "timeout", "cancel", "error", "unknown")
-EXCLUDABLE_OUTCOMES = OUTCOMES[1:]  # predeclared infrastructure exclusions; "completed" never
-HARNESS_COMPLETION = ("success", "failure")
+MANIFEST_VERSION = "agent-benchmark/manifest/v2"
+TASK_VERSION = "agent-benchmark/task/v1"
+EVENT_VERSION = "agent-benchmark/event/v3"
+
+# Execution vocabulary comes from the agent-harness execution contract v1; only what it does not export is here.
+EXCLUDABLE_OUTCOMES = tuple(o for o in OUTCOMES if o != "completed")  # predeclared exclusions; "completed" never
+COMPLETION = ("accepted", "rejected")
+CACHE_SEMANTICS = ("separate", "included_in_input", "unknown")  # contract v1 usage event enum (not exported)
+UNITS = ("input_tokens", "output_tokens", "cache_read_tokens", "cache_write_tokens")
+CONFIG_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}")  # becomes part of contract trial_id; no "/"
 GRADES = ("PASS", "FAIL", "INVALID")
 QUALITY = ("complete", "partial", "unknown")
 FAKE_CANDIDATES = ("good", "wrong", "noop", "malformed")
 FAKE_TRACK = "fake-offline"
 KNOWN_GRADERS = {"sort-check": "1", "patch-unittest": "1"}
-USAGE_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens")
 
-CONFIG_REQUIRED = ("config_id", "model_requested", "workflow", "tool_permissions", "isolation_track")
-CONFIG_NULLABLE = ("model_resolved", "cli", "cli_version", "prompt_digest", "reasoning", "sampling", "budget")
+CONFIG_REQUIRED = ("config_id", "model_requested", "workflow", "tool_permissions", "isolation_track", "budget")
+CONFIG_NULLABLE = ("model_resolved", "cli", "cli_version", "prompt_digest", "reasoning", "sampling")
 
 EVENT_FIELDS = {
     "run_started": ("run_id", "experiment_id", "manifest_digest", "task_digest", "executor", "plan"),
     "run_resumed": ("run_id", "resumed_utc"),
-    "trial_started": ("trial_id", "config_id", "repetition", "request_id", "replaces", "started_utc"),
-    "trial_finished": ("trial_id", "request_id", "source", "execution_id", "attempts", "outcome",
-                       "harness_completion", "candidate_digest", "finished_utc", "duration_ms", "error"),
-    "usage": ("trial_id", "attempt_id", "usage_event_id", "kind", "usage"),
+    "trial_started": ("trial_id", "config_id", "repetition", "request_id", "request_digest", "replaces",
+                      "started_utc"),
+    "trial_finished": ("trial_id", "request_id", "source", "execution_id", "attempts", "outcome", "exit_code",
+                       "completion", "error_code", "drain", "isolation_level", "resolved_model",
+                       "candidate_digest", "finished_utc", "duration_ms", "error"),
+    "usage": ("trial_id", "attempt_id", "usage_event_id", "kind", "source", "units", "cache_semantics"),
     "grade": ("trial_id", "candidate_digest", "grader", "result", "criteria", "isolation"),
     "correction": ("trial_id", "action", "reason", "created_utc"),
     "run_finished": ("run_id", "finished_utc"),
@@ -92,20 +99,11 @@ def _version(obj, path, expected):
         _fail(f"{path}.schema_version", f"unsupported {obj.get('schema_version')!r}, expected {expected!r}")
 
 
-def validate_usage(u, path):
-    """null = unknown usage (valid). complete = every field known; partial = at least one known."""
-    if u is None:
-        return
-    _keys(u, path, ("source", "completeness", *USAGE_FIELDS))
-    _str(u["source"], f"{path}.source")
-    _enum(u["completeness"], f"{path}.completeness", ("complete", "partial"))
-    for f in USAGE_FIELDS:
-        _int(u[f], f"{path}.{f}", 0, nullable=True)
-    known = [u[f] is not None for f in USAGE_FIELDS]
-    if u["completeness"] == "complete" and not all(known):
-        _fail(path, "completeness 'complete' contradicts null fields")
-    if u["completeness"] == "partial" and (all(known) or not any(known)):
-        _fail(path, "completeness 'partial' requires some but not all fields known")
+def validate_units(units, path):
+    """Contract v1 usage units: every unit present, each a non-negative integer or null (unknown)."""
+    _keys(units, path, (), UNITS)
+    for f in UNITS:
+        _int(units[f], f"{path}.{f}", 0, nullable=True)
 
 
 def tree_digest(root):
@@ -173,6 +171,8 @@ def validate_config(c, path):
     _keys(c, path, CONFIG_REQUIRED, CONFIG_NULLABLE)
     for f in ("config_id", "model_requested", "workflow", "isolation_track"):
         _str(c[f], f"{path}.{f}")
+    if not CONFIG_ID.fullmatch(c["config_id"]):
+        _fail(f"{path}.config_id", f"must match {CONFIG_ID.pattern}")
     for f in ("model_resolved", "cli", "cli_version", "prompt_digest"):
         _str(c[f], f"{path}.{f}", nullable=True)
     for f in ("reasoning", "sampling"):
@@ -180,9 +180,8 @@ def validate_config(c, path):
             _fail(f"{path}.{f}", "must be an object or null")
     if not isinstance(c["tool_permissions"], list) or not all(isinstance(t, str) for t in c["tool_permissions"]):
         _fail(f"{path}.tool_permissions", "must be a list of strings")
-    if c["budget"] is not None:
-        _keys(c["budget"], f"{path}.budget", (), ("max_wall_seconds",))
-        _int(c["budget"]["max_wall_seconds"], f"{path}.budget.max_wall_seconds", 1, nullable=True)
+    _keys(c["budget"], f"{path}.budget", ("max_wall_seconds",))
+    _int(c["budget"]["max_wall_seconds"], f"{path}.budget.max_wall_seconds", 1, 86400)  # contract timeout_seconds
 
 
 def validate_manifest(m, task_digest=None):
@@ -199,7 +198,7 @@ def validate_manifest(m, task_digest=None):
     _int(m["repetitions"], "manifest.repetitions", 1, 1000)
     _int(m["seed"], "manifest.seed", 0)
     _keys(m["retry_policy"], "manifest.retry_policy", ("max_attempts",))
-    _int(m["retry_policy"]["max_attempts"], "manifest.retry_policy.max_attempts", 1, 1)  # retries: AB5-03/06
+    _int(m["retry_policy"]["max_attempts"], "manifest.retry_policy.max_attempts", 1, 100)  # contract max_attempts
     if not isinstance(m["exclusions"], list):
         _fail("manifest.exclusions", "must be a list")
     for i, x in enumerate(m["exclusions"]):
@@ -229,16 +228,23 @@ def validate_manifest(m, task_digest=None):
     seen = set()
     for i, e in enumerate(ex["script"]):
         p = f"manifest.executor.script[{i}]"
-        _keys(e, p, ("config_id", "repetition", "outcome", "candidate", "harness_completion", "usage"))
+        _keys(e, p, ("config_id", "repetition", "outcome", "candidate", "completion", "usage"))
         if e["config_id"] not in ids:
             _fail(f"{p}.config_id", f"binding to unknown config {e['config_id']!r}")
         _int(e["repetition"], f"{p}.repetition", 1, m["repetitions"])
         _enum(e["outcome"], f"{p}.outcome", OUTCOMES)
         _str(e["candidate"], f"{p}.candidate", nullable=True)
-        _enum(e["harness_completion"], f"{p}.harness_completion", HARNESS_COMPLETION, nullable=True)
-        validate_usage(e["usage"], f"{p}.usage")
+        _enum(e["completion"], f"{p}.completion", COMPLETION, nullable=True)
+        if e["usage"] is not None:
+            _keys(e["usage"], f"{p}.usage", ("units", "cache_semantics"))
+            validate_units(e["usage"]["units"], f"{p}.usage.units")
+            _enum(e["usage"]["cache_semantics"], f"{p}.usage.cache_semantics", CACHE_SEMANTICS)
         if e["outcome"] == "completed" and e["candidate"] is None:
             _fail(p, "outcome 'completed' without a candidate")
+        if e["completion"] is not None and e["outcome"] != "completed":
+            _fail(p, "only a completed execution can carry a completion decision")
+        if e["outcome"] == "rejected" and (e["candidate"] is not None or e["usage"] is not None):
+            _fail(p, "a rejected request was never launched: no candidate, no usage")
         key = (e["config_id"], e["repetition"])
         if key in seen:
             _fail(p, f"duplicate script entry for {key}")
@@ -278,19 +284,19 @@ def validate_event(e, path):
     if e["type"] == "trial_finished":
         _enum(e["source"], f"{path}.source", TERMINAL_SOURCES)
         _enum(e["outcome"], f"{path}.outcome", OUTCOMES)
-        _enum(e["harness_completion"], f"{path}.harness_completion", HARNESS_COMPLETION, nullable=True)
+        _enum(e["completion"], f"{path}.completion", COMPLETION, nullable=True)
+        _enum(e["error_code"], f"{path}.error_code", ERROR_CODES, nullable=True)
         if not isinstance(e["attempts"], list):
             _fail(f"{path}.attempts", "must be a list")
         for i, a in enumerate(e["attempts"]):
-            _keys(a, f"{path}.attempts[{i}]", ("attempt_id", "outcome"))
+            _keys(a, f"{path}.attempts[{i}]", ("attempt_id", "outcome", "started_at", "ended_at"))
             _str(a["attempt_id"], f"{path}.attempts[{i}].attempt_id")
     if e["type"] == "usage":
         _str(e["attempt_id"], f"{path}.attempt_id")
         _str(e["usage_event_id"], f"{path}.usage_event_id")
         _enum(e["kind"], f"{path}.kind", USAGE_KINDS)
-        if e["usage"] is None:
-            _fail(f"{path}.usage", "a usage event must carry usage; unknown usage is the absence of events")
-        validate_usage(e["usage"], f"{path}.usage")
+        validate_units(e["units"], f"{path}.units")
+        _enum(e["cache_semantics"], f"{path}.cache_semantics", CACHE_SEMANTICS)
     if e["type"] == "grade":
         _enum(e["result"], f"{path}.result", GRADES)
     if e["type"] == "correction":

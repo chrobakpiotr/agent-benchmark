@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from .schema import _enum, _fail, _keys, _str, _version
 
-PRICING_VERSION = "agent-benchmark/pricing/v1"
+PRICING_VERSION = "agent-benchmark/pricing/v2"
 BASES = ("api-price-list", "subscription-estimate")
 UNITS = {"per_token": Decimal(1), "per_thousand_tokens": Decimal(1000), "per_million_tokens": Decimal(1000000)}
 
@@ -36,41 +36,56 @@ def validate_pricing(p):
         _fail("pricing.models", "must be a non-empty object keyed by model id")
     for name, m in p["models"].items():
         path = f"pricing.models[{name!r}]"
-        _keys(m, path, ("currency", "unit", "input", "output", "input_includes_cache_read"), ("cache_read",))
+        _keys(m, path, ("currency", "unit", "input", "output"), ("cache_read", "cache_write"))
         if not isinstance(m["currency"], str) or len(m["currency"]) != 3 or not m["currency"].isupper():
             _fail(f"{path}.currency", "must be an ISO 4217 code like 'USD'")
         _enum(m["unit"], f"{path}.unit", tuple(UNITS))
         for f in ("input", "output"):
             _rate(m[f], f"{path}.{f}")
         _rate(m["cache_read"], f"{path}.cache_read", nullable=True)
-        if not isinstance(m["input_includes_cache_read"], bool):
-            _fail(f"{path}.input_includes_cache_read", "must be true or false")
+        _rate(m["cache_write"], f"{path}.cache_write", nullable=True)
     return p
 
 
-def price_usage(usage, model):
-    """Return (known_amount, fully_priced) for one trial's usage under one model rate entry.
+def price_scope(units, cache_semantics, model):
+    """Return (known_amount, fully_priced) for one attempt's usage units.
 
-    known_amount is None when nothing could be priced. fully_priced requires complete usage and a rate for
-    every non-zero category. With input_includes_cache_read the cache tokens are carved out of input, not added.
+    Cache semantics come from the usage event (contract v1):
+    - separate: every unit is priced at its own rate;
+    - included_in_input: cache tokens are carved out of input, not added (cache > input is unpriceable);
+    - unknown: with non-zero or unknown cache tokens, input and cache cannot be split, so only output is priced.
+    known_amount is a lower bound and None when nothing could be priced.
     """
-    if usage is None:
-        return None, False
     div = UNITS[model["unit"]]
-    rate = {"input": _rate(model["input"], "r"), "output": _rate(model["output"], "r"),
-            "cache_read": _rate(model["cache_read"], "r", nullable=True)}
-    inp, out, cache = usage["input_tokens"], usage["output_tokens"], usage["cache_read_tokens"]
-    if model["input_includes_cache_read"]:
-        if inp is not None and cache is not None and cache > inp:
-            return None, False  # contradictory usage: cannot carve cache out of input
-        inp = None if inp is None or cache is None else inp - cache
-    parts = [(inp, rate["input"]), (out, rate["output"]), (cache, rate["cache_read"])]
-    known, full = [], True
-    for tokens, r in parts:
-        if tokens is None or (r is None and tokens > 0):
+    inp, out = units["input_tokens"], units["output_tokens"]
+    cr, cw = units["cache_read_tokens"], units["cache_write_tokens"]
+    full = True
+    if cache_semantics == "included_in_input":
+        if None in (inp, cr, cw):
+            inp, full = None, False
+        elif cr + cw > inp:
+            return None, False
+        else:
+            inp -= cr + cw
+    elif cache_semantics == "unknown" and not (cr == 0 and cw == 0):
+        inp = cr = cw = None
+        full = False
+    known = []
+    for tokens, rate in ((inp, model["input"]), (out, model["output"]), (cr, model["cache_read"]),
+                         (cw, model["cache_write"])):
+        rate = _rate(rate, "rate", nullable=True)
+        if tokens is None or (rate is None and tokens > 0):
             full = False
-        elif r is not None:
-            known.append(Decimal(tokens) * r / div)
+        elif rate is not None:
+            known.append(Decimal(tokens) * rate / div)
+    return (sum(known, Decimal(0)) if known else None), full
+
+
+def price_trial(row, model):
+    """Sum over all attempts (retries included). Fully priced only with complete usage and every scope priced."""
+    priced = [price_scope(s["units"], s["cache_semantics"], model) for s in row["usage_scopes"]]
+    known = [a for a, _ in priced if a is not None]
+    full = bool(priced) and all(f for _, f in priced) and row["measurement_quality"] == "complete"
     return (sum(known, Decimal(0)) if known else None), full
 
 

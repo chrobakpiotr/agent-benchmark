@@ -16,17 +16,19 @@ MANIFEST = Path(__file__).parent / "fixtures" / "manifest-offline-001.json"
 TASK = {"input": [3, 1, 2, 3, -5], "grader": {"id": "sort-check", "version": "1"}}
 
 # Hand-computed from the fixture script (see docs/specs/ab5-offline-mvp/spec.md, "Oracle"):
-# cfg-a: good PASS, good PASS, noop FAIL (harness claimed success)  -> 2/3
+# cfg-a: good PASS, good PASS, noop FAIL (completion accepted)       -> 2/3
 # cfg-b: good PASS, timeout ungraded, error ungraded                 -> 1/3
 EXPECTED = {
-    "cfg-a": {"started": 3, "outcomes": {"completed": 3, "timeout": 0, "cancel": 0, "error": 0, "unknown": 0},
-              "grades": {"PASS": 2, "FAIL": 1, "INVALID": 0}, "ungraded": 0, "harness_success_not_pass": 1,
+    "cfg-a": {"started": 3, "outcomes": {"completed": 3, "error": 0, "timeout": 0, "cancel": 0, "unknown": 0, "rejected": 0},
+              "grades": {"PASS": 2, "FAIL": 1, "INVALID": 0}, "ungraded": 0, "completion_accepted_not_pass": 1,
               "wilson95": [0.2077, 0.9385], "coverage": {"complete": 1, "partial": 1, "unknown": 1},
-              "known_subtotal": {"input_tokens": 150, "output_tokens": 20, "cache_read_tokens": 0}},
-    "cfg-b": {"started": 3, "outcomes": {"completed": 1, "timeout": 1, "cancel": 0, "error": 1, "unknown": 0},
-              "grades": {"PASS": 1, "FAIL": 0, "INVALID": 0}, "ungraded": 2, "harness_success_not_pass": 0,
+              "known_subtotal": {"input_tokens": 150, "output_tokens": 20, "cache_read_tokens": 0,
+                                 "cache_write_tokens": 0}},
+    "cfg-b": {"started": 3, "outcomes": {"completed": 1, "error": 1, "timeout": 1, "cancel": 0, "unknown": 0, "rejected": 0},
+              "grades": {"PASS": 1, "FAIL": 0, "INVALID": 0}, "ungraded": 2, "completion_accepted_not_pass": 0,
               "wilson95": [0.0615, 0.7923], "coverage": {"complete": 1, "partial": 0, "unknown": 2},
-              "known_subtotal": {"input_tokens": 200, "output_tokens": 40, "cache_read_tokens": 0}},
+              "known_subtotal": {"input_tokens": 200, "output_tokens": 40, "cache_read_tokens": 0,
+                                 "cache_write_tokens": 0}},
 }
 
 
@@ -47,7 +49,7 @@ class OfflinePipeline(unittest.TestCase):
             self.assertEqual(c["outcomes"], e["outcomes"])
             self.assertEqual(c["grades"], e["grades"])
             self.assertEqual(c["ungraded"], e["ungraded"])
-            self.assertEqual(c["harness_success_not_pass"], e["harness_success_not_pass"])
+            self.assertEqual(c["completion_accepted_not_pass"], e["completion_accepted_not_pass"])
             self.assertEqual(c["operational_success"]["wilson95"], e["wilson95"])
             self.assertEqual(c["usage"]["coverage"], e["coverage"])
             self.assertEqual(c["usage"]["known_subtotal"], e["known_subtotal"])
@@ -100,12 +102,12 @@ class OfflinePipeline(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "digests do not match"):
             load_run(self.out)
 
-    def test_executor_crash_is_recorded_as_error(self):
+    def test_backend_crash_is_recorded_as_unknown(self):
         out = Path(self.tmp.name) / "crash"
         runner.run(MANIFEST, out, execute=lambda *a: 1 / 0)
         s = summarize(*load_run(out))
         for c in s["configs"]:
-            self.assertEqual(c["outcomes"]["error"], 3)
+            self.assertEqual(c["outcomes"]["unknown"], 3)  # launch state unknown, not an execution error
             self.assertEqual(c["operational_success"]["pass"], 0)
             self.assertIsNone(c["pass_duration_ms"]["median"])
 

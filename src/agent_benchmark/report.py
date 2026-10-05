@@ -9,8 +9,8 @@ import math
 from decimal import Decimal
 from pathlib import Path
 
-from .pricing import fmt, price_usage, validate_pricing
-from .schema import (GRADES, OUTCOMES, USAGE_FIELDS, ValidationError, _json, digest, validate_event,
+from .pricing import fmt, price_trial, validate_pricing
+from .schema import (GRADES, OUTCOMES, UNITS, ValidationError, _json, canonical, digest, validate_event,
                      validate_manifest, validate_task)
 
 FAKE_BANNER = ("FAKE EXECUTION (offline, scripted outcomes). Not a measurement of any model, CLI or backend; "
@@ -91,7 +91,7 @@ def _cost(c, rs, passes, pricing):
         return {**base, "status": f"no rate for model {model_id!r}", "currency": None, "total": None,
                 "per_pass": None, "known_subtotal": None,
                 "coverage": {"full": 0, "partial": 0, "unknown": len(rs)}}
-    priced = [price_usage(r["usage"], model) for r in rs]
+    priced = [price_trial(r, model) for r in rs]
     known = [a for a, _ in priced if a is not None]
     full = sum(f for _, f in priced)
     total = sum(known, Decimal(0)) if known and full == len(rs) else None
@@ -108,10 +108,10 @@ def _cost(c, rs, passes, pricing):
             "total": fmt(total), "per_pass": fmt(per_pass), "per_pass_note": note}
 
 
-def _sum_usage(items):
-    """Sum usage dicts; a field stays unknown (None) only when no item knows it."""
+def sum_units(items):
+    """Sum unit dicts; a unit stays unknown (None) only when no item knows it."""
     return {f: (sum(u[f] for u in items if u[f] is not None) if any(u[f] is not None for u in items) else None)
-            for f in USAGE_FIELDS}
+            for f in UNITS}
 
 
 def reduce_events(events):
@@ -120,7 +120,8 @@ def reduce_events(events):
     First record wins; every disagreement is kept in `conflicts` instead of overwriting history:
     - identical re-delivered event (same event_id, same body) is ignored; same event_id, other body is a conflict
     - a second terminal or grade for a trial is a conflict and does not replace the first
-    - usage: dedup by usage_event_id; per attempt a `summary` supersedes `stream` events (no double counting)
+    - usage: dedup by usage_event_id; per attempt a `summary` supersedes `stream` events (no double counting);
+      a trial is `complete` only if every attempt has a summary with integer units (contract v1 rule)
     - a start without a terminal stays visible as outcome 'unknown' (interrupted)
     """
     seen, rows, conflicts, usage = {}, {}, [], {}
@@ -143,9 +144,9 @@ def reduce_events(events):
             rows[tid] = {"trial_id": tid, "config_id": e["config_id"], "repetition": e["repetition"],
                          "request_id": e["request_id"], "replaces": e["replaces"], "outcome": "unknown",
                          "interrupted": True, "terminal_source": None, "attempt_ids": [],
-                         "harness_completion": None, "candidate_digest": None, "original_grade": None,
-                         "grade": None, "corrections": [], "duration_ms": None, "usage": None,
-                         "measurement_quality": "unknown"}
+                         "completion": None, "error_code": None, "drain": None, "isolation_level": None,
+                         "candidate_digest": None, "original_grade": None, "grade": None, "corrections": [],
+                         "duration_ms": None, "usage": None, "usage_scopes": [], "measurement_quality": "unknown"}
         elif t in ("trial_finished", "usage", "grade", "correction") and r is None:
             conflict("orphan", e, f"{t} for a trial that was never started; ignored")
         elif t == "trial_finished":
@@ -156,13 +157,15 @@ def reduce_events(events):
             else:
                 r.update(interrupted=False, outcome=e["outcome"], terminal_source=e["source"],
                          attempt_ids=[a["attempt_id"] for a in e["attempts"]],
-                         harness_completion=e["harness_completion"], candidate_digest=e["candidate_digest"],
+                         completion=e["completion"], error_code=e["error_code"], drain=e["drain"],
+                         isolation_level=e["isolation_level"], candidate_digest=e["candidate_digest"],
                          duration_ms=e["duration_ms"])
         elif t == "usage":
             per_trial = usage.setdefault(tid, {})
             prev = per_trial.get(e["usage_event_id"])
             if prev is not None:
-                if (prev["kind"], prev["attempt_id"], prev["usage"]) != (e["kind"], e["attempt_id"], e["usage"]):
+                body = ("kind", "attempt_id", "source", "units", "cache_semantics")
+                if any(prev[k] != e[k] for k in body):
                     conflict("usage_event_id_reused", e, "same usage_event_id with a different body; first kept")
                 continue
             per_trial[e["usage_event_id"]] = e
@@ -184,19 +187,24 @@ def reduce_events(events):
                 conflict("unknown_attempt", e, "usage for an attempt not in the trial terminal; ignored")
                 continue
             by_attempt.setdefault(e["attempt_id"], []).append(e)
-        scoped = []
+        scopes = []
         for aid, evs in by_attempt.items():
             summaries = [e for e in evs if e["kind"] == "summary"]
             if len(summaries) > 1:
                 conflict("multiple_summaries", summaries[1], f"attempt {aid}: more than one summary; first kept")
-            scoped.append(summaries[0]["usage"] if summaries else
-                          {**_sum_usage([e["usage"] for e in evs]),
-                           "completeness": "complete" if all(e["usage"]["completeness"] == "complete" for e in evs)
-                           else "partial"})
-        if scoped:
+            if summaries:
+                s = summaries[0]
+                scopes.append({"attempt_id": aid, "units": s["units"], "cache_semantics": s["cache_semantics"],
+                               "complete": all(v is not None for v in s["units"].values())})
+            else:
+                kinds = {e["cache_semantics"] for e in evs}
+                scopes.append({"attempt_id": aid, "units": sum_units([e["units"] for e in evs]),
+                               "cache_semantics": kinds.pop() if len(kinds) == 1 else "unknown", "complete": False})
+        if scopes:
             missing_attempt = any(a not in by_attempt for a in r["attempt_ids"])
-            complete = all(u["completeness"] == "complete" for u in scoped) and not missing_attempt
-            r["usage"] = _sum_usage(scoped)
+            complete = all(x["complete"] for x in scopes) and not missing_attempt
+            r["usage"] = sum_units([x["units"] for x in scopes])
+            r["usage_scopes"] = scopes
             r["measurement_quality"] = "complete" if complete else "partial"
     return {"trials": list(rows.values()), "conflicts": conflicts}
 
@@ -216,7 +224,7 @@ def summarize(manifest, task, events, inputs, pricing=None, pricing_digest=None)
         excluded = sum(r["outcome"] in excluded_outcomes for r in rs)
         configs.append({
             "config_id": c["config_id"],
-            "config_digest": digest(json.dumps(c, sort_keys=True).encode()),
+            "config_digest": digest(canonical(c)),  # same digest as the contract request's config_digest
             "model_requested": c["model_requested"],
             "workflow": c["workflow"],
             "isolation_track": c["isolation_track"],
@@ -228,7 +236,7 @@ def summarize(manifest, task, events, inputs, pricing=None, pricing_digest=None)
             "outcomes": {o: sum(r["outcome"] == o for r in rs) for o in OUTCOMES},
             "grades": {g: sum(r["grade"] == g for r in rs) for g in GRADES},
             "ungraded": sum(r["grade"] is None for r in rs),
-            "harness_success_not_pass": sum(r["harness_completion"] == "success" and r["grade"] != "PASS" for r in rs),
+            "completion_accepted_not_pass": sum(r["completion"] == "accepted" and r["grade"] != "PASS" for r in rs),
             "operational_success": {"pass": passes, "denominator": n, "denominator_definition": "all started trials",
                                     "rate": round(passes / n, 4) if n else None, "wilson95": wilson95(passes, n)},
             "success_after_exclusions": None if not excluded_outcomes else {
@@ -243,8 +251,7 @@ def summarize(manifest, task, events, inputs, pricing=None, pricing_digest=None)
                                  "min": pass_ms[0] if pass_ms else None, "max": pass_ms[-1] if pass_ms else None},
             "usage": {
                 "coverage": {q: sum(r["measurement_quality"] == q for r in rs) for q in ("complete", "partial", "unknown")},
-                "known_subtotal": {f: sum(u[f] for u in usage_known if u[f] is not None)
-                                   for f in ("input_tokens", "output_tokens", "cache_read_tokens")},
+                "known_subtotal": {f: sum(u[f] for u in usage_known if u[f] is not None) for f in UNITS},
                 "known_subtotal_is_full_usage": n > 0 and all(r["measurement_quality"] == "complete" for r in rs),
             },
             "cost": _cost(c, rs, passes, pricing),
@@ -296,8 +303,8 @@ def render_markdown(s):
            f"- integrity: {'ok' if s['integrity']['ok'] else str(len(s['integrity']['conflicts'])) + ' conflict(s), first record kept'}",
            "",
            "## Per configuration", "",
-           "| config | track | started | completed/timeout/cancel/error/unknown | PASS/FAIL/INVALID/ungraded "
-           "| success (Wilson 95%) | harness success but not PASS | PASS duration ms median [min-max] "
+           f"| config | track | started | {'/'.join(OUTCOMES)} | PASS/FAIL/INVALID/ungraded "
+           "| success (Wilson 95%) | completion accepted but not PASS | PASS duration ms median [min-max] "
            "| usage complete/partial/unknown | known tokens in/out | interrupted/reconciled/replacements/corrected "
            "| cost |",
            "|---|---|---|---|---|---|---|---|---|---|---|---|"]
@@ -309,7 +316,7 @@ def render_markdown(s):
             f"| `{c['config_id']}` | {c['isolation_track']} | {c['started']} "
             f"| {'/'.join(str(o[k]) for k in OUTCOMES)} "
             f"| {g['PASS']}/{g['FAIL']}/{g['INVALID']}/{c['ungraded']} "
-            f"| {sr['pass']}/{sr['denominator']} {ci} | {c['harness_success_not_pass']} "
+            f"| {sr['pass']}/{sr['denominator']} {ci} | {c['completion_accepted_not_pass']} "
             f"| {_fmt(d['median'])} [{_fmt(d['min'])}-{_fmt(d['max'])}] "
             f"| {u['coverage']['complete']}/{u['coverage']['partial']}/{u['coverage']['unknown']} "
             f"| {u['known_subtotal']['input_tokens']}/{u['known_subtotal']['output_tokens']} ({sub}) "
@@ -338,9 +345,10 @@ def render_markdown(s):
     return "\n".join(out)
 
 
-CSV_FIELDS = ("fake_execution", "trial_id", "config_id", "repetition", "replaces", "outcome", "terminal_source",
-              "interrupted", "harness_completion", "original_grade", "grade", "candidate_digest", "duration_ms",
-              "measurement_quality", "input_tokens", "output_tokens", "cache_read_tokens")
+TRIAL_COLUMNS = ("trial_id", "config_id", "repetition", "replaces", "outcome", "terminal_source", "interrupted",
+                 "completion", "error_code", "drain", "original_grade", "grade", "candidate_digest", "duration_ms",
+                 "measurement_quality")
+CSV_FIELDS = ("fake_execution", *TRIAL_COLUMNS, *UNITS)
 
 
 def render_csv(s):
@@ -349,8 +357,8 @@ def render_csv(s):
     w.writerow(CSV_FIELDS)
     for r in s["trials"]:
         u = r["usage"] or {}
-        w.writerow(["true" if s["fake_execution"] else "false", *(_fmt(r[k]) for k in CSV_FIELDS[1:14]),
-                    *(_fmt(u.get(k)) for k in CSV_FIELDS[14:])])
+        w.writerow(["true" if s["fake_execution"] else "false", *(_fmt(r[k]) for k in TRIAL_COLUMNS),
+                    *(_fmt(u.get(k)) for k in UNITS)])
     return buf.getvalue()
 
 

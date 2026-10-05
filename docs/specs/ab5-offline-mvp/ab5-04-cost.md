@@ -2,11 +2,11 @@
 
 Status: draft.
 
-## Pricing snapshot (`agent-benchmark/pricing/v1`)
+## Pricing snapshot (`agent-benchmark/pricing/v2`)
 
 `snapshot_utc`, `source`, `basis` (`api-price-list` | `subscription-estimate`) and per model id: `currency`
-(ISO 4217), `unit` (`per_token` | `per_thousand_tokens` | `per_million_tokens`), `input`, `output`, `cache_read`
-(explicit null if unknown), `input_includes_cache_read`. Never fetched automatically. `report --pricing FILE`
+(ISO 4217), `unit` (`per_token` | `per_thousand_tokens` | `per_million_tokens`), `input`, `output`, `cache_read`,
+`cache_write` (both explicit null if unknown). Never fetched automatically. `report --pricing FILE`
 copies it into the run as `pricing.json` once; a different snapshot for the same run is refused; its digest is
 listed in the report inputs.
 
@@ -14,7 +14,9 @@ listed in the report inputs.
 
 - Trial cost = sum over all attempts (retries, reviewer calls) of priced usage. Model is chosen by
   `model_resolved`, falling back to `model_requested` (recorded as `priced_by`).
-- `input_includes_cache_read=true`: cache tokens are carved out of input, not added; cache > input = unpriceable.
+- Cache handling follows each usage event's `cache_semantics` (contract v1), priced per attempt:
+  `separate` = every unit at its own rate; `included_in_input` = cache read/write carved out of input, not added
+  (cache > input is unpriceable); `unknown` with non-zero or unknown cache tokens = only output is priced.
 - Missing usage, missing rate for a non-zero category or missing model -> not fully priced. Report shows
   `known_subtotal` with coverage `full/partial/unknown`; `total` only when every started trial is fully priced.
 - Cost per PASS = total of all started trials / PASS. 0 PASS -> `null` with "no successful solution". Never 0.
@@ -31,7 +33,7 @@ listed in the report inputs.
 | zero PASS | `test_retries_cache_and_zero_pass` |
 | partial usage / missing price / missing model | `test_fixture_run_partial_usage`, `test_missing_rate_or_usage_is_not_zero`, `test_missing_model_rate` |
 | currency / unit change | `test_retries_cache_and_zero_pass` (USD vs EUR), `test_same_currency_is_comparable`, `test_unit_change_gives_same_amount` |
-| cache overlap | `test_cache_included_in_input_is_not_double_counted`, `test_contradictory_cache_overlap` |
+| cache overlap | `test_cache_included_in_input_is_not_double_counted`, `test_unknown_cache_semantics`, `test_contradictory_cache_overlap` |
 | retries counted | `test_retries_cache_and_zero_pass` (2 attempts per trial) |
 | denominators and exclusions in report | `test_exclusions_have_their_own_denominator` |
 | snapshot bound, not refetched | `test_pricing_is_bound_to_the_run` |

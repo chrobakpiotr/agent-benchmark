@@ -21,11 +21,11 @@ class Crash(BaseException):
 def counting(crash_on=None):
     calls = []
 
-    def execute(request, task, entry, bundle_dir):
+    def execute(request, task, entry, bundle_dir, evidence_root):
         calls.append(request["trial_id"])
         if crash_on is not None and len(calls) == crash_on:
             raise Crash()
-        return runner.fake_execute(request, task, entry, bundle_dir)
+        return runner.fake_execute(request, task, entry, bundle_dir, evidence_root)
     return execute, calls
 
 
@@ -149,11 +149,11 @@ class Integrity(unittest.TestCase):
         term = next(e for e in lines(self.full) if e["type"] == "trial_finished" and e["outcome"] == "timeout")
         aid = term["attempts"][0]["attempt_id"]
 
-        def usage(eid, uid, kind, i, o, completeness="complete"):
+        def usage(eid, uid, kind, i, o):
             append(self.full, {"type": "usage", "event_id": eid, "trial_id": term["trial_id"], "attempt_id": aid,
-                               "usage_event_id": uid, "kind": kind,
-                               "usage": {"source": "test", "completeness": completeness, "input_tokens": i,
-                                         "output_tokens": o, "cache_read_tokens": 0}})
+                               "usage_event_id": uid, "kind": kind, "source": "provider", "cache_semantics": "separate",
+                               "units": {"input_tokens": i, "output_tokens": o, "cache_read_tokens": 0,
+                                         "cache_write_tokens": 0}})
         usage("e1", "s1", "stream", 10, 2)
         usage("e2", "s2", "stream", 5, 1)
         usage("e3", "s1", "stream", 10, 2)       # re-delivered stream event under a new envelope
@@ -172,11 +172,14 @@ class Integrity(unittest.TestCase):
         aid = term["attempts"][0]["attempt_id"]
         for eid, i in (("e1", 10), ("e2", 5)):
             append(self.full, {"type": "usage", "event_id": eid, "trial_id": term["trial_id"], "attempt_id": aid,
-                               "usage_event_id": eid, "kind": "stream",
-                               "usage": {"source": "t", "completeness": "partial", "input_tokens": i,
-                                         "output_tokens": None, "cache_read_tokens": None}})
+                               "usage_event_id": eid, "kind": "stream", "source": "provider",
+                               "cache_semantics": "separate",
+                               "units": {"input_tokens": i, "output_tokens": 1, "cache_read_tokens": 0,
+                                         "cache_write_tokens": None}})
         row = next(r for r in summary(self.full)["trials"] if r["trial_id"] == term["trial_id"])
-        self.assertEqual(row["usage"], {"input_tokens": 15, "output_tokens": None, "cache_read_tokens": None})
+        self.assertEqual(row["usage"], {"input_tokens": 15, "output_tokens": 2, "cache_read_tokens": 0,
+                                        "cache_write_tokens": None})
+        # streams without a summary are never complete (contract v1: complete needs a summary per attempt)
         self.assertEqual(row["measurement_quality"], "partial")
 
     def test_invalidate_lowers_result_and_keeps_history(self):

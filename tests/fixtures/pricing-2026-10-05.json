@@ -1,12 +1,24 @@
 {
-  "schema_version": "agent-benchmark/pricing/v1",
+  "schema_version": "agent-benchmark/pricing/v2",
   "snapshot_utc": "2026-10-05T00:00:00Z",
   "source": "hand-written test fixture, not a real price list",
   "basis": "api-price-list",
   "models": {
-    "fake-model-alpha": {"currency": "USD", "unit": "per_million_tokens", "input": 3, "output": 15,
-                         "cache_read": 0.3, "input_includes_cache_read": false},
-    "fake-model-beta": {"currency": "EUR", "unit": "per_thousand_tokens", "input": 0.002, "output": 0.01,
-                        "cache_read": 0.0005, "input_includes_cache_read": true}
+    "fake-model-alpha": {
+      "currency": "USD",
+      "unit": "per_million_tokens",
+      "input": 3,
+      "output": 15,
+      "cache_read": 0.3,
+      "cache_write": 3.75
+    },
+    "fake-model-beta": {
+      "currency": "EUR",
+      "unit": "per_thousand_tokens",
+      "input": 0.002,
+      "output": 0.01,
+      "cache_read": 0.0005,
+      "cache_write": null
+    }
   }
 }

@@ -1,7 +1,7 @@
-"""Sequential runner: validate -> plan trials -> execute (fake port) -> seal candidate -> grade -> append events.
+"""Sequential runner: validate -> plan trials -> contract request -> backend -> import result -> grade -> events.
 
-The execution port (see docs/execution-port.md) is owned by agent-harness AH5-02. `fake_execute` is the only
-implementation here and is labelled fake in every record.
+Execution goes through `harness_port` (agent-harness execution contract v1). The only backend is the fake one;
+every record says so.
 
 Crash safety: `trial_started` is written before launch, so a missing start means the trial was never launched.
 A start without a terminal is never silently re-run; `resume` reconciles it to `unknown` first.
@@ -12,10 +12,9 @@ import random
 import shutil
 import time
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 
-from . import grader
+from . import grader, harness_port
 from .report import load_run, reduce_events
 from .schema import EVENT_VERSION, FAKE_TRACK, ValidationError, canonical, digest, load_manifest
 
@@ -44,26 +43,14 @@ def fake_candidate(task, bundle_dir, kind):
     }[kind]()
 
 
-def fake_execute(request, task, entry, bundle_dir):
-    """Fake execution port: returns the scripted outcome (reference candidates). No model, no network."""
+def fake_execute(request, task, entry, bundle_dir, evidence_root):
+    """Fake backend: answers a contract request with the scripted outcome. No model, no network."""
     candidate = fake_candidate(task, bundle_dir, entry["candidate"]) if entry["candidate"] else None
-    execution_id = "fake-exec-" + request["request_id"]
-    attempt_id = execution_id + "-a1"
-    usage_events = [] if entry["usage"] is None else [
-        {"attempt_id": attempt_id, "usage_event_id": attempt_id + "-summary", "kind": "summary",
-         "usage": entry["usage"]}]
-    return {
-        "execution_id": execution_id,
-        "attempts": [{"attempt_id": attempt_id, "outcome": entry["outcome"]}],
-        "outcome": entry["outcome"],
-        "harness_completion": entry["harness_completion"],
-        "candidate": candidate,
-        "usage_events": usage_events,
-    }
+    return harness_port.fake_backend(request, entry, candidate, evidence_root)
 
 
 def _utc():
-    return datetime.now(timezone.utc).isoformat(timespec="microseconds")
+    return harness_port.utc()
 
 
 def _append(path, record):
@@ -85,35 +72,34 @@ def _grade(out, manifest, task, trial_id, cand_digest):
                                    "isolation": grader.ISOLATION[gid]})
 
 
-def _execute(out, manifest, task, todo, execute):
+def _execute(out, manifest, task, task_digest, todo, execute):
     """todo: [(config_id, repetition, trial_id, replaces)] executed sequentially."""
     events = out / "events.jsonl"
     script = {(e["config_id"], e["repetition"]): e for e in manifest["executor"]["script"]}
+    configs = {c["config_id"]: c for c in manifest["configs"]}
     for cid, rep, trial_id, replaces in todo:
-        request = {"request_id": str(uuid.uuid4()), "trial_id": trial_id, "config_id": cid}
+        request = harness_port.build_request(manifest, configs[cid], task_digest, trial_id)
+        evidence = out / "evidence" / request["request_id"]
+        evidence.mkdir(parents=True)
+        (evidence / "request.json").write_bytes(canonical(request))
         _append(events, {"type": "trial_started", "trial_id": trial_id, "config_id": cid, "repetition": rep,
-                         "request_id": request["request_id"], "replaces": replaces, "started_utc": _utc()})
+                         "request_id": request["request_id"], "request_digest": digest(canonical(request)),
+                         "replaces": replaces, "started_utc": _utc()})
         t0 = time.monotonic_ns()
         try:
-            result = execute(request, task, script[(cid, rep)], out / "task")
-        except Exception as exc:  # an executor crash is a recorded outcome, not a lost trial
-            result = {"execution_id": None, "attempts": [], "outcome": "error", "harness_completion": None,
-                      "candidate": None, "usage_events": [], "error": f"{type(exc).__name__}: {exc}"}
+            result = execute(request, task, script[(cid, rep)], out / "task", evidence)
+        except Exception as exc:  # backend crashed: launch state unknown, the trial stays visible
+            terminal, usage = harness_port.unknown_terminal(f"backend raised {type(exc).__name__}"), []
+        else:
+            (evidence / "result.json").write_bytes(canonical(result))  # raw, even if it fails validation
+            terminal, usage = harness_port.import_result(request, result, evidence, out / "candidates")
         duration_ms = (time.monotonic_ns() - t0) // 1_000_000
-        cand = result["candidate"]
-        cand_digest = None
-        if cand is not None:
-            cand_digest = digest(cand)
-            (out / "candidates" / cand_digest.split(":", 1)[1]).write_bytes(cand)  # seal: content-addressed
         _append(events, {"type": "trial_finished", "trial_id": trial_id, "request_id": request["request_id"],
-                         "source": "executor", "execution_id": result["execution_id"],
-                         "attempts": result["attempts"], "outcome": result["outcome"],
-                         "harness_completion": result["harness_completion"], "candidate_digest": cand_digest,
-                         "finished_utc": _utc(), "duration_ms": duration_ms, "error": result.get("error")})
-        for u in result["usage_events"]:
+                         "source": "executor", **terminal, "finished_utc": _utc(), "duration_ms": duration_ms})
+        for u in usage:
             _append(events, {"type": "usage", "trial_id": trial_id, **u})
-        if cand_digest:
-            _grade(out, manifest, task, trial_id, cand_digest)
+        if terminal["candidate_digest"]:
+            _grade(out, manifest, task, trial_id, terminal["candidate_digest"])
 
 
 def run(manifest_path, out_dir, execute=fake_execute):
@@ -130,7 +116,7 @@ def run(manifest_path, out_dir, execute=fake_execute):
                                    "manifest_digest": digest(manifest_bytes), "task_digest": digest(task_bytes),
                                    "executor": {"kind": "fake", "track": FAKE_TRACK},
                                    "plan": [f"{c}/r{r}" for c, r in plan]})
-    _execute(out, manifest, task, [(c, r, f"{c}/r{r}", None) for c, r in plan], execute)
+    _execute(out, manifest, task, digest(task_bytes), [(c, r, f"{c}/r{r}", None) for c, r in plan], execute)
     _append(out / "events.jsonl", {"type": "run_finished", "run_id": run_id, "finished_utc": _utc()})
     return out
 
@@ -164,13 +150,12 @@ def resume(run_dir, replace_unknown=False, execute=fake_execute):
     _append(events_path, {"type": "run_resumed", "run_id": run_id, "resumed_utc": _utc()})
     for r in interrupted:
         _append(events_path, {"type": "trial_finished", "trial_id": r["trial_id"], "request_id": r["request_id"],
-                              "source": "reconciliation", "execution_id": None, "attempts": [], "outcome": "unknown",
-                              "harness_completion": None, "candidate_digest": None, "finished_utc": _utc(),
-                              "duration_ms": None,
-                              "error": "interrupted between launch and terminal record; no backend status available"})
+                              "source": "reconciliation", **harness_port.unknown_terminal(
+                                  "interrupted between launch and terminal record; no backend status available"),
+                              "finished_utc": _utc(), "duration_ms": None})
     for r in ungraded:
         _grade(out, manifest, task, r["trial_id"], r["candidate_digest"])
-    _execute(out, manifest, task, todo, execute)
+    _execute(out, manifest, task, events[0]["task_digest"], todo, execute)
     _append(events_path, {"type": "run_finished", "run_id": run_id, "finished_utc": _utc()})
     return out
 

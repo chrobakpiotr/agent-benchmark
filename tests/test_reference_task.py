@@ -114,7 +114,7 @@ class ReferencePipeline(unittest.TestCase):
         self.assertEqual(grades["cfg-a"], {"PASS": 1, "FAIL": 1, "INVALID": 0})
         self.assertEqual(grades["cfg-b"], {"PASS": 0, "FAIL": 2, "INVALID": 0})
         self.assertEqual([g["id"] for g in s["graders"]], ["patch-unittest"])
-        self.assertEqual(sum(c["harness_success_not_pass"] for c in s["configs"]), 3)
+        self.assertEqual(sum(c["completion_accepted_not_pass"] for c in s["configs"]), 3)
 
     def test_unknown_reference_candidate_rejected(self):
         with tempfile.TemporaryDirectory() as d:

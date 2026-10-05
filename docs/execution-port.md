@@ -1,15 +1,15 @@
 # Execution port: consumer requirements (AB5-01 -> AH5-02)
 
-**Status: requirements, not a contract.** The shared execution schema is owned by the agent-harness agent (AH5-02);
-its v1 proposal and this repo's consumer review are at the end of this file.
-agent-benchmark does not define a competing variant. Until a versioned AH5-02 contract exists, the runner uses one
-fake port (`runner.fake_execute`) with the semantics below, and every record produced through it is labelled
-`executor.kind = "fake"`, `isolation_track = "fake-offline"`. When AH5-02 publishes a version, AB5-06 replaces the
-fake with one adapter over the public API at a pinned version, and these requirements are checked against it.
+**Status: contract v1 consumed (AB5-06a).** The shared execution schema is owned by agent-harness (AH5-02);
+agent-benchmark does not define a competing variant. It depends on `agent-harness` tag `v0.1.0`, pinned by commit
+`e57fda8477675fd0722878e4993b19651a6aedc4` in `pyproject.toml`, and uses only `agent_harness.contract`
+through `src/agent_benchmark/harness_port.py`. There is no launch API yet, so the only backend is
+`harness_port.fake_backend`; every record produced through it is labelled `executor.kind = "fake"`,
+`isolation_track = "fake-offline"`. Harness-launched execution is AB5-06b (depends on AH5-03b).
 
 ## What the benchmark needs from one execution request
 
-| Need | Why | Fake today |
+| Need | Why | Fake backend |
 |---|---|---|
 | Caller-supplied `request_id`, echoed back | Dedup/reconcile after a crash between launch and record (AB5-03) | yes |
 | Backend `execution_id` (null if never launched) | Bind events and usage to one execution | yes (`fake-exec-<request_id>`) |
@@ -56,7 +56,10 @@ Findings / questions for the contract owner:
 3. **Launch API.** No launch/cancel API exists yet (ADR: AH5-03b/AH5-04b). AB5-06 is BLOCKED on it; the
    benchmark keeps its fake port until then.
 
-Benchmark-side delta to apply in AB5-06 (not now, to avoid a second variant of the same fields):
+Resolution at `v0.1.0` (`e57fda8`): (1) `complete` requires integer units in a summary for every attempt;
+(2) pinned by git commit SHA; (3) still open, AB5-06b.
+
+Benchmark-side delta, applied in AB5-06a (`docs/specs/ab5-offline-mvp/ab5-06a-contract.md`):
 `harness_completion success/failure` -> `completion accepted/rejected`; new outcome `rejected` (never launched;
 counts in the operational denominator as non-PASS, excludable); candidate bytes -> reference `{path, sha256, size}`
 copied from the evidence root into the benchmark's content-addressed store after verifying digest and size;

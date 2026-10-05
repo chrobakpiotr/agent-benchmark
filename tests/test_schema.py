@@ -34,7 +34,7 @@ class ManifestValidation(unittest.TestCase):
         self.assertEqual(task["task_id"], "synthetic-sort-001")
 
     def test_unknown_version(self):
-        self.rejects(lambda m: m.update(schema_version="agent-benchmark/manifest/v2"), "unsupported")
+        self.rejects(lambda m: m.update(schema_version="agent-benchmark/manifest/v1"), "unsupported")
 
     def test_missing_identity(self):
         self.rejects(lambda m: m.pop("experiment_id"), "missing fields")
@@ -49,14 +49,19 @@ class ManifestValidation(unittest.TestCase):
     def test_contradictory_values(self):
         self.rejects(lambda m: m["configs"].append(copy.deepcopy(m["configs"][0])), "duplicate config_id")
         self.rejects(lambda m: m["executor"]["script"][0].update(candidate=None), "without a candidate")
-        self.rejects(lambda m: m["executor"]["script"][0]["usage"].update(output_tokens=None), "contradicts null")
+        self.rejects(lambda m: m["executor"]["script"][0]["usage"]["units"].update(output_tokens=-1), "output_tokens")
+        self.rejects(lambda m: m["executor"]["script"][0]["usage"].update(cache_semantics="maybe"), "cache_semantics")
+        self.rejects(lambda m: m["executor"]["script"][4].update(completion="accepted"), "completion decision")
+        self.rejects(lambda m: m["executor"]["script"][0].update(outcome="rejected", completion=None), "never launched")
+        self.rejects(lambda m: m["configs"][0].update(config_id="cfg/a"), "config_id")
+        self.rejects(lambda m: m["configs"][0].update(budget=None), "budget")
         self.rejects(lambda m: m["executor"]["script"][1].update(config_id="cfg-a", repetition=1), "duplicate script")
         self.rejects(lambda m: m["executor"]["script"].pop(), "no scripted outcome")
         self.rejects(lambda m: m["configs"][0].update(isolation_track="hidden"), "fake executor requires")
         self.rejects(lambda m: m.update(repetitions=0), "repetitions")
         self.rejects(lambda m: m["executor"]["script"][0].update(outcome="succeeded"), "outcome")
         self.rejects(lambda m: m.update(exclusions=["infra"]), "exclusions")
-        self.rejects(lambda m: m["retry_policy"].update(max_attempts=3), "max_attempts")
+        self.rejects(lambda m: m["retry_policy"].update(max_attempts=101), "max_attempts")
 
     def test_unknown_fields_rejected(self):
         self.rejects(lambda m: m.update(extra=1), "unknown fields")
@@ -98,15 +103,16 @@ class TaskValidation(unittest.TestCase):
 class EventValidation(unittest.TestCase):
     def test_unknown_event_version_and_type(self):
         with self.assertRaisesRegex(ValidationError, "unsupported"):
-            validate_event({"schema_version": "agent-benchmark/event/v1", "type": "grade"}, "e")
+            validate_event({"schema_version": "agent-benchmark/event/v2", "type": "grade"}, "e")
         with self.assertRaisesRegex(ValidationError, "unknown event type"):
-            validate_event({"schema_version": "agent-benchmark/event/v2", "type": "victory"}, "e")
+            validate_event({"schema_version": "agent-benchmark/event/v3", "type": "victory"}, "e")
 
-    def test_usage_event_must_carry_usage_and_correction_cannot_upgrade(self):
-        base = {"schema_version": "agent-benchmark/event/v2", "event_id": "e1", "trial_id": "t"}
-        with self.assertRaisesRegex(ValidationError, "must carry usage"):
+    def test_usage_event_needs_all_units_and_correction_cannot_upgrade(self):
+        base = {"schema_version": "agent-benchmark/event/v3", "event_id": "e1", "trial_id": "t"}
+        with self.assertRaisesRegex(ValidationError, "cache_write_tokens"):
             validate_event({**base, "type": "usage", "attempt_id": "a", "usage_event_id": "u", "kind": "stream",
-                            "usage": None}, "e")
+                            "source": "provider", "cache_semantics": "separate",
+                            "units": {"input_tokens": 1, "output_tokens": 1, "cache_read_tokens": None}}, "e")
         with self.assertRaisesRegex(ValidationError, "action"):
             validate_event({**base, "type": "correction", "action": "set_pass", "reason": "r",
                             "created_utc": "x"}, "e")

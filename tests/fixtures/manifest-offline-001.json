@@ -1,5 +1,5 @@
 {
-  "schema_version": "agent-benchmark/manifest/v1",
+  "schema_version": "agent-benchmark/manifest/v2",
   "experiment_id": "offline-001",
   "task": {
     "path": "tasks/synthetic-sort-001/task.json",
@@ -17,7 +17,9 @@
       "sampling": null,
       "tool_permissions": [],
       "workflow": "single-agent",
-      "budget": {"max_wall_seconds": 60},
+      "budget": {
+        "max_wall_seconds": 60
+      },
       "isolation_track": "fake-offline"
     },
     {
@@ -31,29 +33,93 @@
       "sampling": null,
       "tool_permissions": [],
       "workflow": "single-agent",
-      "budget": null,
+      "budget": {
+        "max_wall_seconds": 60
+      },
       "isolation_track": "fake-offline"
     }
   ],
   "repetitions": 3,
   "seed": 7,
-  "retry_policy": {"max_attempts": 1},
+  "retry_policy": {
+    "max_attempts": 1
+  },
   "exclusions": [],
   "executor": {
     "kind": "fake",
     "script": [
-      {"config_id": "cfg-a", "repetition": 1, "outcome": "completed", "candidate": "good", "harness_completion": "success",
-       "usage": {"source": "fake-script", "completeness": "complete", "input_tokens": 100, "output_tokens": 20, "cache_read_tokens": 0}},
-      {"config_id": "cfg-a", "repetition": 2, "outcome": "completed", "candidate": "good", "harness_completion": "success",
-       "usage": null},
-      {"config_id": "cfg-a", "repetition": 3, "outcome": "completed", "candidate": "noop", "harness_completion": "success",
-       "usage": {"source": "fake-script", "completeness": "partial", "input_tokens": 50, "output_tokens": null, "cache_read_tokens": null}},
-      {"config_id": "cfg-b", "repetition": 1, "outcome": "completed", "candidate": "good", "harness_completion": null,
-       "usage": {"source": "fake-script", "completeness": "complete", "input_tokens": 200, "output_tokens": 40, "cache_read_tokens": 0}},
-      {"config_id": "cfg-b", "repetition": 2, "outcome": "timeout", "candidate": null, "harness_completion": null,
-       "usage": null},
-      {"config_id": "cfg-b", "repetition": 3, "outcome": "error", "candidate": null, "harness_completion": "failure",
-       "usage": null}
+      {
+        "config_id": "cfg-a",
+        "repetition": 1,
+        "outcome": "completed",
+        "candidate": "good",
+        "usage": {
+          "units": {
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0
+          },
+          "cache_semantics": "separate"
+        },
+        "completion": "accepted"
+      },
+      {
+        "config_id": "cfg-a",
+        "repetition": 2,
+        "outcome": "completed",
+        "candidate": "good",
+        "usage": null,
+        "completion": "accepted"
+      },
+      {
+        "config_id": "cfg-a",
+        "repetition": 3,
+        "outcome": "completed",
+        "candidate": "noop",
+        "usage": {
+          "units": {
+            "input_tokens": 50,
+            "output_tokens": null,
+            "cache_read_tokens": null,
+            "cache_write_tokens": null
+          },
+          "cache_semantics": "separate"
+        },
+        "completion": "accepted"
+      },
+      {
+        "config_id": "cfg-b",
+        "repetition": 1,
+        "outcome": "completed",
+        "candidate": "good",
+        "usage": {
+          "units": {
+            "input_tokens": 200,
+            "output_tokens": 40,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0
+          },
+          "cache_semantics": "separate"
+        },
+        "completion": null
+      },
+      {
+        "config_id": "cfg-b",
+        "repetition": 2,
+        "outcome": "timeout",
+        "candidate": null,
+        "usage": null,
+        "completion": null
+      },
+      {
+        "config_id": "cfg-b",
+        "repetition": 3,
+        "outcome": "error",
+        "candidate": null,
+        "usage": null,
+        "completion": null
+      }
     ]
   }
 }
