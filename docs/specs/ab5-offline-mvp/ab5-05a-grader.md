@@ -1,6 +1,6 @@
 # AB5-05a - deterministic task bundle and patch grader
 
-Status: draft by the implementing agent (not self-approved). Track: **transparent diagnostic**, not hidden grading.
+Status: draft. Track: **transparent diagnostic**, not hidden grading.
 
 ## Bundle `tasks/reference-001`
 

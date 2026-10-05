@@ -37,8 +37,7 @@ fake with one adapter over the public API at a pinned version, and these require
 
 ## Consumer review of AH5-02 execution contract v1 (agent-harness `1f07db4`, ADR 0002 "Proposed")
 
-Read-only review; nothing in agent-harness was changed. Their `tests.test_contract` ran locally: 10 tests OK
-(Python 3.9.6, `PYTHONDONTWRITEBYTECODE=1`). This is not an approval of the contract.
+`tests.test_contract` at that revision: 10 tests OK on Python 3.9.6.
 
 Covered as required: caller `request_id` + `request_digest` binding; `execution_id` null when never launched;
 `attempts[]` with own IDs; `outcome` separate from `completion` and from the (consumer-owned) grade;

@@ -1,6 +1,6 @@
 # AB5-00..02 - offline MVP: manifest -> fake run -> grade -> report
 
-Status: draft by the implementing agent (not self-approved; needs evaluator/human acceptance).
+Status: draft.
 Source plan: `agent-benchmark-agent-plan-2026-10-05.md` (AB5-00, AB5-01, AB5-02) + `master-agent-handover-2026-10-05.md`.
 
 ## Behaviour

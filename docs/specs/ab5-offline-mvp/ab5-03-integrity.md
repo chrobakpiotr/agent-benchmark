@@ -1,6 +1,6 @@
 # AB5-03 - trial integrity and resume
 
-Status: draft by the implementing agent (not self-approved). Event schema bumped to `agent-benchmark/event/v2`
+Status: draft. Event schema bumped to `agent-benchmark/event/v2`
 (adds `event_id`, separate `usage` events, `trial_started.replaces`, `trial_finished.source`, `run_resumed`,
 `correction`). v1 is rejected; no v1 data existed outside temporary test runs.
 

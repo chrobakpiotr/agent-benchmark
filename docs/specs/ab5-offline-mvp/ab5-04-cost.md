@@ -1,6 +1,6 @@
 # AB5-04 - cost and statistics
 
-Status: draft by the implementing agent (not self-approved).
+Status: draft.
 
 ## Pricing snapshot (`agent-benchmark/pricing/v1`)
 
