@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-benchmark"
+version = "0.1.0"
+description = "Offline-first benchmark comparing agent configurations on identical tasks"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+agent-benchmark = "agent_benchmark.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

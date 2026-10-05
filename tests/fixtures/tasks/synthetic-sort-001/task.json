@@ -1,0 +1,12 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "synthetic-sort-001",
+  "version": "1",
+  "description": "Return the input integers sorted in non-decreasing order as a JSON list. Synthetic task that exercises the grading pipeline only.",
+  "environment": "none (data-only candidate, no repository, no base SHA)",
+  "visible_checks": ["candidate is a JSON list of integers"],
+  "input": [3, 1, 2, 3, -5],
+  "grader": {"id": "sort-check", "version": "1"},
+  "provenance": "authored for agent-benchmark AB5-02, 2026-10-05",
+  "license": "same as repository"
+}

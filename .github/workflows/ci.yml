@@ -1,0 +1,23 @@
+name: offline-ci
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m unittest discover -s tests -v
+      - name: install and smoke outside checkout
+        run: |
+          python -m venv /tmp/venv && /tmp/venv/bin/pip install .
+          cd "$(mktemp -d)"
+          /tmp/venv/bin/agent-benchmark --help
+          /tmp/venv/bin/agent-benchmark run "$GITHUB_WORKSPACE/tests/fixtures/manifest-offline-001.json" --out run
+          cp run/report.md before.md && /tmp/venv/bin/agent-benchmark report run && cmp run/report.md before.md
