@@ -1,0 +1,18 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "reference-001",
+  "version": "1",
+  "description": "Fix calc.median so it returns the median of any non-empty sequence (unsorted input, even length) and raises ValueError for an empty one. Change calc.py only.",
+  "environment": "Python >= 3.9 stdlib; base tree in base/, no repository history",
+  "visible_checks": ["python -m unittest discover -s tests (from the workspace root)"],
+  "grader": {"id": "patch-unittest", "version": "1"},
+  "bundle": {
+    "base_digest": "sha256:1cfde8cece917887c758e5f8026e14c0b151f3a37ca6a69af9f0a23cdc9f07bb",
+    "hidden_digest": "sha256:b87d06b689b5874587036e4259d8e1c85bfc8a86faeed4654a7e45d0b3fa55e7",
+    "scope": ["calc.py"],
+    "hidden_test_count": 4,
+    "timeout_seconds": 30
+  },
+  "provenance": "synthetic grading reference authored for agent-benchmark AB5-05a, 2026-10-05; not a real-world task",
+  "license": "same as repository"
+}

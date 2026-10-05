@@ -14,7 +14,7 @@ GRADES = ("PASS", "FAIL", "INVALID")
 QUALITY = ("complete", "partial", "unknown")
 FAKE_CANDIDATES = ("good", "wrong", "noop", "malformed")
 FAKE_TRACK = "fake-offline"
-KNOWN_GRADERS = {"sort-check": "1"}
+KNOWN_GRADERS = {"sort-check": "1", "patch-unittest": "1"}
 USAGE_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens")
 
 CONFIG_REQUIRED = ("config_id", "model_requested", "workflow", "tool_permissions", "isolation_track")
@@ -108,23 +108,65 @@ def validate_usage(u, path):
         _fail(path, "completeness 'partial' requires some but not all fields known")
 
 
+def tree_digest(root):
+    """Digest of a directory: sorted relative paths with per-file digests. Symlinks are refused."""
+    root = Path(root)
+    lines = []
+    for p in sorted(root.rglob("*")):
+        if p.is_symlink():
+            _fail(str(p), "symlinks are not allowed in a task bundle")
+        if p.is_file() and "__pycache__" not in p.parts:
+            lines.append(f"{p.relative_to(root).as_posix()} {digest(p.read_bytes())}\n")
+    return digest("".join(lines).encode())
+
+
+TASK_COMMON = ("schema_version", "task_id", "version", "description", "environment", "visible_checks", "grader",
+               "provenance", "license")
+TASK_SPECIFIC = {"sort-check": ("input",), "patch-unittest": ("bundle",)}
+
+
 def validate_task(task):
     _version(task, "task", TASK_VERSION)
-    _keys(task, "task", ("schema_version", "task_id", "version", "description", "environment", "visible_checks",
-                         "input", "grader", "provenance", "license"))
+    _keys(task.get("grader"), "task.grader", ("id", "version"))
+    gid, gver = task["grader"]["id"], task["grader"]["version"]
+    if KNOWN_GRADERS.get(gid) != gver:
+        _fail("task.grader", f"unknown grader {gid!r} version {gver!r}; known {KNOWN_GRADERS}")
+    _keys(task, "task", (*TASK_COMMON, *TASK_SPECIFIC[gid]))
     for f in ("task_id", "version", "description", "environment", "provenance", "license"):
         _str(task[f], f"task.{f}")
     if not isinstance(task["visible_checks"], list) or not all(isinstance(c, str) for c in task["visible_checks"]):
         _fail("task.visible_checks", "must be a list of strings")
-    if not isinstance(task["input"], list) or not task["input"]:
-        _fail("task.input", "must be a non-empty list")
-    for i, v in enumerate(task["input"]):
-        _int(v, f"task.input[{i}]", -2**53)
-    _keys(task["grader"], "task.grader", ("id", "version"))
-    gid, gver = task["grader"]["id"], task["grader"]["version"]
-    if KNOWN_GRADERS.get(gid) != gver:
-        _fail("task.grader", f"unknown grader {gid!r} version {gver!r}; known {KNOWN_GRADERS}")
+    if gid == "sort-check":
+        if not isinstance(task["input"], list) or not task["input"]:
+            _fail("task.input", "must be a non-empty list")
+        for i, v in enumerate(task["input"]):
+            _int(v, f"task.input[{i}]", -2**53)
+    else:
+        b = task["bundle"]
+        _keys(b, "task.bundle", ("base_digest", "hidden_digest", "scope", "hidden_test_count", "timeout_seconds"))
+        _str(b["base_digest"], "task.bundle.base_digest")
+        _str(b["hidden_digest"], "task.bundle.hidden_digest")
+        if not isinstance(b["scope"], list) or not b["scope"] or not all(isinstance(x, str) and x for x in b["scope"]):
+            _fail("task.bundle.scope", "must be a non-empty list of relative paths")
+        _int(b["hidden_test_count"], "task.bundle.hidden_test_count", 1)
+        _int(b["timeout_seconds"], "task.bundle.timeout_seconds", 1, 3600)
     return task
+
+
+def fake_candidate_kinds(task, bundle_dir):
+    if task["grader"]["id"] == "sort-check":
+        return set(FAKE_CANDIDATES)
+    return {p.stem for p in (Path(bundle_dir) / "reference").glob("*.patch")}
+
+
+def verify_bundle(task, bundle_dir):
+    """For patch tasks: base and hidden trees must match the digests pinned in task.json."""
+    if task["grader"]["id"] != "patch-unittest":
+        return
+    for part in ("base", "hidden"):
+        actual = tree_digest(Path(bundle_dir) / part)
+        if actual != task["bundle"][f"{part}_digest"]:
+            _fail(f"task.bundle.{part}_digest", f"bundle {part}/ is {actual}, task pins {task['bundle'][part + '_digest']}")
 
 
 def validate_config(c, path):
@@ -192,7 +234,7 @@ def validate_manifest(m, task_digest=None):
             _fail(f"{p}.config_id", f"binding to unknown config {e['config_id']!r}")
         _int(e["repetition"], f"{p}.repetition", 1, m["repetitions"])
         _enum(e["outcome"], f"{p}.outcome", OUTCOMES)
-        _enum(e["candidate"], f"{p}.candidate", FAKE_CANDIDATES, nullable=True)
+        _str(e["candidate"], f"{p}.candidate", nullable=True)
         _enum(e["harness_completion"], f"{p}.harness_completion", HARNESS_COMPLETION, nullable=True)
         validate_usage(e["usage"], f"{p}.usage")
         if e["outcome"] == "completed" and e["candidate"] is None:
@@ -218,7 +260,13 @@ def load_manifest(path):
         _fail("manifest.task.path", f"task bundle not found: {task_path}")
     task_bytes = task_path.read_bytes()
     validate_manifest(m, digest(task_bytes))
-    return m, validate_task(_json(task_bytes, str(task_path))), manifest_bytes, task_bytes
+    task = validate_task(_json(task_bytes, str(task_path)))
+    verify_bundle(task, task_path.parent)
+    kinds = fake_candidate_kinds(task, task_path.parent)
+    for i, e in enumerate(m["executor"]["script"]):
+        if e["candidate"] is not None and e["candidate"] not in kinds:
+            _fail(f"manifest.executor.script[{i}].candidate", f"{e['candidate']!r} not available; known {sorted(kinds)}")
+    return m, task, manifest_bytes, task_bytes
 
 
 def validate_event(e, path):

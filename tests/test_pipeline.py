@@ -13,7 +13,7 @@ from agent_benchmark.report import load_run, summarize, wilson95, write_report  
 from agent_benchmark.schema import canonical, digest  # noqa: E402
 
 MANIFEST = Path(__file__).parent / "fixtures" / "manifest-offline-001.json"
-TASK = {"input": [3, 1, 2, 3, -5]}
+TASK = {"input": [3, 1, 2, 3, -5], "grader": {"id": "sort-check", "version": "1"}}
 
 # Hand-computed from the fixture script (see docs/specs/ab5-offline-mvp/spec.md, "Oracle"):
 # cfg-a: good PASS, good PASS, noop FAIL (harness claimed success)  -> 2/3

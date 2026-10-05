@@ -31,9 +31,11 @@ to a verified result, and an independent success rate. This file is a **map**. L
 
 - `src/agent_benchmark/schema.py` - manifest/task/event validation, digests.
 - `src/agent_benchmark/runner.py` - trial planning, fake executor port, append-only event writer.
-- `src/agent_benchmark/grader.py` - independent grader for the synthetic task.
+- `src/agent_benchmark/grader.py` - independent graders (`sort-check`, `patch-unittest`).
+- `src/agent_benchmark/pricing.py` - dated pricing snapshots and token cost.
+- `tasks/` - task bundles pinned by digest (`reference-001`: synthetic patch task).
 - `src/agent_benchmark/report.py` - deterministic report (Markdown/CSV/JSON) from recorded events only.
-- `src/agent_benchmark/cli.py` - `validate`, `run`, `report`.
+- `src/agent_benchmark/cli.py` - `validate`, `run`, `report`, `resume`, `invalidate`.
 - `tests/` - stdlib `unittest`; `tests/fixtures/` - frozen manifests and task bundles.
 
 ## Standard verification

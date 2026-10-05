@@ -12,6 +12,7 @@ agent-benchmark validate tests/fixtures/manifest-offline-001.json
 agent-benchmark run tests/fixtures/manifest-offline-001.json --out runs/demo   # writes events.jsonl + report
 agent-benchmark report runs/demo   # regenerate report.md / report.csv / summary.json from records only
 agent-benchmark report runs/demo --pricing tests/fixtures/pricing-2026-10-05.json   # bind a dated price snapshot
+agent-benchmark run tests/fixtures/manifest-reference-001.json --out runs/ref   # patch task, reference patches
 agent-benchmark resume runs/demo [--replace-unknown]   # after a crash: reconcile, grade, continue
 agent-benchmark invalidate runs/demo cfg-a/r1 --reason "..."   # correction record; never upgrades to PASS
 python3 -m unittest discover -s tests

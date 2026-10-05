@@ -21,11 +21,11 @@ class Crash(BaseException):
 def counting(crash_on=None):
     calls = []
 
-    def execute(request, task, entry):
+    def execute(request, task, entry, bundle_dir):
         calls.append(request["trial_id"])
         if crash_on is not None and len(calls) == crash_on:
             raise Crash()
-        return runner.fake_execute(request, task, entry)
+        return runner.fake_execute(request, task, entry, bundle_dir)
     return execute, calls
 
 

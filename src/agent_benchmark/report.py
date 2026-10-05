@@ -17,7 +17,7 @@ FAKE_BANNER = ("FAKE EXECUTION (offline, scripted outcomes). Not a measurement o
                "says nothing about qualified/live behaviour.")
 LIMITATIONS = [
     "Single synthetic task: repetitions of one task do not generalise to other tasks.",
-    "Grader runs in-process on a data-only candidate; transparent diagnostic track, no hidden tests or sandbox.",
+    "Grading isolation is recorded per grade (`isolation`); no track here is hidden/sandboxed grading.",
     "Cost is an estimate from a dated pricing snapshot x recorded usage, not an invoice; no currency conversion.",
     "Wall time covers the execution call only; queue/setup and grading time are not measured yet.",
     "Durations are wall time of the fake call, not of any real model; latency is shown conditional on PASS.",
@@ -47,7 +47,7 @@ def _median(xs):
 def load_run(run_dir):
     run_dir = Path(run_dir)
     manifest_bytes = (run_dir / "manifest.json").read_bytes()
-    task_bytes = (run_dir / "task.json").read_bytes()
+    task_bytes = (run_dir / "task" / "task.json").read_bytes()
     manifest = validate_manifest(_json(manifest_bytes, "manifest.json"), digest(task_bytes))
     task = validate_task(_json(task_bytes, "task.json"))
     events_bytes = (run_dir / "events.jsonl").read_bytes()

@@ -9,6 +9,7 @@ A start without a terminal is never silently re-run; `resume` reconciles it to `
 import json
 import os
 import random
+import shutil
 import time
 import uuid
 from datetime import datetime, timezone
@@ -31,15 +32,21 @@ def plan_trials(manifest):
     return order
 
 
-def fake_execute(request, task, entry):
-    """Fake execution port: returns the scripted outcome. No model, no network, no code execution."""
+def fake_candidate(task, bundle_dir, kind):
+    if task["grader"]["id"] != "sort-check":
+        return (Path(bundle_dir) / "reference" / f"{kind}.patch").read_bytes()
     data = task["input"]
-    candidate = {
+    return {
         "good": lambda: canonical(sorted(data)),
         "wrong": lambda: canonical(sorted(data, reverse=True)),
         "noop": lambda: canonical(data),
         "malformed": lambda: b"not json",
-    }[entry["candidate"]]() if entry["candidate"] else None
+    }[kind]()
+
+
+def fake_execute(request, task, entry, bundle_dir):
+    """Fake execution port: returns the scripted outcome (reference candidates). No model, no network."""
+    candidate = fake_candidate(task, bundle_dir, entry["candidate"]) if entry["candidate"] else None
     execution_id = "fake-exec-" + request["request_id"]
     attempt_id = execution_id + "-a1"
     usage_events = [] if entry["usage"] is None else [
@@ -68,11 +75,14 @@ def _append(path, record):
         os.fsync(f.fileno())
 
 
-def _grade(out, task, trial_id, cand_digest):
-    result, criteria = grader.grade(task, out / "candidates", cand_digest)
+def _grade(out, manifest, task, trial_id, cand_digest):
+    # Candidate code may run on the host only when it comes from the fake executor's reference set.
+    result, criteria = grader.grade(task, out / "candidates", cand_digest, bundle_dir=out / "task",
+                                    host_execution_allowed=manifest["executor"]["kind"] == "fake")
+    gid = task["grader"]["id"]
     _append(out / "events.jsonl", {"type": "grade", "trial_id": trial_id, "candidate_digest": cand_digest,
-                                   "grader": grader.identity(), "result": result, "criteria": criteria,
-                                   "isolation": grader.ISOLATION})
+                                   "grader": grader.identity(gid), "result": result, "criteria": criteria,
+                                   "isolation": grader.ISOLATION[gid]})
 
 
 def _execute(out, manifest, task, todo, execute):
@@ -85,7 +95,7 @@ def _execute(out, manifest, task, todo, execute):
                          "request_id": request["request_id"], "replaces": replaces, "started_utc": _utc()})
         t0 = time.monotonic_ns()
         try:
-            result = execute(request, task, script[(cid, rep)])
+            result = execute(request, task, script[(cid, rep)], out / "task")
         except Exception as exc:  # an executor crash is a recorded outcome, not a lost trial
             result = {"execution_id": None, "attempts": [], "outcome": "error", "harness_completion": None,
                       "candidate": None, "usage_events": [], "error": f"{type(exc).__name__}: {exc}"}
@@ -103,7 +113,7 @@ def _execute(out, manifest, task, todo, execute):
         for u in result["usage_events"]:
             _append(events, {"type": "usage", "trial_id": trial_id, **u})
         if cand_digest:
-            _grade(out, task, trial_id, cand_digest)
+            _grade(out, manifest, task, trial_id, cand_digest)
 
 
 def run(manifest_path, out_dir, execute=fake_execute):
@@ -111,7 +121,8 @@ def run(manifest_path, out_dir, execute=fake_execute):
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=False)  # never overwrite an earlier run's records
     (out / "manifest.json").write_bytes(manifest_bytes)
-    (out / "task.json").write_bytes(task_bytes)
+    task_dir = Path(manifest_path).parent / manifest["task"]["path"]
+    shutil.copytree(task_dir.parent, out / "task", ignore=shutil.ignore_patterns("__pycache__"))
     (out / "candidates").mkdir()
     plan = plan_trials(manifest)
     run_id = str(uuid.uuid4())
@@ -158,7 +169,7 @@ def resume(run_dir, replace_unknown=False, execute=fake_execute):
                               "duration_ms": None,
                               "error": "interrupted between launch and terminal record; no backend status available"})
     for r in ungraded:
-        _grade(out, task, r["trial_id"], r["candidate_digest"])
+        _grade(out, manifest, task, r["trial_id"], r["candidate_digest"])
     _execute(out, manifest, task, todo, execute)
     _append(events_path, {"type": "run_finished", "run_id": run_id, "finished_utc": _utc()})
     return out

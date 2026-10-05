@@ -1,0 +1,14 @@
+--- a/calc.py
++++ b/calc.py
+@@ -1,4 +1,9 @@
+ def median(values):
+     """Return the median of a non-empty sequence of numbers."""
+-    middle = len(values) // 2
+-    return values[mid]
++    if not values:
++        raise ValueError("median of empty sequence")
++    ordered = sorted(values)
++    mid = len(ordered) // 2
++    if len(ordered) % 2:
++        return ordered[mid]
++    return (ordered[mid - 1] + ordered[mid]) / 2

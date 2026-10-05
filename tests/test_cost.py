@@ -25,7 +25,7 @@ def usage(i, o, c, completeness="complete"):
     return {"source": "t", "completeness": completeness, "input_tokens": i, "output_tokens": o, "cache_read_tokens": c}
 
 
-def retry_executor(request, task, entry):
+def retry_executor(request, task, entry, bundle_dir):
     """Two attempts (first errors, retry completes), each with its own usage summary 1000/200/400."""
     good = request["config_id"] == "cfg-a"
     data = sorted(task["input"]) if good else sorted(task["input"], reverse=True)
