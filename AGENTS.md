@@ -42,6 +42,7 @@ to a verified result, and an independent success rate. This file is a **map**. L
 ## Standard verification
 
 ```bash
+python3 -m pip install .   # once per venv: tests import the pinned agent-harness
 python3 -m unittest discover -s tests -v
 git diff --check
 ```
