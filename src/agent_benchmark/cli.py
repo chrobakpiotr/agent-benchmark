@@ -19,6 +19,7 @@ def main(argv=None):
     r.add_argument("--out", required=True, help="new run directory (must not exist)")
     rep = sub.add_parser("report", help="regenerate report.md/report.csv/summary.json from recorded events only")
     rep.add_argument("run_dir")
+    rep.add_argument("--pricing", help="dated pricing snapshot JSON; bound to the run on first use")
     res = sub.add_parser("resume", help="continue an interrupted run; started-but-unfinished trials become 'unknown'")
     res.add_argument("run_dir")
     res.add_argument("--replace-unknown", action="store_true",
@@ -44,7 +45,7 @@ def main(argv=None):
             write_report(args.run_dir)
             print(f"correction recorded for {args.trial_id}")
         else:
-            write_report(args.run_dir)
+            write_report(args.run_dir, args.pricing)
             print(f"report regenerated in {args.run_dir}")
     except (ValidationError, FileNotFoundError, FileExistsError) as exc:
         print(f"error: {exc}", file=sys.stderr)

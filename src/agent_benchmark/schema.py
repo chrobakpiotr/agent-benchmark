@@ -8,6 +8,7 @@ TASK_VERSION = "agent-benchmark/task/v1"
 EVENT_VERSION = "agent-benchmark/event/v2"
 
 OUTCOMES = ("completed", "timeout", "cancel", "error", "unknown")
+EXCLUDABLE_OUTCOMES = OUTCOMES[1:]  # predeclared infrastructure exclusions; "completed" never
 HARNESS_COMPLETION = ("success", "failure")
 GRADES = ("PASS", "FAIL", "INVALID")
 QUALITY = ("complete", "partial", "unknown")
@@ -157,8 +158,14 @@ def validate_manifest(m, task_digest=None):
     _int(m["seed"], "manifest.seed", 0)
     _keys(m["retry_policy"], "manifest.retry_policy", ("max_attempts",))
     _int(m["retry_policy"]["max_attempts"], "manifest.retry_policy.max_attempts", 1, 1)  # retries: AB5-03/06
-    if m["exclusions"] != []:
-        _fail("manifest.exclusions", "must be [] in this version (predeclared exclusions not implemented)")
+    if not isinstance(m["exclusions"], list):
+        _fail("manifest.exclusions", "must be a list")
+    for i, x in enumerate(m["exclusions"]):
+        _keys(x, f"manifest.exclusions[{i}]", ("outcome", "reason"))
+        _enum(x["outcome"], f"manifest.exclusions[{i}].outcome", EXCLUDABLE_OUTCOMES)
+        _str(x["reason"], f"manifest.exclusions[{i}].reason")
+    if len({x["outcome"] for x in m["exclusions"]}) != len(m["exclusions"]):
+        _fail("manifest.exclusions", "duplicate outcome")
 
     if not isinstance(m["configs"], list) or not m["configs"]:
         _fail("manifest.configs", "must be a non-empty list")

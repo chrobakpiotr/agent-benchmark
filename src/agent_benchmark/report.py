@@ -6,8 +6,10 @@ import csv
 import io
 import json
 import math
+from decimal import Decimal
 from pathlib import Path
 
+from .pricing import fmt, price_usage, validate_pricing
 from .schema import (GRADES, OUTCOMES, USAGE_FIELDS, ValidationError, _json, digest, validate_event,
                      validate_manifest, validate_task)
 
@@ -16,7 +18,8 @@ FAKE_BANNER = ("FAKE EXECUTION (offline, scripted outcomes). Not a measurement o
 LIMITATIONS = [
     "Single synthetic task: repetitions of one task do not generalise to other tasks.",
     "Grader runs in-process on a data-only candidate; transparent diagnostic track, no hidden tests or sandbox.",
-    "Cost is not computed (pricing arrives in AB5-04); token totals are known subtotals with coverage, not full usage.",
+    "Cost is an estimate from a dated pricing snapshot x recorded usage, not an invoice; no currency conversion.",
+    "Wall time covers the execution call only; queue/setup and grading time are not measured yet.",
     "Durations are wall time of the fake call, not of any real model; latency is shown conditional on PASS.",
     "Small samples: raw values, median and range only; Wilson 95% interval assumes independent trials.",
 ]
@@ -56,6 +59,53 @@ def load_run(run_dir):
         raise ValidationError("events.jsonl: run_started digests do not match manifest.json/task.json")
     inputs = {"manifest": digest(manifest_bytes), "task": digest(task_bytes), "events": digest(events_bytes)}
     return manifest, task, events, inputs
+
+
+def bind_pricing(run_dir, pricing_path):
+    """Copy a pricing snapshot into the run once; a different snapshot for the same run is refused."""
+    data = Path(pricing_path).read_bytes()
+    validate_pricing(_json(data, str(pricing_path)))
+    target = Path(run_dir) / "pricing.json"
+    if target.exists() and target.read_bytes() != data:
+        raise ValidationError(f"{target}: run already bound to a different pricing snapshot")
+    target.write_bytes(data)
+
+
+def load_pricing(run_dir):
+    path = Path(run_dir) / "pricing.json"
+    if not path.is_file():
+        return None, None
+    data = path.read_bytes()
+    return validate_pricing(_json(data, str(path))), digest(data)
+
+
+def _cost(c, rs, passes, pricing):
+    """Cost of all started trials of one config. Totals only when every trial is fully priced."""
+    if pricing is None:
+        return {"status": "no pricing snapshot", "total": None, "per_pass": None}
+    priced_by = "model_resolved" if c["model_resolved"] else "model_requested"
+    model_id = c[priced_by]
+    model = pricing["models"].get(model_id)
+    base = {"model_id": model_id, "priced_by": priced_by, "basis": pricing["basis"]}
+    if model is None:
+        return {**base, "status": f"no rate for model {model_id!r}", "currency": None, "total": None,
+                "per_pass": None, "known_subtotal": None,
+                "coverage": {"full": 0, "partial": 0, "unknown": len(rs)}}
+    priced = [price_usage(r["usage"], model) for r in rs]
+    known = [a for a, _ in priced if a is not None]
+    full = sum(f for _, f in priced)
+    total = sum(known, Decimal(0)) if known and full == len(rs) else None
+    if total is None:
+        per_pass, note = None, "incomplete cost: full cost of all started trials unknown"
+    elif passes == 0:
+        per_pass, note = None, "no successful solution (0 PASS)"
+    else:
+        per_pass, note = total / passes, "all started trials' cost / PASS"
+    return {**base, "status": "estimate", "currency": model["currency"],
+            "coverage": {"full": full, "partial": sum(1 for a, f in priced if a is not None and not f),
+                         "unknown": sum(1 for a, _ in priced if a is None)},
+            "known_subtotal": fmt(sum(known, Decimal(0))) if known else None,
+            "total": fmt(total), "per_pass": fmt(per_pass), "per_pass_note": note}
 
 
 def _sum_usage(items):
@@ -151,7 +201,7 @@ def reduce_events(events):
     return {"trials": list(rows.values()), "conflicts": conflicts}
 
 
-def summarize(manifest, task, events, inputs):
+def summarize(manifest, task, events, inputs, pricing=None, pricing_digest=None):
     state = reduce_events(events)
     rows = state["trials"]
     graders = sorted({json.dumps(e["grader"], sort_keys=True) for e in events if e["type"] == "grade"})
@@ -162,6 +212,8 @@ def summarize(manifest, task, events, inputs):
         passes = sum(r["grade"] == "PASS" for r in rs)
         pass_ms = sorted(r["duration_ms"] for r in rs if r["grade"] == "PASS" and r["duration_ms"] is not None)
         usage_known = [r["usage"] for r in rs if r["usage"]]
+        excluded_outcomes = {x["outcome"] for x in manifest["exclusions"]}
+        excluded = sum(r["outcome"] in excluded_outcomes for r in rs)
         configs.append({
             "config_id": c["config_id"],
             "config_digest": digest(json.dumps(c, sort_keys=True).encode()),
@@ -179,6 +231,14 @@ def summarize(manifest, task, events, inputs):
             "harness_success_not_pass": sum(r["harness_completion"] == "success" and r["grade"] != "PASS" for r in rs),
             "operational_success": {"pass": passes, "denominator": n, "denominator_definition": "all started trials",
                                     "rate": round(passes / n, 4) if n else None, "wilson95": wilson95(passes, n)},
+            "success_after_exclusions": None if not excluded_outcomes else {
+                "pass": sum(r["grade"] == "PASS" and r["outcome"] not in excluded_outcomes for r in rs),
+                "denominator": n - excluded, "excluded": excluded,
+                "denominator_definition": f"started trials minus outcomes {sorted(excluded_outcomes)} (predeclared)",
+                "wilson95": wilson95(sum(r["grade"] == "PASS" and r["outcome"] not in excluded_outcomes
+                                         for r in rs), n - excluded)},
+            "first_attempt_pass": sum(r["grade"] == "PASS" and len(r["attempt_ids"]) == 1 for r in rs),
+            "after_retry_pass": sum(r["grade"] == "PASS" and len(r["attempt_ids"]) > 1 for r in rs),
             "pass_duration_ms": {"conditional_on": "PASS", "values": pass_ms, "median": _median(pass_ms),
                                  "min": pass_ms[0] if pass_ms else None, "max": pass_ms[-1] if pass_ms else None},
             "usage": {
@@ -187,18 +247,22 @@ def summarize(manifest, task, events, inputs):
                                    for f in ("input_tokens", "output_tokens", "cache_read_tokens")},
                 "known_subtotal_is_full_usage": n > 0 and all(r["measurement_quality"] == "complete" for r in rs),
             },
-            "cost": None,
+            "cost": _cost(c, rs, passes, pricing),
         })
+    currencies = {c["cost"].get("currency") for c in configs}
     return {
         "fake_execution": True,
         "banner": FAKE_BANNER,
         "run_id": events[0]["run_id"],
         "experiment_id": manifest["experiment_id"],
         "run_complete": events[-1]["type"] == "run_finished",
-        "input_digests": inputs,
+        "input_digests": {**inputs, **({"pricing": pricing_digest} if pricing_digest else {})},
+        "pricing": None if pricing is None else {k: pricing[k] for k in ("snapshot_utc", "source", "basis")},
+        "cost_comparable": (pricing is not None and len(currencies) == 1 and None not in currencies
+                            and all(c["cost"]["total"] is not None for c in configs)),
         "integrity": {"ok": not state["conflicts"], "conflicts": state["conflicts"]},
         "graders": [json.loads(g) for g in graders],
-        "exclusions": [],
+        "exclusions": manifest["exclusions"],
         "configs": configs,
         "trials": rows,
         "limitations": LIMITATIONS,
@@ -209,12 +273,26 @@ def _fmt(v):
     return "unknown" if v is None else str(v)
 
 
+def _money(v, cost):
+    return "unknown" if v is None else f"{v} {cost['currency']}"
+
+
+def _cost_cell(cost):
+    if cost["total"] is not None:
+        return f"{_money(cost['total'], cost)} ({cost['status']})"
+    return "unknown (incomplete)" if cost["status"] == "estimate" else f"unknown ({cost['status']})"
+
+
 def render_markdown(s):
     out = [f"# Benchmark report: {s['experiment_id']}", "", f"> **{s['banner']}**", "",
            f"- run_id: `{s['run_id']}`", f"- run complete: {s['run_complete']}",
            *[f"- input {k} digest: `{v}`" for k, v in s["input_digests"].items()],
            *[f"- grader: `{g['id']}` v{g['version']} `{g['digest']}`" for g in s["graders"]],
-           "- exclusions: none (operational success denominator = all started trials, incl. replaced ones)",
+           "- operational success denominator: all started trials, incl. reconciled and replaced ones",
+           "- exclusions (secondary metric only): " + (", ".join(f"{x['outcome']} ({x['reason']})"
+                                                         for x in s["exclusions"]) or "none"),
+           "- pricing: " + ("none (cost unknown)" if s["pricing"] is None else
+                            f"{s['pricing']['basis']} snapshot {s['pricing']['snapshot_utc']} from {s['pricing']['source']}"),
            f"- integrity: {'ok' if s['integrity']['ok'] else str(len(s['integrity']['conflicts'])) + ' conflict(s), first record kept'}",
            "",
            "## Per configuration", "",
@@ -236,11 +314,23 @@ def render_markdown(s):
             f"| {u['coverage']['complete']}/{u['coverage']['partial']}/{u['coverage']['unknown']} "
             f"| {u['known_subtotal']['input_tokens']}/{u['known_subtotal']['output_tokens']} ({sub}) "
             f"| {c['interrupted']}/{c['reconciled_unknown']}/{c['replacements']}/{c['corrected']} "
-            f"| {_fmt(c['cost'])} |")
+            f"| {_cost_cell(c['cost'])} |")
     if s["integrity"]["conflicts"]:
         out += ["", "## Integrity conflicts", "",
                 *[f"- {x['kind']} trial `{x['trial_id']}` event `{x['event_id']}`: {x['detail']}"
                   for x in s["integrity"]["conflicts"]]]
+    out += ["", "## Success and cost detail", "",
+            "| config | first-attempt PASS | after-retry PASS | success after exclusions | cost coverage full/partial/unknown "
+            "| known cost subtotal | cost per PASS |", "|---|---|---|---|---|---|---|"]
+    for c in s["configs"]:
+        x, k = c["success_after_exclusions"], c["cost"]
+        excl = "n/a (no exclusions)" if x is None else f"{x['pass']}/{x['denominator']} (excluded {x['excluded']})"
+        cov = k.get("coverage")
+        out.append(f"| `{c['config_id']}` | {c['first_attempt_pass']} | {c['after_retry_pass']} | {excl} "
+                   f"| {'n/a' if not cov else '/'.join(str(cov[q]) for q in ('full', 'partial', 'unknown'))} "
+                   f"| {_money(k.get('known_subtotal'), k)} | {_money(k['per_pass'], k)} "
+                   f"({k.get('per_pass_note', k['status'])}) |")
+    out.append(f"\nCost comparable across configs: {s['cost_comparable']}")
     corrections = [(r["trial_id"], x) for r in s["trials"] for x in r["corrections"]]
     if corrections:
         out += ["", "## Corrections", "", *[f"- `{t}` {x['action']}: {x['reason']}" for t, x in corrections]]
@@ -264,9 +354,11 @@ def render_csv(s):
     return buf.getvalue()
 
 
-def write_report(run_dir):
+def write_report(run_dir, pricing_path=None):
     run_dir = Path(run_dir)
-    s = summarize(*load_run(run_dir))
+    if pricing_path is not None:
+        bind_pricing(run_dir, pricing_path)
+    s = summarize(*load_run(run_dir), *load_pricing(run_dir))
     (run_dir / "summary.json").write_text(json.dumps(s, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     (run_dir / "report.md").write_text(render_markdown(s), encoding="utf-8")
     (run_dir / "report.csv").write_text(render_csv(s), encoding="utf-8")

@@ -52,7 +52,7 @@ class OfflinePipeline(unittest.TestCase):
             self.assertEqual(c["usage"]["coverage"], e["coverage"])
             self.assertEqual(c["usage"]["known_subtotal"], e["known_subtotal"])
             self.assertFalse(c["usage"]["known_subtotal_is_full_usage"])
-            self.assertIsNone(c["cost"])
+            self.assertEqual(c["cost"], {"status": "no pricing snapshot", "total": None, "per_pass": None})
             self.assertEqual(len(c["pass_duration_ms"]["values"]), e["grades"]["PASS"])
 
     def test_report_regenerates_identically_without_executing(self):
