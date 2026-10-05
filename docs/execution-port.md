@@ -16,7 +16,7 @@ fake with one adapter over the public API at a pinned version, and these require
 | Terminal outcome enum: `completed / timeout / cancel / error / unknown` | Kept separate from grade | yes |
 | Optional harness completion claim (`success / failure / null`) | Reported, never used as grade | yes |
 | Candidate artifact bytes or reference + digest | The grader binds to the sealed digest | bytes |
-| Usage events with identity (source, event/request ID), categories, units, completeness; `null` when unknown | No double counting of stream + summary; unknown != 0 | summary only, no event IDs |
+| Usage events with identity (source, event/request ID), categories, units, completeness; `null` when unknown | No double counting of stream + summary; unknown != 0 | one `summary` event per attempt; ledger already handles `stream` + `summary` (AB5-03) |
 | Requested vs resolved model, CLI/SDK + version | Part of config identity | not applicable |
 | Declared capabilities (cancel, usage, isolation level) | Unsupported capability must be visible, not silently skipped | not applicable |
 | Cancellation that resolves to a real terminal state | Cancelled trials must not vanish | not applicable |

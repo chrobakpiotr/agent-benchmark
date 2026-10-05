@@ -4,7 +4,7 @@ import sys
 
 from . import __version__
 from .report import write_report
-from .runner import plan_trials, run
+from .runner import invalidate, plan_trials, resume, run
 from .schema import ValidationError, load_manifest
 
 
@@ -19,6 +19,14 @@ def main(argv=None):
     r.add_argument("--out", required=True, help="new run directory (must not exist)")
     rep = sub.add_parser("report", help="regenerate report.md/report.csv/summary.json from recorded events only")
     rep.add_argument("run_dir")
+    res = sub.add_parser("resume", help="continue an interrupted run; started-but-unfinished trials become 'unknown'")
+    res.add_argument("run_dir")
+    res.add_argument("--replace-unknown", action="store_true",
+                     help="add a replacement trial (new identity, linked via 'replaces') for each reconciled one")
+    inv = sub.add_parser("invalidate", help="append a correction record that invalidates one trial's grade")
+    inv.add_argument("run_dir")
+    inv.add_argument("trial_id")
+    inv.add_argument("--reason", required=True)
     args = p.parse_args(argv)
     try:
         if args.cmd == "validate":
@@ -28,6 +36,13 @@ def main(argv=None):
             out = run(args.manifest, args.out)
             write_report(out)
             print(f"FAKE run written to {out}")
+        elif args.cmd == "resume":
+            write_report(resume(args.run_dir, replace_unknown=args.replace_unknown))
+            print(f"FAKE run resumed in {args.run_dir}")
+        elif args.cmd == "invalidate":
+            invalidate(args.run_dir, args.trial_id, args.reason)
+            write_report(args.run_dir)
+            print(f"correction recorded for {args.trial_id}")
         else:
             write_report(args.run_dir)
             print(f"report regenerated in {args.run_dir}")

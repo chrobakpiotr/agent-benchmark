@@ -32,7 +32,7 @@ class Package(unittest.TestCase):
 
     def test_help_from_empty_cwd(self):
         with tempfile.TemporaryDirectory() as d:
-            for args in ([], ["validate"], ["run"], ["report"]):
+            for args in ([], ["validate"], ["run"], ["report"], ["resume"], ["invalidate"]):
                 p = subprocess.run([sys.executable, "-m", "agent_benchmark", *args, "--help"], cwd=d,
                                    env=clean_env(), capture_output=True, text=True)
                 self.assertEqual(p.returncode, 0, p.stderr)

@@ -98,9 +98,18 @@ class TaskValidation(unittest.TestCase):
 class EventValidation(unittest.TestCase):
     def test_unknown_event_version_and_type(self):
         with self.assertRaisesRegex(ValidationError, "unsupported"):
-            validate_event({"schema_version": "agent-benchmark/event/v0", "type": "grade"}, "e")
+            validate_event({"schema_version": "agent-benchmark/event/v1", "type": "grade"}, "e")
         with self.assertRaisesRegex(ValidationError, "unknown event type"):
-            validate_event({"schema_version": "agent-benchmark/event/v1", "type": "victory"}, "e")
+            validate_event({"schema_version": "agent-benchmark/event/v2", "type": "victory"}, "e")
+
+    def test_usage_event_must_carry_usage_and_correction_cannot_upgrade(self):
+        base = {"schema_version": "agent-benchmark/event/v2", "event_id": "e1", "trial_id": "t"}
+        with self.assertRaisesRegex(ValidationError, "must carry usage"):
+            validate_event({**base, "type": "usage", "attempt_id": "a", "usage_event_id": "u", "kind": "stream",
+                            "usage": None}, "e")
+        with self.assertRaisesRegex(ValidationError, "action"):
+            validate_event({**base, "type": "correction", "action": "set_pass", "reason": "r",
+                            "created_utc": "x"}, "e")
 
 
 if __name__ == "__main__":

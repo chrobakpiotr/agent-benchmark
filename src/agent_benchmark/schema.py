@@ -5,7 +5,7 @@ from pathlib import Path
 
 MANIFEST_VERSION = "agent-benchmark/manifest/v1"
 TASK_VERSION = "agent-benchmark/task/v1"
-EVENT_VERSION = "agent-benchmark/event/v1"
+EVENT_VERSION = "agent-benchmark/event/v2"
 
 OUTCOMES = ("completed", "timeout", "cancel", "error", "unknown")
 HARNESS_COMPLETION = ("success", "failure")
@@ -21,12 +21,18 @@ CONFIG_NULLABLE = ("model_resolved", "cli", "cli_version", "prompt_digest", "rea
 
 EVENT_FIELDS = {
     "run_started": ("run_id", "experiment_id", "manifest_digest", "task_digest", "executor", "plan"),
-    "trial_started": ("trial_id", "config_id", "repetition", "request_id", "started_utc"),
-    "trial_finished": ("trial_id", "request_id", "execution_id", "attempts", "outcome", "harness_completion",
-                       "candidate_digest", "usage", "measurement_quality", "finished_utc", "duration_ms", "error"),
+    "run_resumed": ("run_id", "resumed_utc"),
+    "trial_started": ("trial_id", "config_id", "repetition", "request_id", "replaces", "started_utc"),
+    "trial_finished": ("trial_id", "request_id", "source", "execution_id", "attempts", "outcome",
+                       "harness_completion", "candidate_digest", "finished_utc", "duration_ms", "error"),
+    "usage": ("trial_id", "attempt_id", "usage_event_id", "kind", "usage"),
     "grade": ("trial_id", "candidate_digest", "grader", "result", "criteria", "isolation"),
+    "correction": ("trial_id", "action", "reason", "created_utc"),
     "run_finished": ("run_id", "finished_utc"),
 }
+TERMINAL_SOURCES = ("executor", "reconciliation")
+USAGE_KINDS = ("stream", "summary")
+CORRECTION_ACTIONS = ("invalidate",)  # corrections can only lower a result, never turn a failure into PASS
 
 
 class ValidationError(ValueError):
@@ -212,14 +218,29 @@ def validate_event(e, path):
     _version(e, path, EVENT_VERSION)
     if e.get("type") not in EVENT_FIELDS:
         _fail(f"{path}.type", f"unknown event type {e.get('type')!r}")
-    _keys(e, path, ("schema_version", "type", *EVENT_FIELDS[e["type"]]))
+    _keys(e, path, ("schema_version", "type", "event_id", *EVENT_FIELDS[e["type"]]))
+    _str(e["event_id"], f"{path}.event_id")
     if e["type"] == "trial_finished":
+        _enum(e["source"], f"{path}.source", TERMINAL_SOURCES)
         _enum(e["outcome"], f"{path}.outcome", OUTCOMES)
-        _enum(e["measurement_quality"], f"{path}.measurement_quality", QUALITY)
         _enum(e["harness_completion"], f"{path}.harness_completion", HARNESS_COMPLETION, nullable=True)
+        if not isinstance(e["attempts"], list):
+            _fail(f"{path}.attempts", "must be a list")
+        for i, a in enumerate(e["attempts"]):
+            _keys(a, f"{path}.attempts[{i}]", ("attempt_id", "outcome"))
+            _str(a["attempt_id"], f"{path}.attempts[{i}].attempt_id")
+    if e["type"] == "usage":
+        _str(e["attempt_id"], f"{path}.attempt_id")
+        _str(e["usage_event_id"], f"{path}.usage_event_id")
+        _enum(e["kind"], f"{path}.kind", USAGE_KINDS)
+        if e["usage"] is None:
+            _fail(f"{path}.usage", "a usage event must carry usage; unknown usage is the absence of events")
         validate_usage(e["usage"], f"{path}.usage")
     if e["type"] == "grade":
         _enum(e["result"], f"{path}.result", GRADES)
+    if e["type"] == "correction":
+        _enum(e["action"], f"{path}.action", CORRECTION_ACTIONS)
+        _str(e["reason"], f"{path}.reason")
     return e
 
 
