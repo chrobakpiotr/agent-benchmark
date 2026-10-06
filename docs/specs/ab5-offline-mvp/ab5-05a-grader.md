@@ -44,3 +44,6 @@ Criteria with details (pinned digests, run count, exit code, output digest) are 
 No CPU/memory/network limits and no filesystem sandbox: candidate code runs as the current user. Hidden tests are
 readable in the bundle. Process-group kill on timeout is implemented but has no test with a forking candidate.
 Model-generated patches must not be graded here until a qualified isolated grading host exists.
+The verdict (exit code + `Ran N tests`) comes from the process that imports the candidate: an in-scope patch
+that prints `Ran 4 tests` and exits 0 at import gets PASS (verified 2026-10-06). PASS is therefore valid only for
+authored reference patches; the fix (verdict computed outside the candidate's process) is in `ab5-05b-grading-boundary.md`.
