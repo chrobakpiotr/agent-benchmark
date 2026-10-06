@@ -36,6 +36,7 @@ Criteria with details (pinned digests, run count, exit code, output digest) are 
 | escape outside workspace | `test_test_deletion_and_escape_are_out_of_scope`, hijack test (`../hidden`, `/etc/passwd`) |
 | grader inputs not modifiable, digest evidence | `test_tampered_bundle_is_invalid`, `test_bundle_matches_pinned_digests` |
 | multiplicity enforced | `test_hidden_test_multiplicity_is_enforced` |
+| grading without secrets; none in run records | `test_candidate_runs_without_the_callers_secrets` (canary env), `ReferencePipeline.test_no_secret_reaches_run_records` |
 | end to end through the fake runner | `ReferencePipeline.test_fake_run_grades_reference_patches` |
 
 ## Limits (AB5-05b)

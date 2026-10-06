@@ -4,10 +4,12 @@ Reference patches are authored fixtures, so running them on the host is allowed 
 not (see AB5-05b).
 """
 import json
+import os
 import shutil
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +22,7 @@ from agent_benchmark.schema import ValidationError, digest, load_manifest, valid
 BUNDLE = ROOT / "tasks" / "reference-001"
 TASK = validate_task(json.loads((BUNDLE / "task.json").read_text()))
 MANIFEST = ROOT / "tests" / "fixtures" / "manifest-reference-001.json"
+CANARY = "sk-canary-6b1f0c"
 
 
 class PatchGrader(unittest.TestCase):
@@ -77,6 +80,13 @@ class PatchGrader(unittest.TestCase):
         result, c = self.ref("hang", timeout=1)
         self.assertEqual((result, c["hidden_tests_finished_within_limit"]), ("FAIL", False))
 
+    def test_candidate_runs_without_the_callers_secrets(self):
+        # the good patch, except that it breaks median() whenever it can see the canary
+        patch = (BUNDLE / "reference" / "good.patch").read_text().replace(
+            "+    if not values:", '+    if not values or "BENCH_CANARY_KEY" in __import__("os").environ:')
+        with mock.patch.dict(os.environ, {"BENCH_CANARY_KEY": CANARY}):
+            self.assertEqual(self.grade(patch.encode())[0], "PASS")
+
     def test_tampered_bundle_is_invalid(self):
         for part, rel in (("hidden", "hidden/test_hidden.py"), ("base", "base/tests/test_visible.py")):
             copy = self.root / f"bundle-{part}"
@@ -115,6 +125,13 @@ class ReferencePipeline(unittest.TestCase):
         self.assertEqual(grades["cfg-b"], {"PASS": 0, "FAIL": 2, "INVALID": 0})
         self.assertEqual([g["id"] for g in s["graders"]], ["patch-unittest"])
         self.assertEqual(sum(c["completion_accepted_not_pass"] for c in s["configs"]), 3)
+
+    def test_no_secret_reaches_run_records(self):
+        with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"BENCH_CANARY_KEY": CANARY}):
+            out = runner.run(MANIFEST, Path(d) / "run")
+            write_report(out)
+            leaks = [p for p in out.rglob("*") if p.is_file() and CANARY.encode() in p.read_bytes()]
+        self.assertEqual(leaks, [])
 
     def test_unknown_reference_candidate_rejected(self):
         with tempfile.TemporaryDirectory() as d:
