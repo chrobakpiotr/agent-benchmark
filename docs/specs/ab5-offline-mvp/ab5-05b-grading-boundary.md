@@ -1,7 +1,8 @@
 # AB5-05b - grading boundary requirements for a qualified target
 
-Status: draft; input to the Showcase AH5-04b qualification (Q01-Q16). Exposed to this repo only through the
-contract v1 `CapabilityReport` / `isolation_level: qualified` (no new contract). Until a target qualifies,
+Status: draft; input to the Showcase AH5-04b qualification (Q01-Q16), mapped in agent-harness
+`docs/specs/AH5-04b/grading-requirements.md`. Contract: B9 fits v1 (`result.artifacts[]`, sealed by digest); B8 and
+B10 need contract v2 (harness ADR 0005, proposed: result `target`, request/result `limits`). Until a target qualifies,
 model-written code stays ungraded on this machine; harness `ProcessBackend` is controlled, not a sandbox, and is
 never used for grading.
 
