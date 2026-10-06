@@ -54,4 +54,4 @@ harness adapter (AB5-06), dashboard, database, queue.
 ## Next tasks (packets not generated; DAG is linear)
 
 AB5-03 trial integrity/resume (see `ab5-03-integrity.md`) -> AB5-04 cost + statistics (see `ab5-04-cost.md`). AB5-05a: see `ab5-05a-grader.md`.
-AB5-06a consumes contract v1 (see `ab5-06a-contract.md`); AB5-06b (harness launch) waits for AH5-03b.
+AB5-06a consumes contract v1 (see `ab5-06a-contract.md`); AB5-06b launches through the harness (see `ab5-06b-launch.md`).

@@ -28,4 +28,4 @@ Status: draft. Scope: everything in AB5-06 that does not need a launch API. Harn
 | no backend | `test_pipeline.test_backend_crash_is_recorded_as_unknown` |
 | candidate reference verified | `test_candidate_reference_is_verified_before_sealing` |
 | unsupported capabilities | contract `rejected` with `CAPABILITY_UNSUPPORTED/NOT_QUALIFIED` maps like `missing-qualification` |
-| cancellation tied to real terminal/drain | NOT RUN: needs a launch API (AB5-06b) |
+| cancellation tied to real terminal/drain | covered in AB5-06b (`ab5-06b-launch.md`) |

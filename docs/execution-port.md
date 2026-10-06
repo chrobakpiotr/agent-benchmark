@@ -1,26 +1,27 @@
 # Execution port: consumer requirements (AB5-01 -> AH5-02)
 
-**Status: contract v1 consumed (AB5-06a).** The shared execution schema is owned by agent-harness (AH5-02);
-agent-benchmark does not define a competing variant. It depends on `agent-harness` tag `v0.1.0`, pinned by commit
-`e57fda8477675fd0722878e4993b19651a6aedc4` in `pyproject.toml`, and uses only `agent_harness.contract`
-through `src/agent_benchmark/harness_port.py`. There is no launch API yet, so the only backend is
-`harness_port.fake_backend`; every record produced through it is labelled `executor.kind = "fake"`,
-`isolation_track = "fake-offline"`. Harness-launched execution is AB5-06b (depends on AH5-03b).
+**Status: contract v1 and offline launch API consumed (AB5-06a/06b).** The shared execution schema is owned by
+agent-harness (AH5-02); agent-benchmark does not define a competing variant. It depends on `agent-harness` tag
+`v0.2.0`, pinned by commit `43bb47c5ed1c6b4c451ed0fcf306b87cdcf3a488` in `pyproject.toml`, and uses only
+`agent_harness.contract` and `agent_harness.execution` (ADR 0004) through `src/agent_benchmark/harness_port.py`.
+Every trial is launched by the harness; the runner's only backend is the harness `ScriptedBackend` built from the
+manifest script, and every record produced through it is labelled `executor.kind = "fake"`,
+`isolation_track = "fake-offline"`. No backend is qualified.
 
 ## What the benchmark needs from one execution request
 
-| Need | Why | Fake backend |
+| Need | Why | Scripted backend (harness) |
 |---|---|---|
 | Caller-supplied `request_id`, echoed back | Dedup/reconcile after a crash between launch and record (AB5-03) | yes |
-| Backend `execution_id` (null if never launched) | Bind events and usage to one execution | yes (`fake-exec-<request_id>`) |
+| Backend `execution_id` (null if never launched) | Bind events and usage to one execution | yes (`scripted-<uuid>`) |
 | Child attempts with own IDs and per-attempt outcome | Every retry/reviewer call counts towards trial cost | 1 attempt |
 | Terminal outcome enum: `completed / timeout / cancel / error / unknown` | Kept separate from grade | yes |
-| Optional harness completion claim (`success / failure / null`) | Reported, never used as grade | yes |
-| Candidate artifact bytes or reference + digest | The grader binds to the sealed digest | bytes |
+| Optional harness completion claim (`accepted / rejected / null`) | Reported, never used as grade | yes |
+| Candidate artifact bytes or reference + digest | The grader binds to the sealed digest | reference; the harness seals it into the trial evidence root |
 | Usage events with identity (source, event/request ID), categories, units, completeness; `null` when unknown | No double counting of stream + summary; unknown != 0 | one `summary` event per attempt; ledger already handles `stream` + `summary` (AB5-03) |
 | Requested vs resolved model, CLI/SDK + version | Part of config identity | not applicable |
-| Declared capabilities (cancel, usage, isolation level) | Unsupported capability must be visible, not silently skipped | not applicable |
-| Cancellation that resolves to a real terminal state | Cancelled trials must not vanish | not applicable |
+| Declared capabilities (cancel, usage, isolation level) | Unsupported capability must be visible, not silently skipped | requests list what the trial needs (`usage`); a missing one is `rejected` `CAPABILITY_UNSUPPORTED` |
+| Cancellation that resolves to a real terminal state | Cancelled trials must not vanish | tested with `ProcessBackend` (`cancel` only, no usage): outcome `cancel`, drain from the process group |
 
 ## Non-goals for the benchmark side
 
@@ -58,6 +59,8 @@ Findings / questions for the contract owner:
 
 Resolution at `v0.1.0` (`e57fda8`): (1) `complete` requires integer units in a summary for every attempt;
 (2) pinned by git commit SHA; (3) still open, AB5-06b.
+Resolution at `v0.2.0` (`43bb47c`): (3) offline launch/cancel API `agent_harness.execution` (ADR 0004), consumed in
+AB5-06b (`docs/specs/ab5-offline-mvp/ab5-06b-launch.md`).
 
 Benchmark-side delta, applied in AB5-06a (`docs/specs/ab5-offline-mvp/ab5-06a-contract.md`):
 `harness_completion success/failure` -> `completion accepted/rejected`; new outcome `rejected` (never launched;

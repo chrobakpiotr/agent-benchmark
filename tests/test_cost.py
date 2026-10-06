@@ -9,6 +9,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from agent_harness import execution  # noqa: E402
+
 from agent_benchmark import harness_port, runner  # noqa: E402
 from agent_benchmark.pricing import price_scope, price_trial, validate_pricing  # noqa: E402
 from agent_benchmark.report import write_report  # noqa: E402
@@ -26,23 +28,17 @@ def units(i, o, cr, cw):
 
 
 def retry_backend(request, task, entry, bundle_dir, evidence_root):
-    """Contract result with two attempts (first errors, retry completes), each with a summary 1000/200/400/0.
+    """Harness result with two attempts (first errors, retry completes), each with a summary 1000/200/400/0.
 
     cfg-a reports cache separately, cfg-b reports cache included in input.
     """
     cfg_a = request["trial_id"].startswith("cfg-a/")
     data = sorted(task["input"]) if cfg_a else sorted(task["input"], reverse=True)
-    result = harness_port.fake_backend(request, {**entry, "outcome": "completed", "completion": "accepted",
-                                                 "usage": None}, canonical(data), evidence_root)
-    first = {**result["attempts"][0], "attempt_id": "att-1", "outcome": "error"}
-    second = {**result["attempts"][0], "attempt_id": "att-2", "outcome": "completed"}
-    result["attempts"] = [first, second]
-    result["usage_events"] = [{"contract_version": 1, "event_id": f"u-{a}", "attempt_id": a, "source": "provider",
-                               "kind": "summary", "units": units(1000, 200, 400, 0),
-                               "cache_semantics": "separate" if cfg_a else "included_in_input"}
-                              for a in ("att-1", "att-2")]
-    result["usage_completeness"] = "complete"
-    return result
+    backend = execution.ScriptedBackend([{"outcome": "error", "units": units(1000, 200, 400, 0)},
+                                         {"outcome": "completed", "units": units(1000, 200, 400, 0)}],
+                                        completion="accepted", candidate=canonical(data),
+                                        cache_semantics="separate" if cfg_a else "included_in_input")
+    return harness_port.launch(request, backend, evidence_root)
 
 
 def manifest_copy(root, **changes):

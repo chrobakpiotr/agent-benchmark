@@ -1,19 +1,20 @@
-"""The single adapter between the benchmark and the agent-harness execution contract v1 (pinned v0.1.0).
+"""The single adapter between the benchmark and agent-harness (contract v1 + offline launch API, pinned v0.2.0).
 
-Public API only (`agent_harness.contract`). There is no launch/cancel API yet (AH5-03b), so the only backend is
-`fake_backend`, which answers a contract request with a contract result built from the manifest script.
-A result that fails contract validation is recorded as outcome `unknown`, never as success.
+Public API only (`agent_harness.contract`, `agent_harness.execution`). The harness launches every trial and seals
+its candidate into the trial's evidence root; the only backend the runner uses is the harness `ScriptedBackend`
+built from the manifest script (`isolation_level: fake`). A result that fails contract validation is recorded as
+outcome `unknown`, never as success.
 """
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from agent_harness import contract
+from agent_harness import contract, execution
 
-from . import __version__
-from .schema import UNITS, ValidationError, canonical, digest
+from .schema import ValidationError, canonical, digest
 
-CANDIDATE_PATH = "candidate/output"
+# Fixed codes for scripted outcomes; a scripted `rejected` means the backend was unavailable (never launched).
+SCRIPTED_ERROR, SCRIPTED_REJECTION = "PROVIDER_ERROR", "BACKEND_UNAVAILABLE"
 
 
 def utc():
@@ -24,12 +25,12 @@ def config_digest(config):
     return digest(canonical(config))
 
 
-def build_request(manifest, config, task_digest, trial_id):
+def build_request(manifest, config, task_digest, trial_id, capabilities=("usage",)):
     settings = {f"{group}.{k}": v for group in ("reasoning", "sampling") for k, v in (config[group] or {}).items()}
     request = {"contract_version": contract.CONTRACT_VERSION, "request_id": f"req-{uuid.uuid4()}",
                "trial_id": trial_id, "task_digest": task_digest, "config_digest": config_digest(config),
                "provider": manifest["executor"]["kind"], "model": config["model_requested"], "settings": settings,
-               "capabilities": ["usage"], "timeout_seconds": config["budget"]["max_wall_seconds"],
+               "capabilities": list(capabilities), "timeout_seconds": config["budget"]["max_wall_seconds"],
                "max_attempts": manifest["retry_policy"]["max_attempts"],
                "input_bindings": [{"name": "task", "sha256": task_digest}]}
     try:
@@ -38,36 +39,28 @@ def build_request(manifest, config, task_digest, trial_id):
         raise ValidationError(f"config {config['config_id']!r} cannot be expressed as a contract request: {exc}")
 
 
-def fake_backend(request, entry, candidate, evidence_root):
-    """Contract v1 result for one scripted trial. Fixed codes: rejected -> BACKEND_UNAVAILABLE, error -> PROVIDER_ERROR."""
-    outcome = entry["outcome"]
-    result = {"contract_version": contract.CONTRACT_VERSION, "request_id": request["request_id"],
-              "request_digest": contract.request_digest(request), "execution_id": None, "outcome": outcome,
-              "exit_code": None, "completion": entry["completion"],
-              "error_code": {"rejected": "BACKEND_UNAVAILABLE", "error": "PROVIDER_ERROR"}.get(outcome),
-              "drain": None, "cancel_requested": False, "isolation_level": "fake", "resolved_model": None,
-              "versions": {"agent-benchmark-fake": __version__}, "started_at": None, "ended_at": None,
-              "attempts": [], "candidate": None, "artifacts": [], "usage_events": [], "usage_completeness": "unknown"}
-    if outcome == "rejected":
-        return result
-    now = utc()
-    result.update(execution_id="fake-" + request["request_id"], started_at=now, ended_at=now,
-                  drain="unconfirmed" if outcome in ("timeout", "unknown") else "confirmed",
-                  attempts=[{"attempt_id": "att-1", "outcome": outcome, "started_at": now, "ended_at": now}])
-    if outcome == "completed":
-        result["exit_code"] = 1 if entry["completion"] == "rejected" else 0
-    if candidate is not None:
-        path = Path(evidence_root) / CANDIDATE_PATH
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(candidate)
-        result["candidate"] = {"path": CANDIDATE_PATH, "sha256": digest(candidate), "size": len(candidate)}
-    if entry["usage"] is not None:
-        units = entry["usage"]["units"]
-        result["usage_events"] = [{"contract_version": contract.CONTRACT_VERSION, "event_id": "u-1",
-                                   "attempt_id": "att-1", "source": "harness", "kind": "summary", "units": units,
-                                   "cache_semantics": entry["usage"]["cache_semantics"]}]
-        result["usage_completeness"] = "complete" if all(units[u] is not None for u in UNITS) else "partial"
-    return result
+def scripted_backend(entry, candidate):
+    """Harness ScriptedBackend answering one manifest script entry (one attempt)."""
+    if entry["outcome"] == "rejected":
+        return execution.ScriptedBackend(rejection=SCRIPTED_REJECTION)
+    usage = entry["usage"]
+    return execution.ScriptedBackend([{"outcome": entry["outcome"], "units": usage["units"] if usage else None}],
+                                     exit_code=1 if entry["completion"] == "rejected" else 0,
+                                     completion=entry["completion"], error_code=SCRIPTED_ERROR, candidate=candidate,
+                                     cache_semantics=usage["cache_semantics"] if usage else "separate")
+
+
+def launch(request, backend, evidence_root):
+    """Launch through the harness and wait for the terminal result; the trial evidence root is also its workspace.
+    No result within the request timeout + 60 s: the execution is cancelled and TimeoutError raised, so the caller
+    records `unknown`."""
+    root = str(Path(evidence_root).resolve())
+    handle = execution.launch(request, backend, workspace=root, evidence_root=root)
+    try:
+        return handle.result(request["timeout_seconds"] + 60)
+    except TimeoutError:
+        handle.cancel()
+        raise
 
 
 def _read_ref(evidence_root, ref):

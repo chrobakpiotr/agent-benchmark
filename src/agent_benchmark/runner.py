@@ -1,7 +1,7 @@
 """Sequential runner: validate -> plan trials -> contract request -> backend -> import result -> grade -> events.
 
-Execution goes through `harness_port` (agent-harness execution contract v1). The only backend is the fake one;
-every record says so.
+Execution goes through `harness_port` (agent-harness launch API, contract v1). The only backend is the harness
+ScriptedBackend (fake); every record says so.
 
 Crash safety: `trial_started` is written before launch, so a missing start means the trial was never launched.
 A start without a terminal is never silently re-run; `resume` reconciles it to `unknown` first.
@@ -46,7 +46,7 @@ def fake_candidate(task, bundle_dir, kind):
 def fake_execute(request, task, entry, bundle_dir, evidence_root):
     """Fake backend: answers a contract request with the scripted outcome. No model, no network."""
     candidate = fake_candidate(task, bundle_dir, entry["candidate"]) if entry["candidate"] else None
-    return harness_port.fake_backend(request, entry, candidate, evidence_root)
+    return harness_port.launch(request, harness_port.scripted_backend(entry, candidate), evidence_root)
 
 
 def _utc():

@@ -1,5 +1,6 @@
 """AB5-06a: the benchmark consumes the pinned agent-harness execution contract v1 through one adapter."""
 import json
+import os
 import re
 import shutil
 import sys
@@ -12,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 import agent_harness  # noqa: E402
-from agent_harness import contract  # noqa: E402
+from agent_harness import contract, execution  # noqa: E402
 
 from agent_benchmark import harness_port, runner  # noqa: E402
 from agent_benchmark.report import reduce_events, summarize, load_run  # noqa: E402
@@ -43,7 +44,7 @@ def ledger(request, terminal, usage):
 
 class Pin(unittest.TestCase):
     def test_installed_contract_matches_pin(self):
-        self.assertEqual((agent_harness.__version__, contract.CONTRACT_VERSION), ("0.1.0", 1))
+        self.assertEqual((agent_harness.__version__, contract.CONTRACT_VERSION), ("0.2.0", 1))
         direct = json.loads(metadata.distribution("agent-harness").read_text("direct_url.json") or "{}")
         if "vcs_info" in direct:  # installed from git: must be exactly the pinned commit
             self.assertEqual(direct["vcs_info"]["commit_id"], PINNED_SHA)
@@ -52,7 +53,7 @@ class Pin(unittest.TestCase):
         for path in (ROOT / "src" / "agent_benchmark").glob("*.py"):
             text = path.read_text()
             for line in re.findall(r"^\s*(?:from|import) agent_harness.*$", text, re.M):
-                self.assertIn(line.strip(), {"from agent_harness import contract",
+                self.assertIn(line.strip(), {"from agent_harness import contract", "from agent_harness import contract, execution",
                                              "from agent_harness.contract import ERROR_CODES, OUTCOMES"}, path.name)
             self.assertNotRegex(text, r"contract\._", path.name)
 
@@ -129,6 +130,37 @@ class GoldenFixtures(unittest.TestCase):
             outside.unlink()
 
 
+class ProcessLaunch(unittest.TestCase):
+    """AB5-06b: a real local process through the harness launch API (controlled, never qualified)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name).resolve()
+        m = json.loads((FIXTURES / "manifest-offline-001.json").read_text())
+        self.request = lambda caps: harness_port.build_request(m, m["configs"][0], "sha256:" + "a" * 64, "cfg-a/r1",
+                                                               capabilities=caps)
+        self.backend = execution.ProcessBackend(["sleep", "30"], env={"PATH": os.defpath}, grace=1.0)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_cancel_resolves_to_a_real_terminal_with_drain(self):
+        request = self.request(["cancel"])
+        handle = execution.launch(request, self.backend, workspace=str(self.root), evidence_root=str(self.root))
+        handle.cancel()
+        result = handle.result(timeout=20)  # well before the 30 s sleep: the cancel stopped the process group
+        terminal, usage = harness_port.import_result(request, result, self.root, self.root)
+        row = ledger(request, terminal, usage)
+        self.assertEqual((row["outcome"], row["drain"], row["isolation_level"]), ("cancel", "confirmed", "controlled"))
+        self.assertTrue(result["cancel_requested"])
+        self.assertEqual((row["usage"], row["measurement_quality"]), (None, "unknown"))
+
+    def test_unsupported_capability_is_rejected_without_launch(self):
+        result = harness_port.launch(self.request(["usage"]), self.backend, self.root)  # process has no usage
+        self.assertEqual((result["outcome"], result["error_code"]), ("rejected", "CAPABILITY_UNSUPPORTED"))
+        self.assertEqual(list(self.root.iterdir()), [])  # nothing started, nothing written
+
+
 class RunnerOverContract(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -152,13 +184,25 @@ class RunnerOverContract(unittest.TestCase):
         b = next(c for c in summarize(*load_run(out))["configs"] if c["config_id"] == "cfg-b")
         self.assertEqual((b["outcomes"]["rejected"], b["operational_success"]["denominator"]), (1, 3))
         self.assertEqual(b["success_after_exclusions"]["denominator"], 2)
+        row = next(r for r in reduce_events(load_run(out)[2])["trials"] if r["trial_id"] == "cfg-b/r2")
+        self.assertEqual(row["error_code"], "BACKEND_UNAVAILABLE")
+        self.assertFalse((out / "evidence" / row["request_id"] / "executions").exists())  # never launched
 
     def test_raw_contract_documents_are_kept_as_evidence(self):
         out = runner.run(FIXTURES / "manifest-offline-001.json", self.root / "r")
         dirs = sorted((out / "evidence").iterdir())
         self.assertEqual(len(dirs), 6)
         request = json.loads((dirs[0] / "request.json").read_text())
-        contract.validate_result(json.loads((dirs[0] / "result.json").read_text()), request)
+        result = contract.validate_result(json.loads((dirs[0] / "result.json").read_text()), request)
+        self.assertEqual((result["versions"], result["isolation_level"]), ({"agent-harness": "0.2.0"}, "fake"))
+
+    def test_candidates_are_sealed_by_the_harness(self):
+        out = runner.run(FIXTURES / "manifest-offline-001.json", self.root / "r")
+        for d in (out / "evidence").iterdir():
+            cand = json.loads((d / "result.json").read_text())["candidate"]
+            if cand:
+                self.assertTrue(cand["path"].startswith("executions/"), cand["path"])
+                self.assertTrue((out / "candidates" / cand["sha256"].split(":")[1]).is_file())
 
     def test_config_that_cannot_be_a_contract_request_is_rejected_before_launch(self):
         out = self.root / "r"
