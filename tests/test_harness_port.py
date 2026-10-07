@@ -3,6 +3,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -44,10 +45,15 @@ def ledger(request, terminal, usage):
 
 class Pin(unittest.TestCase):
     def test_installed_contract_matches_pin(self):
-        self.assertEqual((agent_harness.__version__, contract.CONTRACT_VERSION), ("0.2.0", 1))
+        self.assertEqual((agent_harness.__version__, contract.CONTRACT_VERSION), ("0.3.0", 1))
         direct = json.loads(metadata.distribution("agent-harness").read_text("direct_url.json") or "{}")
         if "vcs_info" in direct:  # installed from git: must be exactly the pinned commit
             self.assertEqual(direct["vcs_info"]["commit_id"], PINNED_SHA)
+
+    def test_constitution_is_an_exact_copy_of_the_pinned_one(self):
+        check = subprocess.run([sys.executable, "-m", "agent_harness", "constitution", "--check",
+                                str(ROOT / "docs" / "constitution.md")], capture_output=True, text=True)
+        self.assertEqual(check.returncode, 0, check.stdout + check.stderr)
 
     def test_only_public_contract_api_is_used(self):
         for path in (ROOT / "src" / "agent_benchmark").glob("*.py"):
@@ -194,7 +200,7 @@ class RunnerOverContract(unittest.TestCase):
         self.assertEqual(len(dirs), 6)
         request = json.loads((dirs[0] / "request.json").read_text())
         result = contract.validate_result(json.loads((dirs[0] / "result.json").read_text()), request)
-        self.assertEqual((result["versions"], result["isolation_level"]), ({"agent-harness": "0.2.0"}, "fake"))
+        self.assertEqual((result["versions"], result["isolation_level"]), ({"agent-harness": agent_harness.__version__}, "fake"))
 
     def test_candidates_are_sealed_by_the_harness(self):
         out = runner.run(FIXTURES / "manifest-offline-001.json", self.root / "r")

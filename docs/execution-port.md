@@ -2,7 +2,7 @@
 
 **Status: contract v1 and offline launch API consumed (AB5-06a/06b).** The shared execution schema is owned by
 agent-harness (AH5-02); agent-benchmark does not define a competing variant. It depends on `agent-harness` tag
-`v0.2.0`, pinned by commit `43bb47c5ed1c6b4c451ed0fcf306b87cdcf3a488` in `pyproject.toml`, and uses only
+`v0.3.0`, pinned by commit `0ef88c5b5751e18b88a9f7b454823c7bf3012e0b` in `pyproject.toml`, and uses only
 `agent_harness.contract` and `agent_harness.execution` (ADR 0004) through `src/agent_benchmark/harness_port.py`.
 Every trial is launched by the harness; the runner's only backend is the harness `ScriptedBackend` built from the
 manifest script, and every record produced through it is labelled `executor.kind = "fake"`,

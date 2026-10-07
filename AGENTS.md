@@ -5,7 +5,8 @@ to a verified result, and an independent success rate. This file is a **map**. L
 
 ## Read order
 
-1. `docs/constitution.md` - non-negotiable shared rules (offline copy, provenance inside).
+1. `docs/constitution.md` - non-negotiable shared rules: verbatim copy of `agent-harness constitution` at the pinned
+   version, checked for drift by `tests/test_harness_port.py`. Never edit it here; rules for this repo go in this file.
 2. The active spec/plan under `docs/specs/<feature-id>/` - source of truth for behaviour and acceptance criteria.
 3. `docs/execution-port.md` - the execution port this repo consumes (owner: agent-harness AH5-02).
 4. Only the source paths listed for the task.
