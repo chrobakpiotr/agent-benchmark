@@ -1,8 +1,8 @@
 # Execution port: consumer requirements (AB5-01 -> AH5-02)
 
-**Status: contract v1 and offline launch API consumed (AB5-06a/06b).** The shared execution schema is owned by
-agent-harness (AH5-02); agent-benchmark does not define a competing variant. It depends on `agent-harness` tag
-`v0.3.0`, pinned by commit `0ef88c5b5751e18b88a9f7b454823c7bf3012e0b` in `pyproject.toml`, and uses only
+**Status: contract v2 and offline launch API consumed (AB5-06a/06b/06c).** The shared execution schema is owned
+by agent-harness (AH5-02); agent-benchmark does not define a competing variant. It depends on `agent-harness` tag
+`v0.5.0`, pinned by commit `16bb93821292096b94889306288ee2caec5f4006` in `pyproject.toml`, and uses only
 `agent_harness.contract` and `agent_harness.execution` (ADR 0004) through `src/agent_benchmark/harness_port.py`.
 Every trial is launched by the harness; the runner's only backend is the harness `ScriptedBackend` built from the
 manifest script, and every record produced through it is labelled `executor.kind = "fake"`,
@@ -61,6 +61,8 @@ Resolution at `v0.1.0` (`e57fda8`): (1) `complete` requires integer units in a s
 (2) pinned by git commit SHA; (3) still open, AB5-06b.
 Resolution at `v0.2.0` (`43bb47c`): (3) offline launch/cancel API `agent_harness.execution` (ADR 0004), consumed in
 AB5-06b (`docs/specs/ab5-offline-mvp/ab5-06b-launch.md`).
+Resolution at `v0.5.0` (`16bb938`): contract v2 (ADR 0005: result `target`, request/result `limits`,
+`LIMIT_EXCEEDED`), consumed in AB5-06c (`docs/specs/ab5-offline-mvp/ab5-06c-contract-v2.md`).
 
 Benchmark-side delta, applied in AB5-06a (`docs/specs/ab5-offline-mvp/ab5-06a-contract.md`):
 `harness_completion success/failure` -> `completion accepted/rejected`; new outcome `rejected` (never launched;

@@ -105,10 +105,10 @@ class EventValidation(unittest.TestCase):
         with self.assertRaisesRegex(ValidationError, "unsupported"):
             validate_event({"schema_version": "agent-benchmark/event/v2", "type": "grade"}, "e")
         with self.assertRaisesRegex(ValidationError, "unknown event type"):
-            validate_event({"schema_version": "agent-benchmark/event/v3", "type": "victory"}, "e")
+            validate_event({"schema_version": "agent-benchmark/event/v4", "type": "victory"}, "e")
 
     def test_usage_event_needs_all_units_and_correction_cannot_upgrade(self):
-        base = {"schema_version": "agent-benchmark/event/v3", "event_id": "e1", "trial_id": "t"}
+        base = {"schema_version": "agent-benchmark/event/v4", "event_id": "e1", "trial_id": "t"}
         with self.assertRaisesRegex(ValidationError, "cache_write_tokens"):
             validate_event({**base, "type": "usage", "attempt_id": "a", "usage_event_id": "u", "kind": "stream",
                             "source": "provider", "cache_semantics": "separate",

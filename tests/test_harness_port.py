@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from importlib import metadata, resources
 from pathlib import Path
 
@@ -17,7 +18,7 @@ import agent_harness  # noqa: E402
 from agent_harness import contract, execution  # noqa: E402
 
 from agent_benchmark import harness_port, runner  # noqa: E402
-from agent_benchmark.report import reduce_events, summarize, load_run  # noqa: E402
+from agent_benchmark.report import reduce_events, summarize, load_run, write_report  # noqa: E402
 from agent_benchmark.schema import EVENT_VERSION, ValidationError, digest, validate_event  # noqa: E402
 
 FIXTURES = ROOT / "tests" / "fixtures"
@@ -45,7 +46,7 @@ def ledger(request, terminal, usage):
 
 class Pin(unittest.TestCase):
     def test_installed_contract_matches_pin(self):
-        self.assertEqual((agent_harness.__version__, contract.CONTRACT_VERSION), ("0.3.0", 1))
+        self.assertEqual((agent_harness.__version__, contract.CONTRACT_VERSION), ("0.5.0", 1))
         direct = json.loads(metadata.distribution("agent-harness").read_text("direct_url.json") or "{}")
         if "vcs_info" in direct:  # installed from git: must be exactly the pinned commit
             self.assertEqual(direct["vcs_info"]["commit_id"], PINNED_SHA)
@@ -60,7 +61,7 @@ class Pin(unittest.TestCase):
             text = path.read_text()
             for line in re.findall(r"^\s*(?:from|import) agent_harness.*$", text, re.M):
                 self.assertIn(line.strip(), {"from agent_harness import contract", "from agent_harness import contract, execution",
-                                             "from agent_harness.contract import ERROR_CODES, OUTCOMES"}, path.name)
+                                             "from agent_harness.contract import ERROR_CODES, FIRED_LIMITS, LIMIT_EXCEEDED, OUTCOMES"}, path.name)
             self.assertNotRegex(text, r"contract\._", path.name)
 
 
@@ -103,6 +104,18 @@ class GoldenFixtures(unittest.TestCase):
             self.assertEqual((row["outcome"], row["drain"], row["error_code"]), (outcome, drain, error_code), name)
             self.assertEqual((row["usage"], row["measurement_quality"]), (None, "unknown"), name)
             self.assertIsNone(terminal["error"], name)
+
+    def test_v2_limit_exceeded_keeps_cause_and_target(self):
+        _, terminal, row = self.load("v2-limit-exceeded")
+        self.assertEqual((row["outcome"], row["error_code"], row["limit_fired"], row["target_id"]),
+                         ("error", "LIMIT_EXCEEDED", "oom", "example-not-a-real-target"))
+        self.assertEqual((row["isolation_level"], terminal["limits"]["applied"]["memory_bytes"]), ("qualified", 536870912))
+
+    def test_v2_candidate_target_stays_unqualified(self):
+        _, terminal, row = self.load("v2-candidate-target")
+        self.assertEqual((row["outcome"], row["isolation_level"], row["limit_fired"]), ("completed", "unqualified", None))
+        self.assertIsNone(terminal["target"]["qualification_digest"])
+        self.assertTrue(terminal["limits"]["output_truncated"])
 
     def test_contract_violation_never_becomes_success(self):
         _, result = golden("success")
@@ -182,6 +195,20 @@ class RunnerOverContract(unittest.TestCase):
         (self.root / "fx" / "m.json").write_text(json.dumps(m))
         return self.root / "fx" / "m.json"
 
+    def test_scripted_limit_fired_is_recorded_and_counted(self):
+        limits = {"cpus": 1, "memory_bytes": 536870912, "pids": 64, "disk_bytes": 268435456, "output_bytes": 1048576}
+        real = harness_port.build_request
+        oom = execution.ScriptedBackend([{"outcome": "error", "units": None}], fired="oom")
+        with mock.patch.object(harness_port, "build_request", lambda *a, **k: real(*a, limits=limits, **k)):
+            out = runner.run(FIXTURES / "manifest-offline-001.json", self.root / "r",
+                             execute=lambda request, *_: harness_port.launch(request, oom, _[-1]))
+        s = write_report(out)
+        for c in s["configs"]:
+            self.assertEqual((c["limits_fired"]["oom"], c["outcomes"]["error"]), (3, 3))
+            self.assertEqual(c["operational_success"], {**c["operational_success"], "pass": 0, "denominator": 3})
+        self.assertTrue(all(r["error_code"] == "LIMIT_EXCEEDED" for r in s["trials"]))
+        self.assertIn("| 0/3/0/0 |", (out / "report.md").read_text())  # limits fired timeout/oom/pids/disk
+
     def test_rejected_counts_in_denominator_and_is_excludable(self):
         def mutate(m):
             m["executor"]["script"][4].update(outcome="rejected")  # cfg-b r2
@@ -201,6 +228,10 @@ class RunnerOverContract(unittest.TestCase):
         request = json.loads((dirs[0] / "request.json").read_text())
         result = contract.validate_result(json.loads((dirs[0] / "result.json").read_text()), request)
         self.assertEqual((result["versions"], result["isolation_level"]), ({"agent-harness": agent_harness.__version__}, "fake"))
+        self.assertEqual((result["contract_version"], result["target"], result["limits"]), (2, None, None))
+        s = summarize(*load_run(out))
+        self.assertEqual((s["targets"], s["configs"][0]["limits_fired"]),
+                         ([], {"timeout": 0, "oom": 0, "pids": 0, "disk": 0}))
 
     def test_candidates_are_sealed_by_the_harness(self):
         out = runner.run(FIXTURES / "manifest-offline-001.json", self.root / "r")

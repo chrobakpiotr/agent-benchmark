@@ -4,13 +4,13 @@ import json
 import re
 from pathlib import Path
 
-from agent_harness.contract import ERROR_CODES, OUTCOMES
+from agent_harness.contract import ERROR_CODES, FIRED_LIMITS, LIMIT_EXCEEDED, OUTCOMES
 
 MANIFEST_VERSION = "agent-benchmark/manifest/v2"
 TASK_VERSION = "agent-benchmark/task/v1"
-EVENT_VERSION = "agent-benchmark/event/v3"
+EVENT_VERSION = "agent-benchmark/event/v4"
 
-# Execution vocabulary comes from the agent-harness execution contract v1; only what it does not export is here.
+# Execution vocabulary comes from the agent-harness execution contract (v2); only what it does not export is here.
 EXCLUDABLE_OUTCOMES = tuple(o for o in OUTCOMES if o != "completed")  # predeclared exclusions; "completed" never
 COMPLETION = ("accepted", "rejected")
 CACHE_SEMANTICS = ("separate", "included_in_input", "unknown")  # contract v1 usage event enum (not exported)
@@ -32,7 +32,7 @@ EVENT_FIELDS = {
                       "started_utc"),
     "trial_finished": ("trial_id", "request_id", "source", "execution_id", "attempts", "outcome", "exit_code",
                        "completion", "error_code", "drain", "isolation_level", "resolved_model",
-                       "candidate_digest", "finished_utc", "duration_ms", "error"),
+                       "candidate_digest", "finished_utc", "duration_ms", "error", "target", "limits"),
     "usage": ("trial_id", "attempt_id", "usage_event_id", "kind", "source", "units", "cache_semantics"),
     "grade": ("trial_id", "candidate_digest", "grader", "result", "criteria", "isolation"),
     "correction": ("trial_id", "action", "reason", "created_utc"),
@@ -285,7 +285,12 @@ def validate_event(e, path):
         _enum(e["source"], f"{path}.source", TERMINAL_SOURCES)
         _enum(e["outcome"], f"{path}.outcome", OUTCOMES)
         _enum(e["completion"], f"{path}.completion", COMPLETION, nullable=True)
-        _enum(e["error_code"], f"{path}.error_code", ERROR_CODES, nullable=True)
+        _enum(e["error_code"], f"{path}.error_code", (*ERROR_CODES, LIMIT_EXCEEDED), nullable=True)
+        if e["target"] is not None:
+            _keys(e["target"], f"{path}.target", ("id", "qualification_digest", "image_digest"))
+        if e["limits"] is not None:
+            _keys(e["limits"], f"{path}.limits", ("applied", "fired", "output_truncated"))
+            _enum(e["limits"]["fired"], f"{path}.limits.fired", FIRED_LIMITS, nullable=True)
         if not isinstance(e["attempts"], list):
             _fail(f"{path}.attempts", "must be a list")
         for i, a in enumerate(e["attempts"]):

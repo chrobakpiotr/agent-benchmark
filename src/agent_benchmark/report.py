@@ -10,8 +10,8 @@ from decimal import Decimal
 from pathlib import Path
 
 from .pricing import fmt, price_trial, validate_pricing
-from .schema import (GRADES, OUTCOMES, UNITS, ValidationError, _json, canonical, digest, validate_event,
-                     validate_manifest, validate_task)
+from .schema import (FIRED_LIMITS, GRADES, OUTCOMES, UNITS, ValidationError, _json, canonical, digest,
+                     validate_event, validate_manifest, validate_task)
 
 FAKE_BANNER = ("FAKE EXECUTION (offline, scripted outcomes). Not a measurement of any model, CLI or backend; "
                "says nothing about qualified/live behaviour.")
@@ -145,7 +145,7 @@ def reduce_events(events):
                          "request_id": e["request_id"], "replaces": e["replaces"], "outcome": "unknown",
                          "interrupted": True, "terminal_source": None, "attempt_ids": [],
                          "completion": None, "error_code": None, "drain": None, "isolation_level": None,
-                         "candidate_digest": None, "original_grade": None, "grade": None, "corrections": [],
+                         "candidate_digest": None, "limit_fired": None, "target_id": None, "original_grade": None, "grade": None, "corrections": [],
                          "duration_ms": None, "usage": None, "usage_scopes": [], "measurement_quality": "unknown"}
         elif t in ("trial_finished", "usage", "grade", "correction") and r is None:
             conflict("orphan", e, f"{t} for a trial that was never started; ignored")
@@ -159,7 +159,8 @@ def reduce_events(events):
                          attempt_ids=[a["attempt_id"] for a in e["attempts"]],
                          completion=e["completion"], error_code=e["error_code"], drain=e["drain"],
                          isolation_level=e["isolation_level"], candidate_digest=e["candidate_digest"],
-                         duration_ms=e["duration_ms"])
+                         duration_ms=e["duration_ms"], limit_fired=(e["limits"] or {}).get("fired"),
+                         target_id=(e["target"] or {}).get("id"))
         elif t == "usage":
             per_trial = usage.setdefault(tid, {})
             prev = per_trial.get(e["usage_event_id"])
@@ -234,6 +235,7 @@ def summarize(manifest, task, events, inputs, pricing=None, pricing_digest=None)
             "replacements": sum(r["replaces"] is not None for r in rs),
             "corrected": sum(bool(r["corrections"]) for r in rs),
             "outcomes": {o: sum(r["outcome"] == o for r in rs) for o in OUTCOMES},
+            "limits_fired": {f: sum(r["limit_fired"] == f for r in rs) for f in FIRED_LIMITS},
             "grades": {g: sum(r["grade"] == g for r in rs) for g in GRADES},
             "ungraded": sum(r["grade"] is None for r in rs),
             "completion_accepted_not_pass": sum(r["completion"] == "accepted" and r["grade"] != "PASS" for r in rs),
@@ -269,6 +271,7 @@ def summarize(manifest, task, events, inputs, pricing=None, pricing_digest=None)
                             and all(c["cost"]["total"] is not None for c in configs)),
         "integrity": {"ok": not state["conflicts"], "conflicts": state["conflicts"]},
         "graders": [json.loads(g) for g in graders],
+        "targets": sorted({r["target_id"] for r in rows if r["target_id"]}),
         "exclusions": manifest["exclusions"],
         "configs": configs,
         "trials": rows,
@@ -300,6 +303,7 @@ def render_markdown(s):
                                                          for x in s["exclusions"]) or "none"),
            "- pricing: " + ("none (cost unknown)" if s["pricing"] is None else
                             f"{s['pricing']['basis']} snapshot {s['pricing']['snapshot_utc']} from {s['pricing']['source']}"),
+           "- execution targets: " + (", ".join(f"`{t}`" for t in s["targets"]) or "none"),
            f"- integrity: {'ok' if s['integrity']['ok'] else str(len(s['integrity']['conflicts'])) + ' conflict(s), first record kept'}",
            "",
            "## Per configuration", "",
@@ -328,7 +332,8 @@ def render_markdown(s):
                   for x in s["integrity"]["conflicts"]]]
     out += ["", "## Success and cost detail", "",
             "| config | first-attempt PASS | after-retry PASS | success after exclusions | cost coverage full/partial/unknown "
-            "| known cost subtotal | cost per PASS |", "|---|---|---|---|---|---|---|"]
+            "| known cost subtotal | cost per PASS | limits fired " + "/".join(FIRED_LIMITS) + " |",
+            "|---|---|---|---|---|---|---|---|"]
     for c in s["configs"]:
         x, k = c["success_after_exclusions"], c["cost"]
         excl = "n/a (no exclusions)" if x is None else f"{x['pass']}/{x['denominator']} (excluded {x['excluded']})"
@@ -336,7 +341,8 @@ def render_markdown(s):
         out.append(f"| `{c['config_id']}` | {c['first_attempt_pass']} | {c['after_retry_pass']} | {excl} "
                    f"| {'n/a' if not cov else '/'.join(str(cov[q]) for q in ('full', 'partial', 'unknown'))} "
                    f"| {_money(k.get('known_subtotal'), k)} | {_money(k['per_pass'], k)} "
-                   f"({k.get('per_pass_note', k['status'])}) |")
+                   f"({k.get('per_pass_note', k['status'])}) "
+                   f"| {'/'.join(str(c['limits_fired'][f]) for f in FIRED_LIMITS)} |")
     out.append(f"\nCost comparable across configs: {s['cost_comparable']}")
     corrections = [(r["trial_id"], x) for r in s["trials"] for x in r["corrections"]]
     if corrections:
@@ -346,7 +352,7 @@ def render_markdown(s):
 
 
 TRIAL_COLUMNS = ("trial_id", "config_id", "repetition", "replaces", "outcome", "terminal_source", "interrupted",
-                 "completion", "error_code", "drain", "original_grade", "grade", "candidate_digest", "duration_ms",
+                 "completion", "error_code", "limit_fired", "target_id", "drain", "original_grade", "grade", "candidate_digest", "duration_ms",
                  "measurement_quality")
 CSV_FIELDS = ("fake_execution", *TRIAL_COLUMNS, *UNITS)
 

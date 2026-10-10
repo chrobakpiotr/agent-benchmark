@@ -1,4 +1,4 @@
-"""The single adapter between the benchmark and agent-harness (contract v1 + offline launch API, pinned v0.3.0).
+"""The single adapter between the benchmark and agent-harness (contract v2 + offline launch API, pinned v0.5.0).
 
 Public API only (`agent_harness.contract`, `agent_harness.execution`). The harness launches every trial and seals
 its candidate into the trial's evidence root; the only backend the runner uses is the harness `ScriptedBackend`
@@ -25,14 +25,14 @@ def config_digest(config):
     return digest(canonical(config))
 
 
-def build_request(manifest, config, task_digest, trial_id, capabilities=("usage",)):
+def build_request(manifest, config, task_digest, trial_id, capabilities=("usage",), limits=None):
     settings = {f"{group}.{k}": v for group in ("reasoning", "sampling") for k, v in (config[group] or {}).items()}
-    request = {"contract_version": contract.CONTRACT_VERSION, "request_id": f"req-{uuid.uuid4()}",
+    request = {"contract_version": 2, "request_id": f"req-{uuid.uuid4()}",
                "trial_id": trial_id, "task_digest": task_digest, "config_digest": config_digest(config),
                "provider": manifest["executor"]["kind"], "model": config["model_requested"], "settings": settings,
                "capabilities": list(capabilities), "timeout_seconds": config["budget"]["max_wall_seconds"],
                "max_attempts": manifest["retry_policy"]["max_attempts"],
-               "input_bindings": [{"name": "task", "sha256": task_digest}]}
+               "input_bindings": [{"name": "task", "sha256": task_digest}], "limits": limits}
     try:
         return contract.validate_request(request)
     except contract.ContractError as exc:
@@ -76,7 +76,7 @@ def _read_ref(evidence_root, ref):
 def unknown_terminal(error):
     return {"execution_id": None, "attempts": [], "outcome": "unknown", "exit_code": None, "completion": None,
             "error_code": None, "drain": None, "isolation_level": None, "resolved_model": None,
-            "candidate_digest": None, "error": error}
+            "candidate_digest": None, "error": error, "target": None, "limits": None}
 
 
 def import_result(request, result, evidence_root, candidates_dir):
@@ -95,7 +95,8 @@ def import_result(request, result, evidence_root, candidates_dir):
             (Path(candidates_dir) / cand["sha256"].split(":", 1)[1]).write_bytes(data)
     terminal = {k: result[k] for k in ("execution_id", "outcome", "exit_code", "completion", "error_code", "drain",
                                        "isolation_level", "resolved_model")}
-    terminal.update(attempts=result["attempts"], candidate_digest=cand["sha256"] if cand else None, error=None)
+    terminal.update(attempts=result["attempts"], candidate_digest=cand["sha256"] if cand else None, error=None,
+                    target=result.get("target"), limits=result.get("limits"))  # v2 only; null on v1 results
     usage = [{"attempt_id": e["attempt_id"], "usage_event_id": e["event_id"], "kind": e["kind"],
               "source": e["source"], "units": e["units"], "cache_semantics": e["cache_semantics"]}
              for e in result["usage_events"]]

@@ -8,8 +8,8 @@ version = "0.1.0"
 description = "Offline-first benchmark comparing agent configurations on identical tasks"
 requires-python = ">=3.13"
 dependencies = [
-    # execution contract v1 + offline launch API, tag v0.3.0 pinned by commit SHA (tags can move)
-    "agent-harness @ git+https://github.com/chrobakpiotr/agent-harness.git@0ef88c5b5751e18b88a9f7b454823c7bf3012e0b",
+    # execution contract v1 + offline launch API + contract v2, tag v0.5.0 pinned by commit SHA (tags can move)
+    "agent-harness @ git+https://github.com/chrobakpiotr/agent-harness.git@16bb93821292096b94889306288ee2caec5f4006",
 ]
 
 [project.scripts]
