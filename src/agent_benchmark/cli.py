@@ -14,7 +14,7 @@ def main(argv=None):
     sub = p.add_subparsers(dest="cmd", required=True)
     v = sub.add_parser("validate", help="validate a manifest and its bound task bundle")
     v.add_argument("manifest")
-    r = sub.add_parser("run", help="execute a manifest with the FAKE executor and write records + report")
+    r = sub.add_parser("run", help="execute a manifest (fake executor, or real agent CLIs) and write records + report")
     r.add_argument("manifest")
     r.add_argument("--out", required=True, help="new run directory (must not exist)")
     rep = sub.add_parser("report", help="regenerate report.md/report.csv/summary.json from recorded events only")
@@ -42,11 +42,11 @@ def main(argv=None):
             print(f"OK {m['experiment_id']}: {len(plan_trials(m))} trials planned, executor={m['executor']['kind']}")
         elif args.cmd == "run":
             out = run(args.manifest, args.out)
-            write_report(out)
-            print(f"FAKE run written to {out}")
+            s = write_report(out)
+            print(f"{'FAKE' if s['fake_execution'] else 'REAL agent-cli'} run written to {out}")
         elif args.cmd == "resume":
-            write_report(resume(args.run_dir, replace_unknown=args.replace_unknown))
-            print(f"FAKE run resumed in {args.run_dir}")
+            s = write_report(resume(args.run_dir, replace_unknown=args.replace_unknown))
+            print(f"{'FAKE' if s['fake_execution'] else 'REAL agent-cli'} run resumed in {args.run_dir}")
         elif args.cmd == "invalidate":
             invalidate(args.run_dir, args.trial_id, args.reason)
             write_report(args.run_dir)

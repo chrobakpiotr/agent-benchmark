@@ -15,6 +15,9 @@ from .schema import (FIRED_LIMITS, GRADES, OUTCOMES, UNITS, ValidationError, _js
 
 FAKE_BANNER = ("FAKE EXECUTION (offline, scripted outcomes). Not a measurement of any model, CLI or backend; "
                "says nothing about qualified/live behaviour.")
+CONTROLLED_BANNER = ("REAL AGENT CLIs on this host (controlled track: each CLI's own sandbox, subscription login, "
+                     "no API billing). Agent-written candidates are UNGRADED until a qualified grading target exists; "
+                     "cost is subscription quota, not priced.")
 LIMITATIONS = [
     "Single synthetic task: repetitions of one task do not generalise to other tasks.",
     "Grading isolation is recorded per grade (`isolation`); no track here is hidden/sandboxed grading.",
@@ -260,8 +263,8 @@ def summarize(manifest, task, events, inputs, pricing=None, pricing_digest=None)
         })
     currencies = {c["cost"].get("currency") for c in configs}
     return {
-        "fake_execution": True,
-        "banner": FAKE_BANNER,
+        "fake_execution": events[0]["executor"]["kind"] == "fake",
+        "banner": FAKE_BANNER if events[0]["executor"]["kind"] == "fake" else CONTROLLED_BANNER,
         "run_id": events[0]["run_id"],
         "experiment_id": manifest["experiment_id"],
         "run_complete": events[-1]["type"] == "run_finished",

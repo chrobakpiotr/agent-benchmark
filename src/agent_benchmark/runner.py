@@ -10,13 +10,14 @@ import json
 import os
 import random
 import shutil
+import tempfile
 import time
 import uuid
 from pathlib import Path
 
-from . import grader, harness_port
+from . import grader, harness_port, zero_spend
 from .report import load_run, reduce_events
-from .schema import EVENT_VERSION, FAKE_TRACK, ValidationError, canonical, digest, load_manifest
+from .schema import CONTROLLED_TRACK, EVENT_VERSION, FAKE_TRACK, ValidationError, canonical, digest, load_manifest
 
 
 def plan_trials(manifest):
@@ -62,10 +63,49 @@ def _append(path, record):
         os.fsync(f.fileno())
 
 
+def agent_cli_execute(request, task, config, bundle_dir, evidence_root):
+    """Real CLI on its subscription login (harness AgentCliBackend); candidate = sealed diff of a fresh workspace.
+
+    The workspace sits next to, never around, the evidence root. A refusal reason or withheld output is kept as
+    evidence because the contract result only carries the error code.
+    """
+    evidence_root = Path(evidence_root)
+    workspace = evidence_root.parent.parent / "workspaces" / request["request_id"]
+    workspace.parent.mkdir(exist_ok=True)
+    backend = harness_port.agent_cli_backend(config, task, harness_port.prepare_workspace(bundle_dir / "base", workspace))
+    try:
+        return harness_port.launch(request, backend, evidence_root, workspace=workspace)
+    finally:
+        notes = {"rejection_reason": backend.rejection_reasons.get(request["request_id"]), "withheld": backend.withheld}
+        (evidence_root / "backend-notes.json").write_text(json.dumps(notes, sort_keys=True))
+
+
+EXECUTORS = {"fake": fake_execute, "agent-cli": agent_cli_execute}
+
+
+def _live_guard(manifest, out):
+    """Real CLI runs: evidence outside agent-writable temp dirs, and nothing that could bill money."""
+    if manifest["executor"]["kind"] == "fake":
+        return
+    out = Path(out).resolve()
+    temps = {Path("/tmp").resolve(), Path(tempfile.gettempdir()).resolve()}
+    if os.environ.get("TMPDIR"):
+        temps.add(Path(os.environ["TMPDIR"]).resolve())
+    inside = [t for t in temps if t == out or t in out.parents]
+    if inside:
+        raise ValidationError(f"{out}: agent CLIs can write {inside[0]}; put the run directory outside it")
+    problems = zero_spend.problems()
+    if problems:
+        raise ValidationError("zero-spend preflight failed: " + "; ".join(problems))
+
+
 def _grade(out, manifest, task, trial_id, cand_digest):
-    # Candidate code may run on the host only when it comes from the fake executor's reference set.
+    # Candidate code may run on the host only when it comes from the fake executor's reference set. Agent-written
+    # candidates stay ungraded until a qualified grading target exists (AB5-05b).
+    if manifest["executor"]["kind"] != "fake":
+        return
     result, criteria = grader.grade(task, out / "candidates", cand_digest, bundle_dir=out / "task",
-                                    host_execution_allowed=manifest["executor"]["kind"] == "fake")
+                                    host_execution_allowed=True)
     gid = task["grader"]["id"]
     _append(out / "events.jsonl", {"type": "grade", "trial_id": trial_id, "candidate_digest": cand_digest,
                                    "grader": grader.identity(gid), "result": result, "criteria": criteria,
@@ -75,7 +115,7 @@ def _grade(out, manifest, task, trial_id, cand_digest):
 def _execute(out, manifest, task, task_digest, todo, execute):
     """todo: [(config_id, repetition, trial_id, replaces)] executed sequentially."""
     events = out / "events.jsonl"
-    script = {(e["config_id"], e["repetition"]): e for e in manifest["executor"]["script"]}
+    script = {(e["config_id"], e["repetition"]): e for e in manifest["executor"].get("script", [])}
     configs = {c["config_id"]: c for c in manifest["configs"]}
     for cid, rep, trial_id, replaces in todo:
         request = harness_port.build_request(manifest, configs[cid], task_digest, trial_id)
@@ -87,7 +127,8 @@ def _execute(out, manifest, task, task_digest, todo, execute):
                          "replaces": replaces, "started_utc": _utc()})
         t0 = time.monotonic_ns()
         try:
-            result = execute(request, task, script[(cid, rep)], out / "task", evidence)
+            entry = script[(cid, rep)] if manifest["executor"]["kind"] == "fake" else configs[cid]
+            result = execute(request, task, entry, out / "task", evidence)
         except Exception as exc:  # backend crashed: launch state unknown, the trial stays visible
             terminal, usage = harness_port.unknown_terminal(f"backend raised {type(exc).__name__}"), []
         else:
@@ -102,8 +143,10 @@ def _execute(out, manifest, task, task_digest, todo, execute):
             _grade(out, manifest, task, trial_id, terminal["candidate_digest"])
 
 
-def run(manifest_path, out_dir, execute=fake_execute):
+def run(manifest_path, out_dir, execute=None):
     manifest, task, manifest_bytes, task_bytes = load_manifest(manifest_path)
+    _live_guard(manifest, out_dir)
+    execute = execute or EXECUTORS[manifest["executor"]["kind"]]
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=False)  # never overwrite an earlier run's records
     (out / "manifest.json").write_bytes(manifest_bytes)
@@ -114,14 +157,16 @@ def run(manifest_path, out_dir, execute=fake_execute):
     run_id = str(uuid.uuid4())
     _append(out / "events.jsonl", {"type": "run_started", "run_id": run_id, "experiment_id": manifest["experiment_id"],
                                    "manifest_digest": digest(manifest_bytes), "task_digest": digest(task_bytes),
-                                   "executor": {"kind": "fake", "track": FAKE_TRACK},
+                                   "executor": {"kind": manifest["executor"]["kind"],
+                                                "track": FAKE_TRACK if manifest["executor"]["kind"] == "fake"
+                                                else CONTROLLED_TRACK},
                                    "plan": [f"{c}/r{r}" for c, r in plan]})
     _execute(out, manifest, task, digest(task_bytes), [(c, r, f"{c}/r{r}", None) for c, r in plan], execute)
     _append(out / "events.jsonl", {"type": "run_finished", "run_id": run_id, "finished_utc": _utc()})
     return out
 
 
-def resume(run_dir, replace_unknown=False, execute=fake_execute):
+def resume(run_dir, replace_unknown=False, execute=None):
     """Continue an interrupted run without re-running anything that may already have been launched.
 
     - started but no terminal -> reconciled to outcome 'unknown' (stays visible, counts in the denominator);
@@ -131,6 +176,8 @@ def resume(run_dir, replace_unknown=False, execute=fake_execute):
     """
     out = Path(run_dir)
     manifest, task, events, _ = load_run(out)
+    _live_guard(manifest, out)
+    execute = execute or EXECUTORS[manifest["executor"]["kind"]]
     rows = {r["trial_id"]: r for r in reduce_events(events)["trials"]}
     plan = plan_trials(manifest)
     if [f"{c}/r{r}" for c, r in plan] != events[0]["plan"]:

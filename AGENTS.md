@@ -41,6 +41,7 @@ to a verified result, and an independent success rate. This file is a **map**. L
 - `src/agent_benchmark/report.py` - deterministic report (Markdown/CSV/JSON) from recorded events only.
 - `src/agent_benchmark/cli.py` - `validate`, `run`, `report`, `resume`, `invalidate`.
 - `src/agent_benchmark/zero_spend.py` - `preflight`: no API-billing env vars, subscription CLI logins (AB5-07).
+- `experiments/` - real-run manifests (`ab5-07-pilot.json`: zero-spend agent-CLI pilot, see `ab5-07-pilot.md`).
 - `tests/` - stdlib `unittest`; `tests/fixtures/` - frozen manifests and task bundles.
 
 ## Standard verification

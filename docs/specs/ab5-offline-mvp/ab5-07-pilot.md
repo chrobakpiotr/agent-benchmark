@@ -1,6 +1,7 @@
 # AB5-07 - zero-spend live pilot
 
-Status: draft; blocked on a harness backend that runs agent CLIs in the qualified sandbox (see "Dependencies").
+Status: execution path implemented on harness v0.6.0 (AH5-05b `AgentCliBackend`); grading of agent-written
+candidates blocked on harness AH5-04c (`patch-io` on the qualified target).
 Budget: **zero money**. Only the user's existing subscriptions (Claude Pro, ChatGPT Plus) and free OpenRouter models;
 no API keys, no usage credits, no credit purchases.
 
@@ -27,10 +28,11 @@ no API keys, no usage credits, no credit purchases.
 | `codex-sol-plus` | Codex CLI (pinned version) | `gpt-6.1-sol` | `exec -m gpt-6.1-sol --sandbox workspace-write --skip-git-repo-check --json --ephemeral` | qualified target |
 | `openrouter-free` (optional) | agent CLI to be chosen (OpenCode/Aider) | `cohere/north-mini-code:free` | headless single task | qualified target |
 
-Open: Claude's permission mode. `acceptEdits` auto-accepts edits but presumably denies shell commands in `-p`
-(UNVERIFIED), so Claude could not run tests while Codex can (`workspace-write` allows sandboxed commands). Parity
-needs shell allowed under Claude Code's own sandboxed Bash with network off; `bypassPermissions` would let commands
-read the mounted login token. Decide with the harness backend; until then the row is provisional.
+Both CLIs get equal conditions (harness AH5-05b, smoke-tested on this host): Claude Code's Bash runs in its own
+sandbox with no network (`failIfUnavailable`, no unsandboxed commands, WebFetch/WebSearch disallowed, CLI login
+directories unreadable); Codex runs `--sandbox workspace-write`; neither falls back to another mode. The prompt goes in
+on stdin; API-billing variables are removed from the child; login methods are pinned (`claudeai`, `chatgpt`); a
+candidate or output containing a login token or credential shape is withheld (`error`/`PROVIDER_ERROR`).
 
 CLI name and version, model, flags and permissions are part of the config identity (`cli`, `cli_version`,
 `tool_permissions`, `workflow`); changing any of them, e.g. a different Codex sandbox mode, is a new config.
@@ -49,9 +51,22 @@ CLI name and version, model, flags and permissions are part of the config identi
 5. Cost is reported as `subscription, not priced` with token counts; never priced from API list prices.
    `total_cost_usd` may be shown only labelled as a list-price estimate.
 
+## Implementation (`experiments/ab5-07-pilot.json`, `runner.agent_cli_execute`)
+
+- Executor kind `agent-cli`, configs name their `cli` (`claude`/`codex`), track `controlled-host`.
+- Per trial: a fresh workspace `<run>/workspaces/<request_id>` (copy of the task base, one Git base commit); prompt =
+  task description + visible checks (`harness_port.agent_prompt`, nothing hidden); `AgentCliBackend(cli, prompt,
+  diff_base=<base commit>)`; candidate = the diff the harness seals after `drain: confirmed`.
+- Before every run and resume: `zero_spend.problems()` must be empty and the run directory must not be inside
+  `/tmp` or `$TMPDIR` (the harness refuses agent-writable evidence roots).
+- Agent-written candidates are recorded but **ungraded** (no grade event) until the qualified grading target exists;
+  the report banner says so. Refusal reasons and withheld outputs are kept in `backend-notes.json`.
+- Evidence: `tests/test_agent_cli_run.py` (fake `codex`/`claude` on `PATH`, no provider call).
+
 ## Procedure
 
-1. One calibration trial per config; read the quota bar (`/usage`, Codex `/status`) before and after.
+1. `agent-benchmark run experiments/ab5-07-pilot.json --out ~/agent-benchmark-runs/<name>` (outside `/tmp`).
+   One calibration trial per config first; read the quota bar (`/usage`, Codex `/status`) before and after.
 2. Schedule the remaining 4 per config across 5-hour windows; never while the maintainer's Claude Code session is
    active (shared Pro quota). OpenRouter at most about 1 trial per day (50 requests/day).
 3. Report per config: PASS rate (Wilson), wall time, tokens, quota windows used, every failure/timeout/limit.

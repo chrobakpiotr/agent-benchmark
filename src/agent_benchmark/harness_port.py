@@ -1,10 +1,13 @@
-"""The single adapter between the benchmark and agent-harness (contract v2 + offline launch API, pinned v0.5.0).
+"""The single adapter between the benchmark and agent-harness (contract v2 + offline launch API, pinned v0.6.0).
 
 Public API only (`agent_harness.contract`, `agent_harness.execution`). The harness launches every trial and seals
 its candidate into the trial's evidence root; the only backend the runner uses is the harness `ScriptedBackend`
 built from the manifest script (`isolation_level: fake`). A result that fails contract validation is recorded as
 outcome `unknown`, never as success.
 """
+import os
+import shutil
+import subprocess
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -29,7 +32,7 @@ def build_request(manifest, config, task_digest, trial_id, capabilities=("usage"
     settings = {f"{group}.{k}": v for group in ("reasoning", "sampling") for k, v in (config[group] or {}).items()}
     request = {"contract_version": 2, "request_id": f"req-{uuid.uuid4()}",
                "trial_id": trial_id, "task_digest": task_digest, "config_digest": config_digest(config),
-               "provider": manifest["executor"]["kind"], "model": config["model_requested"], "settings": settings,
+               "provider": config["cli"] or manifest["executor"]["kind"], "model": config["model_requested"], "settings": settings,
                "capabilities": list(capabilities), "timeout_seconds": config["budget"]["max_wall_seconds"],
                "max_attempts": manifest["retry_policy"]["max_attempts"],
                "input_bindings": [{"name": "task", "sha256": task_digest}], "limits": limits}
@@ -50,17 +53,43 @@ def scripted_backend(entry, candidate):
                                      cache_semantics=usage["cache_semantics"] if usage else "separate")
 
 
-def launch(request, backend, evidence_root):
-    """Launch through the harness and wait for the terminal result; the trial evidence root is also its workspace.
+def launch(request, backend, evidence_root, workspace=None):
+    """Launch through the harness and wait for the terminal result; without a workspace the evidence root is used.
     No result within the request timeout + 60 s: the execution is cancelled and TimeoutError raised, so the caller
     records `unknown`."""
     root = str(Path(evidence_root).resolve())
-    handle = execution.launch(request, backend, workspace=root, evidence_root=root)
+    handle = execution.launch(request, backend, workspace=str(Path(workspace).resolve()) if workspace else root,
+                              evidence_root=root)
     try:
         return handle.result(request["timeout_seconds"] + 60)
     except TimeoutError:
         handle.cancel()
         raise
+
+
+def agent_prompt(task):
+    """What the agent is told: the task text and its visible checks, nothing from the hidden material."""
+    checks = "\n".join(f"- {c}" for c in task["visible_checks"])
+    return (f"{task['description']}\n\nVisible checks you may run:\n{checks}\n\n"
+            "Work only in the current directory. Edit the files in place; do not commit.\n")
+
+
+def prepare_workspace(base_dir, workspace):
+    """Copy the task's base tree into a fresh Git repository with one base commit; return the commit id."""
+    shutil.copytree(base_dir, workspace)
+    env = {"PATH": os.defpath, "HOME": str(workspace), "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": os.devnull,
+           "GIT_AUTHOR_NAME": "agent-benchmark", "GIT_AUTHOR_EMAIL": "base@agent-benchmark",
+           "GIT_COMMITTER_NAME": "agent-benchmark", "GIT_COMMITTER_EMAIL": "base@agent-benchmark",
+           "GIT_AUTHOR_DATE": "2026-01-01T00:00:00Z", "GIT_COMMITTER_DATE": "2026-01-01T00:00:00Z"}
+    for argv in (["init", "-q"], ["add", "-A"], ["commit", "-q", "--no-verify", "-m", "base"]):
+        subprocess.run(["git", *argv], cwd=workspace, env=env, check=True, capture_output=True)
+    return subprocess.run(["git", "rev-parse", "HEAD"], cwd=workspace, env=env, check=True, capture_output=True,
+                          text=True).stdout.strip()
+
+
+def agent_cli_backend(config, task, diff_base):
+    """Harness AgentCliBackend for one config: the CLI's own login and sandbox, candidate = workspace diff."""
+    return execution.AgentCliBackend(config["cli"], agent_prompt(task), diff_base=diff_base)
 
 
 def _read_ref(evidence_root, ref):

@@ -20,6 +20,8 @@ GRADES = ("PASS", "FAIL", "INVALID")
 QUALITY = ("complete", "partial", "unknown")
 FAKE_CANDIDATES = ("good", "wrong", "noop", "malformed")
 FAKE_TRACK = "fake-offline"
+CONTROLLED_TRACK = "controlled-host"  # agent CLI on this host in its own sandbox (harness AgentCliBackend)
+AGENT_CLIS = ("claude", "codex")
 KNOWN_GRADERS = {"sort-check": "1", "patch-unittest": "1", "patch-io": "1"}
 
 CONFIG_REQUIRED = ("config_id", "model_requested", "workflow", "tool_permissions", "isolation_track", "budget")
@@ -219,8 +221,15 @@ def validate_manifest(m, task_digest=None):
         _fail("manifest.configs", f"duplicate config_id in {ids}")
 
     ex = m["executor"]
+    _enum(ex.get("kind") if isinstance(ex, dict) else None, "manifest.executor.kind", ("fake", "agent-cli"))
+    if ex["kind"] == "agent-cli":  # real CLI runs: nothing scripted, every config names its CLI
+        _keys(ex, "manifest.executor", ("kind",))
+        for i, c in enumerate(m["configs"]):
+            _enum(c["cli"], f"manifest.configs[{i}].cli", AGENT_CLIS)
+            if c["isolation_track"] != CONTROLLED_TRACK:
+                _fail(f"manifest.configs[{i}].isolation_track", f"agent-cli executor requires {CONTROLLED_TRACK!r}")
+        return m
     _keys(ex, "manifest.executor", ("kind", "script"))
-    _enum(ex["kind"], "manifest.executor.kind", ("fake",))
     for i, c in enumerate(m["configs"]):
         if c["isolation_track"] != FAKE_TRACK:
             _fail(f"manifest.configs[{i}].isolation_track", f"fake executor requires {FAKE_TRACK!r}")
@@ -270,7 +279,7 @@ def load_manifest(path):
     task = validate_task(_json(task_bytes, str(task_path)))
     verify_bundle(task, task_path.parent)
     kinds = fake_candidate_kinds(task, task_path.parent)
-    for i, e in enumerate(m["executor"]["script"]):
+    for i, e in enumerate(m["executor"].get("script", [])):
         if e["candidate"] is not None and e["candidate"] not in kinds:
             _fail(f"manifest.executor.script[{i}].candidate", f"{e['candidate']!r} not available; known {sorted(kinds)}")
     return m, task, manifest_bytes, task_bytes
