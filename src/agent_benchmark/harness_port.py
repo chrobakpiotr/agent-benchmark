@@ -1,4 +1,4 @@
-"""The single adapter between the benchmark and agent-harness (contract v2 + offline launch API, pinned v0.6.0).
+"""The single adapter between the benchmark and agent-harness (contract v2 + offline launch API, pinned v0.6.1).
 
 Public API only (`agent_harness.contract`, `agent_harness.execution`). The harness launches every trial and seals
 its candidate into the trial's evidence root; the only backend the runner uses is the harness `ScriptedBackend`

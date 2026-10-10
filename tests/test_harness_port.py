@@ -46,7 +46,7 @@ def ledger(request, terminal, usage):
 
 class Pin(unittest.TestCase):
     def test_installed_contract_matches_pin(self):
-        self.assertEqual((agent_harness.__version__, contract.CONTRACT_VERSION), ("0.6.0", 1))
+        self.assertEqual((agent_harness.__version__, contract.CONTRACT_VERSION), ("0.6.1", 1))
         direct = json.loads(metadata.distribution("agent-harness").read_text("direct_url.json") or "{}")
         if "vcs_info" in direct:  # installed from git: must be exactly the pinned commit
             self.assertEqual(direct["vcs_info"]["commit_id"], PINNED_SHA)
