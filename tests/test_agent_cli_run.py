@@ -84,7 +84,7 @@ class AgentCliRun(unittest.TestCase):
         self.assertIn("+# edited by the fake agent", patch)
         self.assertNotIn(".git/", patch)
         self.assertFalse(s["fake_execution"])
-        self.assertIn("UNGRADED", s["banner"])
+        self.assertIn("graded only on the qualified Docker target", s["banner"])
         evidence = out / "evidence" / row["request_id"]
         self.assertEqual(json.loads((evidence / "backend-notes.json").read_text()),
                          {"rejection_reason": None, "withheld": None})

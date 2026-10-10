@@ -16,7 +16,7 @@ from .schema import (FIRED_LIMITS, GRADES, OUTCOMES, UNITS, ValidationError, _js
 FAKE_BANNER = ("FAKE EXECUTION (offline, scripted outcomes). Not a measurement of any model, CLI or backend; "
                "says nothing about qualified/live behaviour.")
 CONTROLLED_BANNER = ("REAL AGENT CLIs on this host (controlled track: each CLI's own sandbox, subscription login, "
-                     "no API billing). agent-written candidates are graded only on the qualified Docker target (see each grade's isolation); "
+                     "no API billing). Agent-written candidates are graded only on the qualified Docker target (see each grade's isolation); "
                      "cost is subscription quota, not priced.")
 LIMITATIONS = [
     "Single synthetic task: repetitions of one task do not generalise to other tasks.",
