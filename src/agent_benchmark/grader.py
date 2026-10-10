@@ -61,15 +61,20 @@ def _sealed(candidates_dir, candidate_digest):
     return data if data is not None and digest(data) == candidate_digest else None
 
 
-def grade(task, candidates_dir, candidate_digest, bundle_dir=None, host_execution_allowed=False, timeout=None):
-    """Return (result, criteria). INVALID = candidate or bundle cannot be bound to its pinned digest."""
+def grade(task, candidates_dir, candidate_digest, bundle_dir=None, host_execution_allowed=False, timeout=None,
+          qualified_run=None):
+    """Return (result, criteria). INVALID = candidate or bundle cannot be bound to its pinned digest.
+
+    `qualified_run` (patch-io only) replaces `run_cases` with a run on the qualified grading target, so candidates
+    that are not vouched for can be graded without executing them on this host.
+    """
     data = _sealed(candidates_dir, candidate_digest)
     criteria = [{"criterion": "candidate_matches_sealed_digest", "passed": data is not None}]
     if data is None:
         return "INVALID", criteria
     if task["grader"]["id"] == "sort-check":
         return _grade_sort(task, data, criteria)
-    return _grade_patch(task, data, criteria, Path(bundle_dir), host_execution_allowed, timeout)
+    return _grade_patch(task, data, criteria, Path(bundle_dir), host_execution_allowed, timeout, qualified_run)
 
 
 def _grade_sort(task, data, criteria):
@@ -112,7 +117,7 @@ def _scope_violations(text, scope):
     return bad
 
 
-def _grade_patch(task, data, criteria, bundle_dir, host_execution_allowed, timeout):
+def _grade_patch(task, data, criteria, bundle_dir, host_execution_allowed, timeout, qualified_run=None):
     b = task["bundle"]
     try:
         verify_bundle(task, bundle_dir)
@@ -123,7 +128,11 @@ def _grade_patch(task, data, criteria, bundle_dir, host_execution_allowed, timeo
                      "detail": {"base": b["base_digest"], "hidden": b["hidden_digest"]}})
     if not bundle_ok:
         return "INVALID", criteria
-    if not host_execution_allowed:
+    if qualified_run is not None and task["grader"]["id"] != "patch-io":
+        criteria.append({"criterion": "qualified_grading_supported", "passed": False,
+                         "detail": "only patch-io runs on the qualified target"})
+        return "INVALID", criteria
+    if not host_execution_allowed and qualified_run is None:
         criteria.append({"criterion": "host_execution_allowed", "passed": False,
                          "detail": "candidate source not vouched for; needs isolated grading host (AB5-05b)"})
         return "INVALID", criteria
@@ -153,7 +162,8 @@ def _grade_patch(task, data, criteria, bundle_dir, host_execution_allowed, timeo
             return "FAIL", criteria
 
         if task["grader"]["id"] == "patch-io":
-            return _grade_io(b, bundle_dir, ws, tmp / "run", env, timeout or b["timeout_seconds"], criteria)
+            return _grade_io(b, bundle_dir, ws, tmp / "run", env, timeout or b["timeout_seconds"], criteria,
+                             qualified_run or run_cases)
         shutil.copytree(bundle_dir / "hidden", hidden)  # outside the workspace, only after the patch is applied
         limit = timeout or b["timeout_seconds"]
         proc = subprocess.Popen([sys.executable, "-m", "unittest", "discover", "-s", str(hidden), "-t", str(hidden)],
@@ -225,9 +235,9 @@ def _case_passes(got, want):
     return "value" in got and _equal(got["value"], want["value"])
 
 
-def _grade_io(b, bundle_dir, ws, run_dir, env, limit, criteria):
+def _grade_io(b, bundle_dir, ws, run_dir, env, limit, criteria, run=run_cases):
     expected = json.loads((bundle_dir / "expected" / "expected.json").read_bytes())  # never enters the process
-    finished, exit_code, output = run_cases(ws, (bundle_dir / "hidden" / "cases.json").read_bytes(), run_dir, env,
+    finished, exit_code, output = run(ws, (bundle_dir / "hidden" / "cases.json").read_bytes(), run_dir, env,
                                             limit)
     criteria.append({"criterion": "hidden_cases_finished_within_limit", "passed": finished,
                      "detail": {"limit_seconds": limit, "exit_code": exit_code}})  # exit code is evidence only

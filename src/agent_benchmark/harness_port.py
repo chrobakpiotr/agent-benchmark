@@ -1,4 +1,4 @@
-"""The single adapter between the benchmark and agent-harness (contract v2 + offline launch API, pinned v0.6.1).
+"""The single adapter between the benchmark and agent-harness (contract v2 + offline launch API, pinned v0.7.0).
 
 Public API only (`agent_harness.contract`, `agent_harness.execution`). The harness launches every trial and seals
 its candidate into the trial's evidence root; the only backend the runner uses is the harness `ScriptedBackend`
@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from agent_harness import contract, execution
+from agent_harness import contract, execution, qualification
 
 from .schema import ValidationError, canonical, digest
 
@@ -90,6 +90,57 @@ def prepare_workspace(base_dir, workspace):
 def agent_cli_backend(config, task, diff_base):
     """Harness AgentCliBackend for one config: the CLI's own login and sandbox, candidate = workspace diff."""
     return execution.AgentCliBackend(config["cli"], agent_prompt(task), diff_base=diff_base)
+
+
+class GradingSession:
+    """One qualified grading session (harness AH5-04c): qualify once under a fresh job id, then grade many candidates.
+
+    `run_cases` has the signature of `grader.run_cases`; it runs the trusted driver in a fresh container with the
+    qualified flags and returns the `answers` artifact. `isolation` is the B10 evidence stored in every grade record.
+    Raises ValidationError when the target does not qualify or refuses, so candidates stay ungraded, never FAIL.
+    """
+
+    def __init__(self, out, cases_path, driver, job_id):
+        from agent_harness.qualification.reference import reviewed_reference
+        self.out, self.cases_path = Path(out), Path(cases_path)
+        reviewed = reviewed_reference()
+        qdir = self.out / "qualification" / job_id
+        qdir.parent.mkdir(parents=True, exist_ok=True)
+        s = qualification.qualify(job_id, qdir, reviewed=reviewed, timeout_seconds=60)
+        if not s["qualified"]:
+            raise ValidationError(f"grading target did not qualify under job {job_id}; retry with a new job id")
+        self.backend = execution.QualifiedDockerBackend(
+            s["report_doc"], qualification_evidence=qdir / "evidence", capability_report=s["capability_doc"],
+            job_id=job_id, image=qualification.DEFAULT_IMAGE,
+            command=["python3", "-c", driver, "/inputs/cases.json", "/output/answers.json"], cases=self.cases_path,
+            reviewed=reviewed)
+        self.isolation = {"track": "qualified", "target": self.backend.target, "job_id": job_id,
+                          "qualification_digest": s["qualification_digest"],
+                          "reviewed_qualification_digest": s["reviewed_qualification_digest"],
+                          "probe_digest": s["probe_digest"], "image": qualification.DEFAULT_IMAGE}
+        self.fired = []
+
+    def run_cases(self, ws, cases, run_dir, env, limit):
+        if cases != self.cases_path.read_bytes():
+            raise ValidationError("grading session bound to other cases")
+        request = contract.validate_request({
+            "contract_version": 2, "request_id": f"grade-{uuid.uuid4()}", "trial_id": None,
+            "task_digest": digest(cases), "config_digest": digest(canonical(self.backend.command)),
+            "provider": "qualified-docker", "model": "patch-io", "settings": {}, "capabilities": ["qualified_isolation"],
+            "timeout_seconds": limit, "max_attempts": 1, "input_bindings": [{"name": "cases", "sha256": digest(cases)}],
+            "limits": execution.QUALIFIED_LIMITS})
+        evidence = self.out / "grading" / request["request_id"]
+        evidence.mkdir(parents=True)
+        result = launch(request, self.backend, evidence, workspace=ws)
+        (evidence / "result.json").write_bytes(canonical(result))
+        fired = (result.get("limits") or {}).get("fired")
+        self.fired.append(fired)
+        if result["outcome"] == "timeout":
+            return False, None, None
+        if result["outcome"] not in ("completed", "error"):
+            raise ValidationError(f"qualified grading {result['outcome']}: {self.backend.rejection_reason}")
+        ref = next((a for a in result["artifacts"] if a.get("name") == "answers"), None)
+        return True, result["exit_code"], _read_ref(evidence, ref) if ref else None
 
 
 def _read_ref(evidence_root, ref):

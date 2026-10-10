@@ -1,7 +1,7 @@
 # AB5-07 - zero-spend live pilot
 
-Status: execution path implemented on harness v0.6.0 (AH5-05b `AgentCliBackend`); grading of agent-written
-candidates blocked on harness AH5-04c (`patch-io` on the qualified target).
+Status: execution (AH5-05b `AgentCliBackend`) and grading (AH5-04c `QualifiedDockerBackend`) implemented on
+harness v0.7.0.
 Budget: **zero money**. Only the user's existing subscriptions (Claude Pro, ChatGPT Plus) and free OpenRouter models;
 no API keys, no usage credits, no credit purchases.
 
@@ -59,8 +59,13 @@ CLI name and version, model, flags and permissions are part of the config identi
   diff_base=<base commit>)`; candidate = the diff the harness seals after `drain: confirmed`.
 - Before every run and resume: `zero_spend.problems()` must be empty and the run directory must not be inside
   `/tmp` or `$TMPDIR` (the harness refuses agent-writable evidence roots).
-- Agent-written candidates are recorded but **ungraded** (no grade event) until the qualified grading target exists;
-  the report banner says so. Refusal reasons and withheld outputs are kept in `backend-notes.json`.
+- Agent-written candidates are graded only on the qualified target: `harness_port.GradingSession` qualifies once
+  per run directory (harness `qualification.qualify` under a fresh job id, matched against the independently reviewed
+  tuple), then each candidate's patched workspace goes to `QualifiedDockerBackend` as a contract v2 request with
+  `QUALIFIED_LIMITS`; `patch-io` computes the verdict on this host from the sealed `answers` artifact. The grade
+  record's `isolation` holds target, job id, session/reviewed qualification digests, probe digest, image and the
+  fired limit (B10). If the target does not qualify or refuses, candidates stay ungraded (never FAIL) and
+  `resume` grades them later. Run with no other Docker load. Refusal reasons and withheld outputs are kept in `backend-notes.json`.
 - Evidence: `tests/test_agent_cli_run.py` (fake `codex`/`claude` on `PATH`, no provider call).
 
 ## Procedure

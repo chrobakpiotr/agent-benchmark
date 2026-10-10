@@ -17,7 +17,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from agent_benchmark import runner  # noqa: E402
+from agent_benchmark import harness_port, runner  # noqa: E402
 from agent_benchmark.report import load_run, reduce_events, write_report  # noqa: E402
 from agent_benchmark.schema import ValidationError  # noqa: E402
 
@@ -62,8 +62,14 @@ class AgentCliRun(unittest.TestCase):
         env["PATH"] = f"{self.root / 'bin'}{os.pathsep}{os.environ['PATH']}"
         self.env = mock.patch.dict(os.environ, env, clear=True)
         self.env.start()
+        runner._SESSIONS.clear()
+        # no Docker in unit tests: by default the grading target is unavailable
+        self.session = mock.patch.object(harness_port, "GradingSession",
+                                         side_effect=ValidationError("grading target did not qualify"))
+        self.session.start()
 
     def tearDown(self):
+        self.session.stop()
         self.env.stop()
         shutil.rmtree(self.root)
 
@@ -83,6 +89,30 @@ class AgentCliRun(unittest.TestCase):
         self.assertEqual(json.loads((evidence / "backend-notes.json").read_text()),
                          {"rejection_reason": None, "withheld": None})
         self.assertTrue((out / "workspaces" / row["request_id"] / ".git").is_dir())  # beside, not around, evidence
+
+    def test_candidate_is_graded_only_through_the_qualified_session(self):
+        calls = []
+
+        class FakeSession:  # stands in for harness QualifiedDockerBackend; never runs the candidate on this host
+            isolation = {"track": "qualified", "qualification_digest": "sha256:" + "a" * 64}
+            fired = [None]
+
+            def __init__(self, out, cases_path, driver, job_id):
+                calls.append((cases_path.name, job_id))
+
+            def run_cases(self, ws, cases, run_dir, env, limit):
+                self.workspace_patched = "# edited by the fake agent" in (ws / "src/agent_harness/contract.py").read_text()
+                return True, 0, b"{}"  # no answers: every hidden case fails
+        self.session.stop()
+        with mock.patch.object(harness_port, "GradingSession", FakeSession):
+            out = runner.run(MANIFEST, self.root / "run")
+        self.session.start()
+        grades = [json.loads(l) for l in (out / "events.jsonl").read_text().splitlines()
+                  if json.loads(l)["type"] == "grade"]
+        self.assertEqual([(g["result"], g["isolation"]["track"]) for g in grades], [("FAIL", "qualified")])
+        self.assertEqual(grades[0]["isolation"]["limit_fired"], None)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][0], "cases.json")
 
     def test_run_directory_in_temp_is_refused_before_anything_starts(self):
         out = Path(tempfile.mkdtemp()) / "run"

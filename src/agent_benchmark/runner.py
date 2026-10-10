@@ -10,6 +10,7 @@ import json
 import os
 import random
 import shutil
+import sys
 import tempfile
 import time
 import uuid
@@ -99,17 +100,42 @@ def _live_guard(manifest, out):
         raise ValidationError("zero-spend preflight failed: " + "; ".join(problems))
 
 
+_SESSIONS = {}  # ponytail: one qualified grading session per run directory per process; resume starts a new one
+
+
+def _session(out):
+    key = str(Path(out).resolve())
+    if key not in _SESSIONS:
+        run_id = json.loads((Path(out) / "events.jsonl").open().readline())["run_id"]
+        _SESSIONS[key] = harness_port.GradingSession(out, Path(out) / "task" / "hidden" / "cases.json", grader.DRIVER,
+                                                     job_id=f"grade-{run_id[:8]}-{uuid.uuid4().hex[:8]}")
+    return _SESSIONS[key]
+
+
 def _grade(out, manifest, task, trial_id, cand_digest):
-    # Candidate code may run on the host only when it comes from the fake executor's reference set. Agent-written
-    # candidates stay ungraded until a qualified grading target exists (AB5-05b).
-    if manifest["executor"]["kind"] != "fake":
-        return
-    result, criteria = grader.grade(task, out / "candidates", cand_digest, bundle_dir=out / "task",
-                                    host_execution_allowed=True)
+    # Candidate code runs on this host only when it comes from the fake executor's reference set. Agent-written
+    # candidates run only on the qualified grading target (harness AH5-04c); if it does not qualify they stay
+    # ungraded (resume grades them later), never FAIL.
     gid = task["grader"]["id"]
+    isolation, qualified_run = grader.ISOLATION[gid], None
+    if manifest["executor"]["kind"] != "fake":
+        try:
+            session = _session(out)
+        except (ValidationError, OSError) as exc:
+            print(f"warning: {trial_id} left ungraded: {exc}", file=sys.stderr)
+            return
+        qualified_run = session.run_cases
+    try:
+        result, criteria = grader.grade(task, out / "candidates", cand_digest, bundle_dir=out / "task",
+                                        host_execution_allowed=qualified_run is None, qualified_run=qualified_run)
+    except ValidationError as exc:  # the target refused or failed: not the candidate's fault
+        print(f"warning: {trial_id} left ungraded: {exc}", file=sys.stderr)
+        return
+    if qualified_run is not None:
+        isolation = {**session.isolation, "limit_fired": session.fired[-1] if session.fired else None}
     _append(out / "events.jsonl", {"type": "grade", "trial_id": trial_id, "candidate_digest": cand_digest,
                                    "grader": grader.identity(gid), "result": result, "criteria": criteria,
-                                   "isolation": grader.ISOLATION[gid]})
+                                   "isolation": isolation})
 
 
 def _execute(out, manifest, task, task_digest, todo, execute):

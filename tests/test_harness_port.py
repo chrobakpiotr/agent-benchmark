@@ -46,7 +46,7 @@ def ledger(request, terminal, usage):
 
 class Pin(unittest.TestCase):
     def test_installed_contract_matches_pin(self):
-        self.assertEqual((agent_harness.__version__, contract.CONTRACT_VERSION), ("0.6.1", 1))
+        self.assertEqual((agent_harness.__version__, contract.CONTRACT_VERSION), ("0.7.0", 1))
         direct = json.loads(metadata.distribution("agent-harness").read_text("direct_url.json") or "{}")
         if "vcs_info" in direct:  # installed from git: must be exactly the pinned commit
             self.assertEqual(direct["vcs_info"]["commit_id"], PINNED_SHA)
@@ -61,6 +61,8 @@ class Pin(unittest.TestCase):
             text = path.read_text()
             for line in re.findall(r"^\s*(?:from|import) agent_harness.*$", text, re.M):
                 self.assertIn(line.strip(), {"from agent_harness import contract", "from agent_harness import contract, execution",
+                                             "from agent_harness import contract, execution, qualification",
+                                             "from agent_harness.qualification.reference import reviewed_reference",
                                              "from agent_harness.contract import ERROR_CODES, FIRED_LIMITS, LIMIT_EXCEEDED, OUTCOMES"}, path.name)
             self.assertNotRegex(text, r"contract\._", path.name)
 
