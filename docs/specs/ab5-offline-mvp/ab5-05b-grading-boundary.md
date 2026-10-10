@@ -33,10 +33,32 @@ Python stdlib only; needs `git` (for `git apply`) and Python >= 3.9.
 The limit values are defaults for stdlib Python tasks with about 150x headroom over the baseline; a task may
 declare tighter values in `task.json` later. A larger real task needs new measurements and values, not a silent raise.
 
-## Benchmark-side change this enables (not a target requirement)
+## Benchmark-side change this enables (not a target requirement): implemented, grader `patch-io` v1
 
-Today the verdict (exit code + `Ran N tests` on stderr) comes from the process that imports the candidate, so a
-candidate can forge it (print `Ran 4 tests`, exit 0 at import). A sandbox does not prevent that. With B2/B9, the
-grader runs the candidate on hidden inputs inside the sandbox, receives outputs through B9 and compares them with
-the expected values outside. Until that exists, PASS from `patch-unittest` is valid only for authored reference
-patches (the current `host_execution_allowed` rule).
+`patch-unittest` takes its verdict (exit code + `Ran N tests` on stderr) from the process that imports the
+candidate, so a candidate can forge it (print `Ran 4 tests`, exit 0 at import). A sandbox does not prevent that.
+
+`patch-io` v1 (`src/agent_benchmark/grader.py`, task `tasks/reference-002`) splits the hidden material: `hidden/`
+holds only case inputs, `expected/` the expected values, each pinned by its own tree digest. After the same
+pre-checks as `patch-unittest` (sealed digest, pinned bundle, vouched source, scope, `git apply`), `run_cases`
+starts a fresh process group with a grader-owned driver that imports the candidate, evaluates each case and writes
+the answers to one output file (at most 1 MiB, symlinks refused). The grader compares that file with the expected
+values outside the process: PASS needs every case present and correct and exactly `hidden_test_count` cases.
+Exit code is evidence only. `run_cases` is the step a qualified target will run as a contract launch, returning the
+file through `result.artifacts[]` (B9).
+
+Still the transparent diagnostic track on the host: expected values never enter the candidate's process or its
+grading directory, but they stay readable on the host by path (B2 needs the qualified target), and there are no
+CPU/memory/network limits. Host execution remains limited to vouched candidates (`host_execution_allowed`).
+
+| AC | Evidence (`tests/test_patch_io.py`) |
+|---|---|
+| forged test report (stderr + exit 0 at import) is FAIL | `test_forged_test_report_is_fail` |
+| a forged output file must hold the right values | `test_forged_output_file_needs_the_right_values` |
+| expected values absent from the candidate's process and grading directory | `test_expected_values_never_reach_the_candidate` |
+| symlinked or oversized (> 1 MiB) output refused | `test_symlinked_or_oversized_output_is_refused` |
+| known-good PASS; noop/wrong/hardcoded FAIL | `test_known_good_passes`, `test_noop_wrong_hardcoded_fail_on_behaviour` |
+| scope violations and hang (process group killed) | `test_scope_and_hang` |
+| tampered inputs or expected values INVALID | `test_tampered_bundle_is_invalid`, `test_bundle_matches_pinned_digests` |
+| no caller secrets in the candidate's process or run records | `test_candidate_runs_without_the_callers_secrets`, `PatchIOPipeline.test_fake_run_grades_reference_patches` |
+| end to end through the fake runner (`manifest-reference-002.json`) | `PatchIOPipeline.test_fake_run_grades_reference_patches` |

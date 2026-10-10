@@ -7,6 +7,10 @@ The grader identity digest is this file's bytes, so any change to grading logic 
   subprocess with a timeout and an empty environment. This executes candidate code on the host, so it is only
   allowed when the caller vouches for the candidate source (fake executor + reference patches). Model-generated
   patches need the isolated grading host of AB5-05b.
+- patch-io: same pre-checks and patch step; then only the case inputs enter the candidate's process, a driver writes
+  the candidate's answers to one bounded output file, and the verdict is computed here from that file against
+  expected values that never enter the candidate's process. Exit code and output of that process are evidence
+  only, so a candidate cannot forge a pass by printing or exiting early. Same host/vouching rule as patch-unittest.
 """
 import json
 import os
@@ -26,7 +30,25 @@ ISOLATION = {
     "sort-check": "none: in-process, data-only candidate, offline fake track (transparent diagnostic, no hidden tests)",
     "patch-unittest": ("host subprocess: temp workspace, empty env, timeout only; no CPU/memory/network limits; "
                        "hidden tests readable in the bundle (transparent diagnostic)"),
+    "patch-io": ("host subprocess: temp workspace, empty env, timeout only; no CPU/memory/network limits; only case "
+                 "inputs enter the candidate process, verdict computed outside it from a bounded output file; "
+                 "expected values stay readable on the host by path (transparent diagnostic)"),
 }
+OUTPUT_LIMIT = 1 << 20  # bytes of the candidate's output file (AB5-05b B9)
+
+# Runs inside the candidate's process: inputs in, answers out. It never sees expected values.
+DRIVER = """import importlib, json, sys
+spec = json.load(open(sys.argv[1]))
+mod = importlib.import_module(spec["module"])
+out = {}
+for case in spec["cases"]:
+    try:
+        out[case["id"]] = {"value": json.loads(json.dumps(getattr(mod, case["function"])(*case["args"])))}
+    except Exception as exc:
+        out[case["id"]] = {"raises": [k.__name__ for k in type(exc).__mro__]}
+with open(sys.argv[2], "w") as f:
+    json.dump(out, f)
+"""
 
 
 def identity(grader_id):
@@ -130,6 +152,8 @@ def _grade_patch(task, data, criteria, bundle_dir, host_execution_allowed, timeo
         if not applies:
             return "FAIL", criteria
 
+        if task["grader"]["id"] == "patch-io":
+            return _grade_io(b, bundle_dir, ws, tmp / "run", env, timeout or b["timeout_seconds"], criteria)
         shutil.copytree(bundle_dir / "hidden", hidden)  # outside the workspace, only after the patch is applied
         limit = timeout or b["timeout_seconds"]
         proc = subprocess.Popen([sys.executable, "-m", "unittest", "discover", "-s", str(hidden), "-t", str(hidden)],
@@ -150,4 +174,80 @@ def _grade_patch(task, data, criteria, bundle_dir, host_execution_allowed, timeo
                          "detail": {"expected": b["hidden_test_count"], "ran": count}})
         criteria.append({"criterion": "hidden_tests_pass", "passed": proc.returncode == 0,
                          "detail": {"exit_code": proc.returncode, "output_digest": digest(stderr.encode())}})
+    return ("PASS" if all(c["passed"] for c in criteria) else "FAIL"), criteria
+
+
+def run_cases(ws, cases, run_dir, env, limit):
+    """Run the patched workspace on the case inputs in a fresh process group; return (finished, exit_code, output).
+
+    Only `cases` (inputs) enter the process. `output` is the bytes of its single output file (at most
+    OUTPUT_LIMIT + 1; None if missing or a symlink). A qualified target will run this step as a contract launch and
+    return the file through result.artifacts[] (AB5-05b B9).
+    """
+    run_dir.mkdir()
+    (run_dir / "driver.py").write_text(DRIVER)
+    (run_dir / "cases.json").write_bytes(cases)
+    out = run_dir / "outputs.json"
+    proc = subprocess.Popen([sys.executable, str(run_dir / "driver.py"), str(run_dir / "cases.json"), str(out)],
+                            cwd=ws, env={**env, "PYTHONPATH": str(ws)}, stdin=subprocess.DEVNULL,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    try:
+        proc.wait(timeout=limit)
+        finished = True
+    except subprocess.TimeoutExpired:
+        finished = False
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)  # leftovers of the group must not touch the output after this point
+    except ProcessLookupError:
+        pass
+    proc.wait()
+    if not finished:
+        return False, None, None
+    try:
+        fd = os.open(out, os.O_RDONLY | os.O_NOFOLLOW)
+    except OSError:
+        return True, proc.returncode, None
+    with os.fdopen(fd, "rb") as f:
+        return True, proc.returncode, f.read(OUTPUT_LIMIT + 1)
+
+
+def _equal(a, b):
+    def num(v):
+        return isinstance(v, (int, float)) and not isinstance(v, bool)
+    return a == b if num(a) and num(b) else json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True)
+
+
+def _case_passes(got, want):
+    if not isinstance(got, dict):
+        return False
+    if "raises" in want:
+        return isinstance(got.get("raises"), list) and want["raises"] in got["raises"]
+    return "value" in got and _equal(got["value"], want["value"])
+
+
+def _grade_io(b, bundle_dir, ws, run_dir, env, limit, criteria):
+    expected = json.loads((bundle_dir / "expected" / "expected.json").read_bytes())  # never enters the process
+    finished, exit_code, output = run_cases(ws, (bundle_dir / "hidden" / "cases.json").read_bytes(), run_dir, env,
+                                            limit)
+    criteria.append({"criterion": "hidden_cases_finished_within_limit", "passed": finished,
+                     "detail": {"limit_seconds": limit, "exit_code": exit_code}})  # exit code is evidence only
+    if not finished:
+        return "FAIL", criteria
+    answers = None
+    if output is not None and len(output) <= OUTPUT_LIMIT:
+        try:
+            answers = json.loads(output)
+        except ValueError:
+            pass
+    valid = isinstance(answers, dict)
+    criteria.append({"criterion": "output_file_valid", "passed": valid,
+                     "detail": {"bytes": None if output is None else len(output), "limit": OUTPUT_LIMIT,
+                                "digest": None if output is None else digest(output)}})
+    if not valid:
+        return "FAIL", criteria
+    criteria.append({"criterion": "hidden_case_count_matches",
+                     "passed": set(answers) == set(expected) and len(expected) == b["hidden_test_count"],
+                     "detail": {"expected": b["hidden_test_count"], "returned": len(answers)}})
+    failed = sorted(cid for cid, want in expected.items() if not _case_passes(answers.get(cid), want))
+    criteria.append({"criterion": "hidden_cases_pass", "passed": not failed, "detail": {"failed": failed}})
     return ("PASS" if all(c["passed"] for c in criteria) else "FAIL"), criteria

@@ -1,0 +1,85 @@
+{
+  "schema_version": "agent-benchmark/manifest/v2",
+  "experiment_id": "reference-002-offline",
+  "task": {
+    "path": "../../tasks/reference-002/task.json",
+    "digest": "sha256:71af3a5c2e57b032bbfe9a5f7e1a6da23cc8e6ba2d64decb1a0942f79b7156d3"
+  },
+  "configs": [
+    {
+      "config_id": "cfg-a",
+      "model_requested": "fake-model-alpha",
+      "model_resolved": null,
+      "cli": null,
+      "cli_version": null,
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 60
+      },
+      "isolation_track": "fake-offline"
+    },
+    {
+      "config_id": "cfg-b",
+      "model_requested": "fake-model-beta",
+      "model_resolved": null,
+      "cli": null,
+      "cli_version": null,
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 60
+      },
+      "isolation_track": "fake-offline"
+    }
+  ],
+  "repetitions": 2,
+  "seed": 11,
+  "retry_policy": {
+    "max_attempts": 1
+  },
+  "exclusions": [],
+  "executor": {
+    "kind": "fake",
+    "script": [
+      {
+        "config_id": "cfg-a",
+        "repetition": 1,
+        "outcome": "completed",
+        "candidate": "good",
+        "usage": null,
+        "completion": "accepted"
+      },
+      {
+        "config_id": "cfg-a",
+        "repetition": 2,
+        "outcome": "completed",
+        "candidate": "hardcoded",
+        "usage": null,
+        "completion": "accepted"
+      },
+      {
+        "config_id": "cfg-b",
+        "repetition": 1,
+        "outcome": "completed",
+        "candidate": "wrong",
+        "usage": null,
+        "completion": "accepted"
+      },
+      {
+        "config_id": "cfg-b",
+        "repetition": 2,
+        "outcome": "completed",
+        "candidate": "test_deletion",
+        "usage": null,
+        "completion": "accepted"
+      }
+    ]
+  }
+}

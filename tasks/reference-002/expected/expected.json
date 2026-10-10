@@ -1,0 +1,6 @@
+{
+  "unsorted_odd": {"value": 5},
+  "unsorted_even": {"value": 2.5},
+  "single": {"value": 7},
+  "empty_raises": {"raises": "ValueError"}
+}

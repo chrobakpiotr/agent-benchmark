@@ -47,3 +47,5 @@ Model-generated patches must not be graded here until a qualified isolated gradi
 The verdict (exit code + `Ran N tests`) comes from the process that imports the candidate: an in-scope patch
 that prints `Ran 4 tests` and exits 0 at import gets PASS (verified 2026-10-06). PASS is therefore valid only for
 authored reference patches; the fix (verdict computed outside the candidate's process) is in `ab5-05b-grading-boundary.md`.
+`patch-io` v1 (task `reference-002`) implements it and supersedes `patch-unittest` for any untrusted candidate;
+`patch-unittest` and `reference-001` stay unchanged for existing records.

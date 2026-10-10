@@ -33,9 +33,11 @@ to a verified result, and an independent success rate. This file is a **map**. L
 - `src/agent_benchmark/schema.py` - manifest/task/event validation, digests.
 - `src/agent_benchmark/runner.py` - trial planning, fake executor port, append-only event writer.
 - `src/agent_benchmark/harness_port.py` - adapter over the agent-harness contract v1 and launch API (harness ScriptedBackend).
-- `src/agent_benchmark/grader.py` - independent graders (`sort-check`, `patch-unittest`).
+- `src/agent_benchmark/grader.py` - independent graders (`sort-check`, `patch-unittest`, `patch-io`: verdict
+  computed outside the candidate's process).
 - `src/agent_benchmark/pricing.py` - dated pricing snapshots and token cost.
-- `tasks/` - task bundles pinned by digest (`reference-001`: synthetic patch task).
+- `tasks/` - task bundles pinned by digest (`reference-001`: synthetic patch task; `reference-002`: same task for
+  `patch-io`, case inputs and expected values split).
 - `src/agent_benchmark/report.py` - deterministic report (Markdown/CSV/JSON) from recorded events only.
 - `src/agent_benchmark/cli.py` - `validate`, `run`, `report`, `resume`, `invalidate`.
 - `tests/` - stdlib `unittest`; `tests/fixtures/` - frozen manifests and task bundles.

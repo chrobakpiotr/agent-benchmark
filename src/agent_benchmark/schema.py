@@ -20,7 +20,7 @@ GRADES = ("PASS", "FAIL", "INVALID")
 QUALITY = ("complete", "partial", "unknown")
 FAKE_CANDIDATES = ("good", "wrong", "noop", "malformed")
 FAKE_TRACK = "fake-offline"
-KNOWN_GRADERS = {"sort-check": "1", "patch-unittest": "1"}
+KNOWN_GRADERS = {"sort-check": "1", "patch-unittest": "1", "patch-io": "1"}
 
 CONFIG_REQUIRED = ("config_id", "model_requested", "workflow", "tool_permissions", "isolation_track", "budget")
 CONFIG_NULLABLE = ("model_resolved", "cli", "cli_version", "prompt_digest", "reasoning", "sampling")
@@ -120,7 +120,9 @@ def tree_digest(root):
 
 TASK_COMMON = ("schema_version", "task_id", "version", "description", "environment", "visible_checks", "grader",
                "provenance", "license")
-TASK_SPECIFIC = {"sort-check": ("input",), "patch-unittest": ("bundle",)}
+TASK_SPECIFIC = {"sort-check": ("input",), "patch-unittest": ("bundle",), "patch-io": ("bundle",)}
+# patch-io keeps expected values in their own tree, never copied next to the candidate
+BUNDLE_TREES = {"patch-unittest": ("base", "hidden"), "patch-io": ("base", "hidden", "expected")}
 
 
 def validate_task(task):
@@ -141,9 +143,10 @@ def validate_task(task):
             _int(v, f"task.input[{i}]", -2**53)
     else:
         b = task["bundle"]
-        _keys(b, "task.bundle", ("base_digest", "hidden_digest", "scope", "hidden_test_count", "timeout_seconds"))
-        _str(b["base_digest"], "task.bundle.base_digest")
-        _str(b["hidden_digest"], "task.bundle.hidden_digest")
+        trees = BUNDLE_TREES[gid]
+        _keys(b, "task.bundle", (*(f"{t}_digest" for t in trees), "scope", "hidden_test_count", "timeout_seconds"))
+        for t in trees:
+            _str(b[f"{t}_digest"], f"task.bundle.{t}_digest")
         if not isinstance(b["scope"], list) or not b["scope"] or not all(isinstance(x, str) and x for x in b["scope"]):
             _fail("task.bundle.scope", "must be a non-empty list of relative paths")
         _int(b["hidden_test_count"], "task.bundle.hidden_test_count", 1)
@@ -159,9 +162,7 @@ def fake_candidate_kinds(task, bundle_dir):
 
 def verify_bundle(task, bundle_dir):
     """For patch tasks: base and hidden trees must match the digests pinned in task.json."""
-    if task["grader"]["id"] != "patch-unittest":
-        return
-    for part in ("base", "hidden"):
+    for part in BUNDLE_TREES.get(task["grader"]["id"], ()):
         actual = tree_digest(Path(bundle_dir) / part)
         if actual != task["bundle"][f"{part}_digest"]:
             _fail(f"task.bundle.{part}_digest", f"bundle {part}/ is {actual}, task pins {task['bundle'][part + '_digest']}")

@@ -1,0 +1,19 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "reference-002",
+  "version": "1",
+  "description": "Fix calc.median so it returns the median of any non-empty sequence (unsorted input, even length) and raises ValueError for an empty one. Change calc.py only.",
+  "environment": "Python >= 3.9 stdlib; base tree in base/, no repository history",
+  "visible_checks": ["python -m unittest discover -s tests (from the workspace root)"],
+  "grader": {"id": "patch-io", "version": "1"},
+  "bundle": {
+    "base_digest": "sha256:1cfde8cece917887c758e5f8026e14c0b151f3a37ca6a69af9f0a23cdc9f07bb",
+    "hidden_digest": "sha256:b890d468f1fa39c4f6384d1243642c1c1799d8e30e6987c6d23851c40c4d750a",
+    "expected_digest": "sha256:7c8a80cbfd6b355316f39c5c91405494cf562a58144ac81a4e0410c1e3004dc4",
+    "scope": ["calc.py"],
+    "hidden_test_count": 4,
+    "timeout_seconds": 30
+  },
+  "provenance": "synthetic grading reference authored for agent-benchmark AB5-05b, 2026-10-10; same task as reference-001, hidden checks split into case inputs (hidden/) and expected values (expected/) for the patch-io grader; not a real-world task",
+  "license": "same as repository"
+}

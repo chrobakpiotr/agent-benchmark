@@ -1,0 +1,9 @@
+{
+  "module": "calc",
+  "cases": [
+    {"id": "unsorted_odd", "function": "median", "args": [[9, 1, 5]]},
+    {"id": "unsorted_even", "function": "median", "args": [[4, 1, 3, 2]]},
+    {"id": "single", "function": "median", "args": [[7]]},
+    {"id": "empty_raises", "function": "median", "args": [[]]}
+  ]
+}
