@@ -10,7 +10,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from .pricing import fmt, price_trial, validate_pricing
-from .schema import (FIRED_LIMITS, GRADES, OUTCOMES, UNITS, ValidationError, _json, canonical, digest,
+from .schema import (CONTROLLED_TRACK, FIRED_LIMITS, GRADES, OUTCOMES, UNITS, ValidationError, _json, canonical, digest,
                      validate_event, validate_manifest, validate_task)
 
 FAKE_BANNER = ("FAKE EXECUTION (offline, scripted outcomes). Not a measurement of any model, CLI or backend; "
@@ -84,6 +84,8 @@ def load_pricing(run_dir):
 
 def _cost(c, rs, passes, pricing):
     """Cost of all started trials of one config. Totals only when every trial is fully priced."""
+    if c["isolation_track"] == CONTROLLED_TRACK:  # subscription CLIs: quota, never API list prices (AB5-07 rule 5)
+        return {"status": "subscription, not priced", "total": None, "per_pass": None}
     if pricing is None:
         return {"status": "no pricing snapshot", "total": None, "per_pass": None}
     priced_by = "model_resolved" if c["model_resolved"] else "model_requested"
