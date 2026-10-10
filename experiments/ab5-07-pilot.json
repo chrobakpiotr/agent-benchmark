@@ -39,7 +39,7 @@
       "isolation_track": "controlled-host"
     }
   ],
-  "repetitions": 5,
+  "repetitions": 4,
   "seed": 7,
   "retry_policy": {
     "max_attempts": 1

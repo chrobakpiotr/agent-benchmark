@@ -20,7 +20,7 @@ no API keys, no usage credits, no credit purchases.
 - Not used: Gemini CLI personal login (ended 2026-06-18), GitHub Models (retired 2026-07-30), Groq/Cloudflare
   free tiers (token caps below one trial), local models (Intel CPU-only, 2-5 tokens/s, hours per trial).
 
-## Configurations (task `real-001`, 5 repetitions each, sequential)
+## Configurations (task `real-001`, sequential; calibration 1 + pilot 4 repetitions each, separate runs)
 
 | config | CLI | model | flags | isolation_track |
 |---|---|---|---|---|
