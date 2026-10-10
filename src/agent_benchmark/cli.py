@@ -1,8 +1,8 @@
-"""CLI: validate | run | report. Offline only; no model or network calls."""
+"""CLI: validate | run | report | resume | invalidate | preflight. Offline only; no model or network calls."""
 import argparse
 import sys
 
-from . import __version__
+from . import __version__, zero_spend
 from .report import write_report
 from .runner import invalidate, plan_trials, resume, run
 from .schema import ValidationError, load_manifest
@@ -28,7 +28,14 @@ def main(argv=None):
     inv.add_argument("run_dir")
     inv.add_argument("trial_id")
     inv.add_argument("--reason", required=True)
+    sub.add_parser("preflight", help="check zero-spend preconditions: no API-billing env vars, subscription logins")
     args = p.parse_args(argv)
+    if args.cmd == "preflight":
+        found = zero_spend.problems()
+        for line in found:
+            print(f"FAIL {line}", file=sys.stderr)
+        print("OK zero-spend preconditions hold" if not found else f"{len(found)} problem(s)")
+        return 1 if found else 0
     try:
         if args.cmd == "validate":
             m = load_manifest(args.manifest)[0]
