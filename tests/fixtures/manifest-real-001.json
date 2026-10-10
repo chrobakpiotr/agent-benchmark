@@ -1,0 +1,85 @@
+{
+  "schema_version": "agent-benchmark/manifest/v2",
+  "experiment_id": "real-001-offline",
+  "task": {
+    "path": "../../tasks/real-001/task.json",
+    "digest": "sha256:d35e3f16221432f501fdf47cea8a1c4b13ccd83be437f50d81356621e4bbb003"
+  },
+  "configs": [
+    {
+      "config_id": "cfg-a",
+      "model_requested": "fake-model-alpha",
+      "model_resolved": null,
+      "cli": null,
+      "cli_version": null,
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 60
+      },
+      "isolation_track": "fake-offline"
+    },
+    {
+      "config_id": "cfg-b",
+      "model_requested": "fake-model-beta",
+      "model_resolved": null,
+      "cli": null,
+      "cli_version": null,
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 60
+      },
+      "isolation_track": "fake-offline"
+    }
+  ],
+  "repetitions": 2,
+  "seed": 11,
+  "retry_policy": {
+    "max_attempts": 1
+  },
+  "exclusions": [],
+  "executor": {
+    "kind": "fake",
+    "script": [
+      {
+        "config_id": "cfg-a",
+        "repetition": 1,
+        "outcome": "completed",
+        "candidate": "good",
+        "usage": null,
+        "completion": "accepted"
+      },
+      {
+        "config_id": "cfg-a",
+        "repetition": 2,
+        "outcome": "completed",
+        "candidate": "wrong",
+        "usage": null,
+        "completion": "accepted"
+      },
+      {
+        "config_id": "cfg-b",
+        "repetition": 1,
+        "outcome": "completed",
+        "candidate": "overstrict",
+        "usage": null,
+        "completion": "accepted"
+      },
+      {
+        "config_id": "cfg-b",
+        "repetition": 2,
+        "outcome": "completed",
+        "candidate": "noop",
+        "usage": null,
+        "completion": "accepted"
+      }
+    ]
+  }
+}

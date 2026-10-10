@@ -1,0 +1,27 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-001",
+  "version": "1",
+  "description": "agent-harness contract v1: validate_result accepts a result with usage_completeness \"complete\" even when a summary event has null units or an attempt has no summary event. Under \"complete\", every attempt must have exactly one summary event and every unit in it must be an integer; otherwise raise ContractError. \"partial\" and \"unknown\" keep their current rules. Keep the golden contract fixtures valid. Change src/agent_harness/ only.",
+  "environment": "Python >= 3.9 stdlib; base tree = agent-harness af994d7 without .github, no repository history",
+  "visible_checks": [
+    "PYTHONPATH=src python -m unittest tests.test_contract tests.test_boundaries (from the workspace root)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:c7a400f047cd518957c096743dc59a94567e1e8f6eb629fea4d7f375b748d467",
+    "hidden_digest": "sha256:cf424d26b62b6860382b48447ea573ad2660f1f2706f7090ea12f5468a033a2b",
+    "expected_digest": "sha256:5c756bc77d7676e39cf60a55842661b8f79a10a51bc091ac33a4747ead19db68",
+    "scope": [
+      "src/agent_harness/contract.py",
+      "src/agent_harness/contract_fixtures/success.json"
+    ],
+    "hidden_test_count": 6,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: agent-harness commit 2ada5ffe25c5b95e42842577b494cc5dd69cff8e (fix(contract): require integer units for complete usage, 2026-10-05), base = its parent af994d7; reference/good.patch is that commit's src diff; hidden cases authored for agent-benchmark from the commit's test change (2026-10-10). Public repository, created after typical model training cutoffs but readable online: contamination possible for models with browsing or later training data",
+  "license": "MIT (agent-harness, Copyright (c) 2026 PC; base/LICENSE)"
+}

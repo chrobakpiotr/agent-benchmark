@@ -36,7 +36,7 @@ to a verified result, and an independent success rate. This file is a **map**. L
 - `src/agent_benchmark/grader.py` - independent graders (`sort-check`, `patch-unittest`, `patch-io`: verdict
   computed outside the candidate's process).
 - `src/agent_benchmark/pricing.py` - dated pricing snapshots and token cost.
-- `tasks/` - task bundles pinned by digest (`reference-001`: synthetic patch task; `reference-002`: same task for
+- `tasks/` - task bundles pinned by digest (`reference-001`: synthetic patch task; `reference-002`: same task for; `real-001`: real agent-harness fix `2ada5ff`, graded by `patch-io`.
   `patch-io`, case inputs and expected values split).
 - `src/agent_benchmark/report.py` - deterministic report (Markdown/CSV/JSON) from recorded events only.
 - `src/agent_benchmark/cli.py` - `validate`, `run`, `report`, `resume`, `invalidate`.
