@@ -1,0 +1,51 @@
+{
+  "schema_version": "agent-benchmark/manifest/v2",
+  "experiment_id": "ab5-07-calibration",
+  "task": {
+    "path": "../tasks/real-001/task.json",
+    "digest": "sha256:d35e3f16221432f501fdf47cea8a1c4b13ccd83be437f50d81356621e4bbb003"
+  },
+  "configs": [
+    {
+      "config_id": "claude-sonnet-pro",
+      "model_requested": "sonnet",
+      "model_resolved": null,
+      "cli": "claude",
+      "cli_version": null,
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 1800
+      },
+      "isolation_track": "controlled-host"
+    },
+    {
+      "config_id": "codex-sol-plus",
+      "model_requested": "gpt-6.1-sol",
+      "model_resolved": null,
+      "cli": "codex",
+      "cli_version": null,
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 1800
+      },
+      "isolation_track": "controlled-host"
+    }
+  ],
+  "repetitions": 1,
+  "seed": 7,
+  "retry_policy": {
+    "max_attempts": 1
+  },
+  "exclusions": [],
+  "executor": {
+    "kind": "agent-cli"
+  }
+}
