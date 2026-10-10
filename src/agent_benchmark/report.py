@@ -295,6 +295,8 @@ def _money(v, cost):
 def _cost_cell(cost):
     if cost["total"] is not None:
         return f"{_money(cost['total'], cost)} ({cost['status']})"
+    if cost["status"] == "subscription, not priced":
+        return cost["status"]
     return "unknown (incomplete)" if cost["status"] == "estimate" else f"unknown ({cost['status']})"
 
 
