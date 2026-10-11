@@ -113,6 +113,20 @@ class RealTask2(unittest.TestCase):
         self.assertEqual(grades["cfg-a"], {"PASS": 1, "FAIL": 1, "INVALID": 0})  # good, request_only
         self.assertEqual(grades["cfg-b"], {"PASS": 0, "FAIL": 2, "INVALID": 0})  # applied_only, noop
 
+    def test_bug_report_variant_shares_the_bundle_and_is_the_task_of_its_run(self):
+        variant = BUNDLE_2 / "task-bug-report.json"
+        task = validate_task(json.loads(variant.read_text()))
+        self.assertEqual((task["task_id"], task["bundle"]), ("real-002-bug", TASK_2["bundle"]))
+        self.assertNotIn("float", task["description"])  # only the bool symptom is reported; floats test the fix
+        with tempfile.TemporaryDirectory() as d:
+            m = json.loads((ROOT / "tests" / "fixtures" / "manifest-real-002.json").read_text())
+            m["task"] = {"path": str(variant), "digest": digest(variant.read_bytes())}
+            Path(d, "m.json").write_text(json.dumps(m))
+            out = runner.run(Path(d, "m.json"), Path(d) / "run")
+            s = write_report(out)
+            self.assertEqual(json.loads((out / "task" / "task.json").read_text())["task_id"], "real-002-bug")
+        self.assertEqual(s["configs"][0]["grades"]["PASS"] + s["configs"][1]["grades"]["PASS"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

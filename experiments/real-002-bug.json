@@ -1,0 +1,51 @@
+{
+  "schema_version": "agent-benchmark/manifest/v2",
+  "experiment_id": "ab5-07-real-002-bug",
+  "task": {
+    "path": "../tasks/real-002/task-bug-report.json",
+    "digest": "sha256:6a4544964cc0986d1d2ea4595c33cf70d689a4607e4d94947159afc5e325ca92"
+  },
+  "configs": [
+    {
+      "config_id": "claude-sonnet-pro",
+      "model_requested": "sonnet",
+      "model_resolved": null,
+      "cli": "claude",
+      "cli_version": null,
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 1800
+      },
+      "isolation_track": "controlled-host"
+    },
+    {
+      "config_id": "codex-sol-plus",
+      "model_requested": "gpt-6.1-sol",
+      "model_resolved": null,
+      "cli": "codex",
+      "cli_version": null,
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 1800
+      },
+      "isolation_track": "controlled-host"
+    }
+  ],
+  "repetitions": 4,
+  "seed": 7,
+  "retry_policy": {
+    "max_attempts": 1
+  },
+  "exclusions": [],
+  "executor": {
+    "kind": "agent-cli"
+  }
+}

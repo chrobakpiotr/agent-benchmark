@@ -178,6 +178,7 @@ def run(manifest_path, out_dir, execute=None):
     (out / "manifest.json").write_bytes(manifest_bytes)
     task_dir = Path(manifest_path).parent / manifest["task"]["path"]
     shutil.copytree(task_dir.parent, out / "task", ignore=shutil.ignore_patterns("__pycache__"))
+    (out / "task" / "task.json").write_bytes(task_bytes)  # the bound task file, also when it is a variant of task.json
     (out / "candidates").mkdir()
     plan = plan_trials(manifest)
     run_id = str(uuid.uuid4())

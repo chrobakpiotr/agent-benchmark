@@ -1,0 +1,26 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-002-bug",
+  "version": "1",
+  "description": "Two bug reports from consumers of agent-harness contract v2: (a) a version 2 launch request asking for qualified isolation passed validate_request although it says nothing about resource limits; (b) a result whose limits.applied says \"cpus\": true passed validate_result as if it matched the requested \"cpus\": 1. Find the underlying problems and fix them. Change src/agent_harness/contract.py only.",
+  "environment": "Python >= 3.13 stdlib; base tree = agent-harness f2eeda2 without .github, no repository history",
+  "visible_checks": [
+    "PYTHONPATH=src python -m unittest tests.test_contract tests.test_contract_v2 tests.test_boundaries (from the workspace root)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:8a550ba5c905c3f3cdbde7f2d541571c3a0c6b01e58263eab130f1d85344525e",
+    "hidden_digest": "sha256:ea13ec03b0071aef491588e843c3bfe9d62c98f7ccad486476441a6e28c81a17",
+    "expected_digest": "sha256:de5b0e486dd9d48923cc568a9799728fd6c942441476d553b7cbecb3668fa040",
+    "scope": [
+      "src/agent_harness/contract.py"
+    ],
+    "hidden_test_count": 9,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: agent-harness commit b29dfdf8977e6f5bce2011a502016ffffcc6744b (fix(contract): exact applied limits, explicit limits for qualified requests, backend targets, 2026-10-07), base = its parent f2eeda2; reference/good.patch is that commit's contract.py diff (its execution.py backend-target change is out of scope); hidden cases authored for agent-benchmark from the commit's tests (2026-10-11). Public repository: contamination possible for models with browsing or later training data; bug-report variant: description states symptoms only (AB5-07 A2, 2026-10-11)",
+  "license": "MIT (agent-harness, Copyright (c) 2026 PC; base/LICENSE)"
+}

@@ -55,3 +55,13 @@ extra key and a different value rejected. The base fails 4 of them. Reference pa
 | end to end through the fake runner | `test_fake_run_grades_reference_patches` |
 
 Agent run: `experiments/real-002.json` (same configs as the AB5-07 pilot, 4 repetitions each).
+
+# Bug-report variants (`task-bug-report.json`)
+
+Hypothesis from the AB5-07 runs (16/16 PASS on `real-001`/`real-002`): the task descriptions state the required
+rules, so agents implement a specification instead of diagnosing a bug. Each real task now has a second task file
+next to `task.json`, with the same bundle, hidden cases and grader, whose description states symptoms only:
+`real-001-bug` (null cache units accepted as complete; the missing-summary case is not mentioned) and `real-002-bug`
+(qualified request without limits accepted; `cpus: true` accepted; the float cases are not mentioned). The runner
+stores the bound task file as the run's `task.json`. Agent runs: `experiments/real-001-bug.json`,
+`experiments/real-002-bug.json`. Evidence: `RealTask2.test_bug_report_variant_shares_the_bundle_and_is_the_task_of_its_run`.
