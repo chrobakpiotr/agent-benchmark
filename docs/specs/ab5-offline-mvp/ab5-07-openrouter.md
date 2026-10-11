@@ -48,3 +48,14 @@ Status: requirements; blocked on a harness backend for a third agent CLI. Budget
 - Approve installing OpenCode on this host (`npm i -g opencode-ai` or the harness-chosen method).
 - Create an OpenRouter API key with credit limit 0 and buy no credits; it is passed only as an environment variable at run time,
   never written to the repository or logs.
+
+## Verified on this host (2026-10-11)
+
+- OpenCode 1.19.0 installed in `~/.local/bin/opencode` (`npm i -g --prefix ~/.local opencode-ai@1.19.0`; `/usr/local`
+  is not writable and sudo was not used; the package's install scripts were not run). `opencode run` offers
+  `--format json` and `-m provider/model`.
+- The user's key lives in `~/.config/agent-benchmark/openrouter.key` (mode 600, directory 700), never in the repository
+  or logs. `GET /api/v1/key`: `limit: 0`, `limit_remaining: 0`, `usage: 0`, `is_free_tier: true`, free-model daily
+  requests 50.
+- A zero-limit key can call `:free` models: one chat completion to `cohere/north-mini-code:free` returned
+  `cost: 0` and `upstream_inference_cost: 0`; account `usage` stayed 0.
