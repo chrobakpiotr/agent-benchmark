@@ -13,7 +13,7 @@ from agent_harness import execution  # noqa: E402
 
 from agent_benchmark import harness_port, runner  # noqa: E402
 from agent_benchmark.pricing import price_scope, price_trial, validate_pricing  # noqa: E402
-from agent_benchmark.report import write_report  # noqa: E402
+from agent_benchmark.report import _processed_input, write_report  # noqa: E402
 from agent_benchmark.schema import ValidationError, canonical  # noqa: E402
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -50,6 +50,12 @@ def manifest_copy(root, **changes):
 
 
 class PriceScope(unittest.TestCase):
+    def test_processed_input_is_comparable_across_cache_semantics(self):
+        self.assertEqual(_processed_input({"units": units(10, 5, 200, 30), "cache_semantics": "separate"}), 240)
+        self.assertEqual(_processed_input({"units": units(240, 5, 200, 0), "cache_semantics": "included_in_input"}), 240)
+        self.assertIsNone(_processed_input({"units": units(10, 5, 200, 30), "cache_semantics": "unknown"}))
+        self.assertIsNone(_processed_input({"units": units(10, 5, None, 30), "cache_semantics": "separate"}))
+
     def test_cache_separate(self):
         # 1000*3 + 200*15 + 400*0.3 + 0*3.75 = 6120 per million
         self.assertEqual(price_scope(units(1000, 200, 400, 0), "separate", ALPHA), (Decimal("0.00612"), True))

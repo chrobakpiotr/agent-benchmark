@@ -82,6 +82,17 @@ def load_pricing(run_dir):
     return validate_pricing(_json(data, str(path))), digest(data)
 
 
+def _processed_input(scope):
+    """Input tokens the model processed, comparable across providers: cache reads/writes are added when reported
+    separately, already inside `input_tokens` when `included_in_input`; unknown semantics or units -> None."""
+    u, sem = scope["units"], scope["cache_semantics"]
+    if sem == "included_in_input":
+        return u["input_tokens"]
+    if sem == "separate" and None not in (u["input_tokens"], u["cache_read_tokens"], u["cache_write_tokens"]):
+        return u["input_tokens"] + u["cache_read_tokens"] + u["cache_write_tokens"]
+    return None
+
+
 def _cost(c, rs, passes, pricing):
     """Cost of all started trials of one config. Totals only when every trial is fully priced."""
     if c["isolation_track"] == CONTROLLED_TRACK:  # subscription CLIs: quota, never API list prices (AB5-07 rule 5)
@@ -151,7 +162,8 @@ def reduce_events(events):
                          "interrupted": True, "terminal_source": None, "attempt_ids": [],
                          "completion": None, "error_code": None, "drain": None, "isolation_level": None,
                          "candidate_digest": None, "limit_fired": None, "target_id": None, "original_grade": None, "grade": None, "corrections": [],
-                         "duration_ms": None, "usage": None, "usage_scopes": [], "measurement_quality": "unknown"}
+                         "duration_ms": None, "usage": None, "usage_scopes": [], "processed_input_tokens": None,
+                         "measurement_quality": "unknown"}
         elif t in ("trial_finished", "usage", "grade", "correction") and r is None:
             conflict("orphan", e, f"{t} for a trial that was never started; ignored")
         elif t == "trial_finished":
@@ -211,6 +223,8 @@ def reduce_events(events):
             complete = all(x["complete"] for x in scopes) and not missing_attempt
             r["usage"] = sum_units([x["units"] for x in scopes])
             r["usage_scopes"] = scopes
+            per_scope = [_processed_input(x) for x in scopes]
+            r["processed_input_tokens"] = None if None in per_scope else sum(per_scope)
             r["measurement_quality"] = "complete" if complete else "partial"
     return {"trials": list(rows.values()), "conflicts": conflicts}
 
@@ -260,6 +274,8 @@ def summarize(manifest, task, events, inputs, pricing=None, pricing_digest=None)
                 "coverage": {q: sum(r["measurement_quality"] == q for r in rs) for q in ("complete", "partial", "unknown")},
                 "known_subtotal": {f: sum(u[f] for u in usage_known if u[f] is not None) for f in UNITS},
                 "known_subtotal_is_full_usage": n > 0 and all(r["measurement_quality"] == "complete" for r in rs),
+                "processed_input_tokens": sum(r.get("processed_input_tokens") or 0 for r in rs),
+                "processed_input_known_trials": sum(r.get("processed_input_tokens") is not None for r in rs),
             },
             "cost": _cost(c, rs, passes, pricing),
         })
@@ -316,13 +332,12 @@ def render_markdown(s):
            "## Per configuration", "",
            f"| config | track | started | {'/'.join(OUTCOMES)} | PASS/FAIL/INVALID/ungraded "
            "| success (Wilson 95%) | completion accepted but not PASS | PASS duration ms median [min-max] "
-           "| usage complete/partial/unknown | known tokens in/out | interrupted/reconciled/replacements/corrected "
+           "| usage complete/partial/unknown | tokens processed in/out (trials known) | interrupted/reconciled/replacements/corrected "
            "| cost |",
            "|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for c in s["configs"]:
         o, g, sr, d, u = c["outcomes"], c["grades"], c["operational_success"], c["pass_duration_ms"], c["usage"]
         ci = "n/a" if sr["wilson95"] is None else f"[{sr['wilson95'][0]}, {sr['wilson95'][1]}]"
-        sub = "known subtotal" if not u["known_subtotal_is_full_usage"] else "full"
         out.append(
             f"| `{c['config_id']}` | {c['isolation_track']} | {c['started']} "
             f"| {'/'.join(str(o[k]) for k in OUTCOMES)} "
@@ -330,7 +345,8 @@ def render_markdown(s):
             f"| {sr['pass']}/{sr['denominator']} {ci} | {c['completion_accepted_not_pass']} "
             f"| {_fmt(d['median'])} [{_fmt(d['min'])}-{_fmt(d['max'])}] "
             f"| {u['coverage']['complete']}/{u['coverage']['partial']}/{u['coverage']['unknown']} "
-            f"| {u['known_subtotal']['input_tokens']}/{u['known_subtotal']['output_tokens']} ({sub}) "
+            f"| {u['processed_input_tokens']}/{u['known_subtotal']['output_tokens']} "
+            f"({u['processed_input_known_trials']}/{c['started']}) "
             f"| {c['interrupted']}/{c['reconciled_unknown']}/{c['replacements']}/{c['corrected']} "
             f"| {_cost_cell(c['cost'])} |")
     if s["integrity"]["conflicts"]:

@@ -85,6 +85,7 @@ class AgentCliRun(unittest.TestCase):
         self.assertNotIn(".git/", patch)
         self.assertFalse(s["fake_execution"])
         self.assertEqual(s["configs"][0]["cost"]["status"], "subscription, not priced")
+        self.assertEqual(s["configs"][0]["usage"]["processed_input_tokens"], 100)  # cache inside input
         self.assertIn("graded only on the qualified Docker target", s["banner"])
         evidence = out / "evidence" / row["request_id"]
         self.assertEqual(json.loads((evidence / "backend-notes.json").read_text()),
