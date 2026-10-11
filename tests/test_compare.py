@@ -1,4 +1,6 @@
 """AB5-08: comparison of two recorded runs (comparability first, correctness before cost). Hand-computed oracles."""
+import contextlib
+import io
 import json
 import shutil
 import sys
@@ -71,9 +73,11 @@ class Compare(unittest.TestCase):
 
     def test_cli_prints_markdown_and_rejects_unreadable_runs(self):
         a, b = self.run_offline("a"), self.run_offline("b")
-        self.assertEqual(cli.main(["compare", str(a), str(b), "--out", str(self.root / "cmp.md")]), 0)
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(cli.main(["compare", str(a), str(b), "--out", str(self.root / "cmp.md")]), 0)
         self.assertIn("| `cfg-a` | yes | 2/3 / 2/3 |", (self.root / "cmp.md").read_text())
-        self.assertEqual(cli.main(["compare", str(a), str(self.root / "missing")]), 2)
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(cli.main(["compare", str(a), str(self.root / "missing")]), 2)
 
 
 if __name__ == "__main__":
