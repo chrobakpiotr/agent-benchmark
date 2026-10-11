@@ -72,3 +72,17 @@ to be "fully priceable" and the golden fixtures to stay valid, while every hidde
 defensible readings. Its 8 grades are invalidated with that reason in `~/agent-benchmark-runs/real-001-bug-2026-10-11`.
 v2 has its own bundle (`tasks/real-001-bug/`) whose cases use `cache_semantics: "separate"` and a description naming
 that case; evidence `RealTask1Bug.test_bundle_and_reference_patches`.
+
+# A3 design (next): `real-003` from agent-harness `b8e1e90`
+
+Pattern proven by `real-001-bug` v2: a symptom-only report plus hidden cases where part of the fix must be inferred.
+Source: `b8e1e90` "fix(contract): match the qualification job id as a whole token" (2026-10-06): evidence for job
+`attempt-1` must not be accepted because it names `attempt-10`. Report: "a qualification for job X passed with
+evidence written by job X0". Inferred part (hidden, not in the report): prefixes (`pre-X`), path/colon/dot/@/+
+boundaries, and legitimate occurrences (`X` followed by a quote, newline, space or comma) that must still pass.
+`verify_qualification_evidence(doc, evidence_root)` reads files, so the base gets task-owned evidence fixtures
+outside the patch scope (scope = `src/agent_harness/contract.py`), each case passing an absolute path under
+`/workspace`. Limit: candidate code runs in the same container and could rewrite those fixtures at import; the
+verdict still needs the expected outcomes, which never enter the container. Acceptance before any agent run: the
+reference patches (real fix, no-op, substring-only fix, over-strict exact-line match) must each fail or pass as
+designed, including one reference patch per plausible reading of the report.
