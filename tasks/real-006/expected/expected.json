@@ -1,0 +1,29 @@
+{
+ "float_reported": {
+  "raises": "InvalidVersion"
+ },
+ "int": {
+  "raises": "InvalidVersion"
+ },
+ "none": {
+  "raises": "InvalidVersion"
+ },
+ "list_of_str": {
+  "raises": "InvalidVersion"
+ },
+ "list_two_parts": {
+  "raises": "InvalidVersion"
+ },
+ "dict": {
+  "raises": "InvalidVersion"
+ },
+ "bad_string_unchanged": {
+  "raises": "InvalidVersion"
+ },
+ "canonical_simple": {
+  "value": "1"
+ },
+ "canonical_complex": {
+  "value": "2!1.post0.dev1"
+ }
+}

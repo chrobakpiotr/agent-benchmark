@@ -135,3 +135,13 @@ genuine cases pass under all of them.
   Python runs entered the sealed diff (the harness diff honours the workspace's ignore rules) and failed the scope
   check; 3 Claude grades of the v2 run are invalidated for that reason. The agent-harness bases already had a
   `.gitignore`. Rule added: every base tree must ship the project's ignore rules for build artefacts.
+
+# `real-006` from pypa/packaging `d3e7f5d`
+
+Commit `d3e7f5d` "fix(version): reject non-string versions consistently" (2026-07-08); base = parent `9a11fba` with
+`.gitignore`. The report names a float (`Version(2.5)` raises a bare TypeError). At the base, numbers, `None` and
+dicts fail with TypeError but lists take another path and fail with AttributeError, so a fix that only catches
+TypeError misses them (inferred, not stated). Cases go through `src.packaging.utils` (`Version`,
+`canonicalize_version` as a string-valued guard); arguments are JSON. Reference outcomes: `good` PASS; `noop` fails 6;
+`float_only` fails 5; `catch_typeerror` fails only the two list cases; `coerce_to_str` fails float and int. Built by
+`build_task.py`. Calibration run first (`experiments/real-006-calibration.json`), then `experiments/real-006.json`.

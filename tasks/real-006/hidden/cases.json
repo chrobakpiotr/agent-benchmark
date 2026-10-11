@@ -1,0 +1,75 @@
+{
+ "module": "src.packaging.utils",
+ "cases": [
+  {
+   "id": "float_reported",
+   "function": "Version",
+   "args": [
+    1.0
+   ]
+  },
+  {
+   "id": "int",
+   "function": "Version",
+   "args": [
+    7
+   ]
+  },
+  {
+   "id": "none",
+   "function": "Version",
+   "args": [
+    null
+   ]
+  },
+  {
+   "id": "list_of_str",
+   "function": "Version",
+   "args": [
+    [
+     "1"
+    ]
+   ]
+  },
+  {
+   "id": "list_two_parts",
+   "function": "Version",
+   "args": [
+    [
+     "1",
+     "2"
+    ]
+   ]
+  },
+  {
+   "id": "dict",
+   "function": "Version",
+   "args": [
+    {
+     "major": 1
+    }
+   ]
+  },
+  {
+   "id": "bad_string_unchanged",
+   "function": "Version",
+   "args": [
+    "not a version"
+   ]
+  },
+  {
+   "id": "canonical_simple",
+   "function": "canonicalize_version",
+   "args": [
+    "1.0.0"
+   ]
+  },
+  {
+   "id": "canonical_complex",
+   "function": "canonicalize_version",
+   "args": [
+    "2!1.0.post0.dev1"
+   ]
+  }
+ ]
+}

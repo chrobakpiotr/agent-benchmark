@@ -1,0 +1,26 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-006",
+  "version": "1",
+  "description": "Bug report from a user of the packaging library: a float read by mistake from a config file was passed to packaging.version.Version (Version(2.5)), and it raised a bare TypeError instead of packaging's InvalidVersion, so code that catches InvalidVersion crashed. Invalid input must always raise InvalidVersion. Find the problem and fix it. Change src/packaging/version.py only.",
+  "environment": "Python >= 3.13 stdlib; base tree = pypa/packaging 9a11fba (src, tests, licenses, pyproject, README, .gitignore), no repository history; the project's own test suite needs pytest, which is not installed",
+  "visible_checks": [
+    "python -c \"from src.packaging.version import Version; print(Version('1.0rc1'))\" (from the workspace root; pytest is not available)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:1a38991f5e3b686b377f6cafd6ac61a43e45566c6d4a751c1b774c67f3a63c7d",
+    "hidden_digest": "sha256:683816d08efe22f1e72e40e721e0e766fd8c9408ee430e87326994d1d57b78e1",
+    "expected_digest": "sha256:4ec1dec91d038f5111f7ba892e7837d614211bc4afd2ba6208f782ca24daa102",
+    "scope": [
+      "src/packaging/version.py"
+    ],
+    "hidden_test_count": 9,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: pypa/packaging commit d3e7f5d (fix(version): reject non-string versions consistently, #1319, 2026-07-08), base = its parent 9a11fba; reference/good.patch is that commit's src diff; symptom-only description naming a float; hidden cases authored for agent-benchmark (2026-10-11): other non-string inputs, one of which (a list) fails through a different exception at the base, plus string guards; other reference patches built by build_task.py. Public repository: contamination possible",
+  "license": "Apache-2.0 OR BSD-2-Clause (pypa/packaging; base/LICENSE, base/LICENSE.APACHE, base/LICENSE.BSD)"
+}

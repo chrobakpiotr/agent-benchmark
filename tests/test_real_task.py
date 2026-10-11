@@ -220,5 +220,29 @@ class RealTask5(unittest.TestCase):
                            env={"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
         self.assertEqual((p.returncode, p.stdout.strip()), (0, "demo-lib>=1"), p.stderr[-300:])
 
+
+class RealTask6(unittest.TestCase):
+    """real-006: pypa/packaging fix d3e7f5d; the report names a float, a list fails through another exception path."""
+
+    def test_bundle_reference_patches_and_visible_check(self):
+        bundle = ROOT / "tasks" / "real-006"
+        task = validate_task(json.loads((bundle / "task.json").read_text()))
+        verify_bundle(task, bundle)
+        non_float = ["dict", "int", "list_of_str", "list_two_parts", "none"]
+        want = {"good": ("PASS", []), "noop": ("FAIL", sorted(non_float + ["float_reported"])),
+                "float_only": ("FAIL", non_float), "catch_typeerror": ("FAIL", ["list_of_str", "list_two_parts"]),
+                "coerce_to_str": ("FAIL", ["float_reported", "int"])}
+        for name, (result, failed) in want.items():
+            data = (bundle / "reference" / f"{name}.patch").read_bytes()
+            with tempfile.TemporaryDirectory() as d:
+                (Path(d) / digest(data).split(":")[1]).write_bytes(data)
+                r, c = grader.grade(task, d, digest(data), bundle_dir=bundle, host_execution_allowed=True)
+            got = next(x["detail"]["failed"] for x in c if x["criterion"] == "hidden_cases_pass")
+            self.assertEqual((r, got), (result, failed), name)
+        p = subprocess.run([sys.executable, "-c", "from src.packaging.version import Version; print(Version('1.0rc1'))"],
+                           cwd=bundle / "base", env={"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"},
+                           capture_output=True, text=True)
+        self.assertEqual((p.returncode, p.stdout.strip()), (0, "1.0rc1"), p.stderr[-300:])
+
 if __name__ == "__main__":
     unittest.main()

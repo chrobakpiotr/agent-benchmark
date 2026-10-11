@@ -1,0 +1,13 @@
+diff --git a/src/packaging/version.py b/src/packaging/version.py
+index ee5aa48..8b3dc7f 100644
+--- a/src/packaging/version.py
++++ b/src/packaging/version.py
+@@ -410,6 +410,8 @@ class Version(_BaseVersion):
+             If the ``version`` does not conform to PEP 440 in any way then this
+             exception will be raised.
+         """
++        if isinstance(version, float):
++            raise InvalidVersion(f"Invalid version: {version!r}")
+         if _SIMPLE_VERSION_INDICATORS.issuperset(version):
+             try:
+                 self._release = tuple(map(int, version.split(".")))
