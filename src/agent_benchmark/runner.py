@@ -133,6 +133,9 @@ def _live_guard(manifest, out):
     if inside:
         raise ValidationError(f"{out}: agent CLIs can write {inside[0]}; put the run directory outside it")
     problems = zero_spend.problems()
+    installed = cli_versions(manifest)
+    problems += [f"config {c['config_id']}: {c['cli']} is {installed.get(c['cli'])!r}, the manifest pins {c['cli_version']!r}"
+                 for c in manifest["configs"] if c["cli_version"] is not None and installed.get(c["cli"]) != c["cli_version"]]
     clis = [c["cli"] for c in manifest["configs"]] + [c["reviewer"]["cli"] for c in manifest["configs"] if "reviewer" in c]
     if "opencode" in clis:
         problems += zero_spend.openrouter_problems(

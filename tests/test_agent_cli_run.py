@@ -191,6 +191,17 @@ class AgentCliRun(unittest.TestCase):
             with self.assertRaisesRegex(ValidationError, "CLI versions changed"):
                 runner.resume(self.root / "run")
 
+    def test_pinned_cli_version_must_match_the_installed_one(self):
+        m = json.loads(MANIFEST.read_text())
+        m["task"] = {**m["task"], "path": str((MANIFEST.parent / m["task"]["path"]).resolve())}
+        m["configs"][0]["cli_version"] = "codex-cli 1.2.3"
+        path = self.root / "pinned.json"
+        path.write_text(json.dumps(m))
+        with self.assertRaisesRegex(ValidationError, "manifest pins 'codex-cli 1.2.3'"):
+            runner.run(path, self.root / "run")
+        with mock.patch.dict(os.environ, {"FAKE_CODEX_VERSION": "codex-cli 1.2.3"}):
+            runner.run(path, self.root / "run2")  # matching version runs
+
     def test_run_directory_in_temp_is_refused_before_anything_starts(self):
         out = Path(tempfile.mkdtemp()) / "run"
         try:
