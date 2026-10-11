@@ -70,3 +70,12 @@ Status: integrated on harness v0.8.3 (`AgentCliBackend("opencode", ..., api_key_
   still withheld by the harness's `\bsk-[A-Za-z0-9_-]{32,}` output pattern. A leak could not spend money (limit 0).
 - Calibration: `experiments/opencode-calibration.json` (1 trial on `real-001`); the daily counter
   (`free_model_daily_requests.used`) is read before and after to measure the request count.
+
+## Calibration result (2026-10-11, harness v0.8.3)
+
+One trial of `opencode-north-free` (`cohere/north-mini-code:free`) on `real-001`: the agent worked for 55 model
+steps (26 shell commands, 17 reads, 15 edits) without finishing, and the daily counter went from 1 to 56 used of 50.
+The relay mapped OpenRouter's 429 to `quota_exhausted` with `resets_at` = next UTC midnight; the run stopped as
+designed; account `usage` stayed 0 (no spend). Conclusion: on the free tier (50 requests/day) this model cannot
+complete even the simplest task in one day, so the configuration is dropped as specified rather than paid for
+(1000/day would need a one-off credit purchase). A different free model would need its own calibration.
