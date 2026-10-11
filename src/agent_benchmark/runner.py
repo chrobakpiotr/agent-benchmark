@@ -245,7 +245,9 @@ def run(manifest_path, out_dir, execute=None):
     run_id = str(uuid.uuid4())
     _append(out / "events.jsonl", {"type": "run_started", "run_id": run_id, "experiment_id": manifest["experiment_id"],
                                    "manifest_digest": digest(manifest_bytes), "task_digest": digest(task_bytes),
-                                   "executor": {"kind": manifest["executor"]["kind"], "cli_versions": cli_versions(manifest),
+                                   "executor": {"kind": manifest["executor"]["kind"],
+                                                **({} if manifest["executor"]["kind"] == "fake"
+                                                   else {"cli_versions": cli_versions(manifest)}),
                                                 "track": FAKE_TRACK if manifest["executor"]["kind"] == "fake"
                                                 else CONTROLLED_TRACK},
                                    "plan": [f"{c}/r{r}" for c, r in plan]})
