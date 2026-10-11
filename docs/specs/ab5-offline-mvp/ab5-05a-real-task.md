@@ -73,7 +73,7 @@ defensible readings. Its 8 grades are invalidated with that reason in `~/agent-b
 v2 has its own bundle (`tasks/real-001-bug/`) whose cases use `cache_semantics: "separate"` and a description naming
 that case; evidence `RealTask1Bug.test_bundle_and_reference_patches`.
 
-# A3 design (next): `real-003` from agent-harness `b8e1e90`
+# `real-003` from agent-harness `b8e1e90` (implemented)
 
 Pattern proven by `real-001-bug` v2: a symptom-only report plus hidden cases where part of the fix must be inferred.
 Source: `b8e1e90` "fix(contract): match the qualification job id as a whole token" (2026-10-06): evidence for job
@@ -86,3 +86,8 @@ outside the patch scope (scope = `src/agent_harness/contract.py`), each case pas
 verdict still needs the expected outcomes, which never enter the container. Acceptance before any agent run: the
 reference patches (real fix, no-op, substring-only fix, over-strict exact-line match) must each fail or pass as
 designed, including one reference patch per plausible reading of the report.
+
+Implemented as designed (`tasks/real-003`, fixtures rebuilt by `build_fixtures.py`). Reference outcomes: `good` PASS;
+`noop` fails 4; `digit_only` fails letter/prefix/hyphen; `word_boundary` (`\b`) fails only the hyphen case, which needs
+the ID alphabet inferred from the contract; `overstrict` (job id alone at line end) fails the quoted and parenthesised
+contexts. Evidence: `RealTask3.test_bundle_reference_patches_and_visible_checks`. Agent run: `experiments/real-003.json`.

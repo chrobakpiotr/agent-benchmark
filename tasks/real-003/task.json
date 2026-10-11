@@ -1,0 +1,26 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-003",
+  "version": "1",
+  "description": "Bug report from an operator of agent-harness: contract.qualification_passes returned True for a target qualification of job ci-run-12-attempt-1, although every evidence file had been written by job ci-run-12-attempt-10. Evidence must prove it was produced by the report's own job. Find the problem and fix it. Change src/agent_harness/contract.py only.",
+  "environment": "Python >= 3.13 stdlib; base tree = agent-harness 9e01ec4 without .github plus task-owned evidence fixtures in bench_fixtures/ (built by tasks/real-003/build_fixtures.py), no repository history",
+  "visible_checks": [
+    "PYTHONPATH=src python -m unittest tests.test_contract tests.test_qualification tests.test_boundaries (from the workspace root)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:992737f67d4bdfc9a7c2af8566026fd936d8a6fd5c87bb8ade2d869ae46b63f6",
+    "hidden_digest": "sha256:6df102a0476abb350f9d8ce2c010fc6385288c943dae725b728dae458ccc45b7",
+    "expected_digest": "sha256:d4a1621e9a15325099ddc7d8ec6be8271b931e7cb1e4e682425b61acf0f6e8dc",
+    "scope": [
+      "src/agent_harness/contract.py"
+    ],
+    "hidden_test_count": 7,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: agent-harness commit b8e1e90abc8a56c646f010a2d65e776c2ddd6731 (fix(contract): match the qualification job id as a whole token, 2026-10-06), base = its parent 9e01ec4; reference/good.patch is that commit's contract.py diff; symptom-only description; hidden cases and evidence fixtures authored for agent-benchmark (2026-10-11): the reported digit suffix plus inferred letter, prefix and hyphen boundaries (hyphen is in the contract's ID alphabet) and three legitimate contexts; dot and colon contexts deliberately left out as ambiguous. Public repository: contamination possible",
+  "license": "MIT (agent-harness, Copyright (c) 2026 PC; base/LICENSE)"
+}

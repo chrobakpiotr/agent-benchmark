@@ -145,5 +145,30 @@ class RealTask2(unittest.TestCase):
         self.assertEqual(s["configs"][0]["grades"]["PASS"] + s["configs"][1]["grades"]["PASS"], 1)
 
 
+
+class RealTask3(unittest.TestCase):
+    """real-003: agent-harness fix b8e1e90, symptom-only; one reference patch per plausible reading."""
+
+    def test_bundle_reference_patches_and_visible_checks(self):
+        bundle = ROOT / "tasks" / "real-003"
+        task = validate_task(json.loads((bundle / "task.json").read_text()))
+        verify_bundle(task, bundle)
+        want = {"good": ("PASS", []), "noop": ("FAIL", ["prefix_word", "suffix_digit", "suffix_hyphen_word", "suffix_letter"]),
+                "digit_only": ("FAIL", ["prefix_word", "suffix_hyphen_word", "suffix_letter"]),
+                "word_boundary": ("FAIL", ["suffix_hyphen_word"]),
+                "overstrict": ("FAIL", ["own_job_parenthesised", "own_job_quoted"])}
+        for name, (result, failed) in want.items():
+            data = (bundle / "reference" / f"{name}.patch").read_bytes()
+            with tempfile.TemporaryDirectory() as d:
+                (Path(d) / digest(data).split(":")[1]).write_bytes(data)
+                r, c = grader.grade(task, d, digest(data), bundle_dir=bundle, host_execution_allowed=True)
+            got = next(x["detail"]["failed"] for x in c if x["criterion"] == "hidden_cases_pass")
+            self.assertEqual((r, got), (result, failed), name)
+        p = subprocess.run([sys.executable, "-m", "unittest", "tests.test_contract", "tests.test_qualification",
+                            "tests.test_boundaries"], cwd=bundle / "base",
+                           env={"PATH": "/usr/bin:/bin", "PYTHONPATH": "src", "PYTHONDONTWRITEBYTECODE": "1"},
+                           capture_output=True, text=True)
+        self.assertEqual(p.returncode, 0, p.stderr[-500:])
+
 if __name__ == "__main__":
     unittest.main()

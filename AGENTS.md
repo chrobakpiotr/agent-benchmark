@@ -37,7 +37,7 @@ to a verified result, and an independent success rate. This file is a **map**. L
   computed outside the candidate's process).
 - `src/agent_benchmark/pricing.py` - dated pricing snapshots and token cost.
 - `tasks/` - task bundles pinned by digest (`reference-001`: synthetic patch task; `reference-002`: same task for
-  `patch-io`, case inputs and expected values split; `real-001`, `real-002`: real agent-harness fixes `2ada5ff`, `b29dfdf`, graded by `patch-io`).
+  `patch-io`, case inputs and expected values split; `real-001`..`real-003` (+ `real-001-bug`): real agent-harness fixes `2ada5ff`, `b29dfdf`, `b8e1e90`, graded by `patch-io`).
 - `src/agent_benchmark/report.py` - deterministic report (Markdown/CSV/JSON) from recorded events only.
 - `src/agent_benchmark/compare.py` - `compare RUN_A RUN_B`: comparability checks first, then correctness, then cost (AB5-08).
 - `src/agent_benchmark/cli.py` - `validate`, `run`, `report`, `resume`, `invalidate`.

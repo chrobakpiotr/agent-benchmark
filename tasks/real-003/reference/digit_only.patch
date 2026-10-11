@@ -1,0 +1,16 @@
+diff --git a/src/agent_harness/contract.py b/src/agent_harness/contract.py
+index f9f3025..109308f 100644
+--- a/src/agent_harness/contract.py
++++ b/src/agent_harness/contract.py
+@@ -240,9 +240,9 @@ def verify_qualification_evidence(doc, evidence_root):
+                 digest.update(chunk)
+         if "sha256:" + digest.hexdigest() != ref["sha256"]:
+             raise ContractError("BINDING_MISMATCH", f"qualification evidence {ref['path']}")
+-    job = doc["tuple"]["job_id"].encode()
++    job = re.compile(re.escape(doc["tuple"]["job_id"].encode()) + rb"(?![0-9])")
+     for check in doc["checks"]:
+-        if check["result"] == "pass" and not any(job in _evidence_bytes(root, r) for r in check["evidence"]):
++        if check["result"] == "pass" and not any(job.search(_evidence_bytes(root, r)) for r in check["evidence"]):
+             raise ContractError("BINDING_MISMATCH", f"qualification.checks[{check['id']}]: evidence does not name the job")
+     review = doc["independent_review"]
+     if review is not None and review["subject"].encode() not in _evidence_bytes(root, review["evidence"]):

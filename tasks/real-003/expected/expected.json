@@ -1,0 +1,23 @@
+{
+ "suffix_digit": {
+  "raises": "ContractError"
+ },
+ "suffix_letter": {
+  "raises": "ContractError"
+ },
+ "prefix_word": {
+  "raises": "ContractError"
+ },
+ "suffix_hyphen_word": {
+  "raises": "ContractError"
+ },
+ "own_job_line_end": {
+  "value": true
+ },
+ "own_job_quoted": {
+  "value": true
+ },
+ "own_job_parenthesised": {
+  "value": true
+ }
+}
