@@ -93,7 +93,7 @@ class AgentCliRun(unittest.TestCase):
         self.assertIn("graded only on the qualified Docker target", s["banner"])
         evidence = out / "evidence" / row["request_id"]
         self.assertEqual(json.loads((evidence / "backend-notes.json").read_text()),
-                         {"rejection_reason": None, "withheld": None, "error": None})
+                         {"rejection_reason": None, "withheld": None, "error": None, "requests": None})
         self.assertTrue((out / "workspaces" / row["request_id"] / ".git").is_dir())  # beside, not around, evidence
 
     def test_candidate_is_graded_only_through_the_qualified_session(self):

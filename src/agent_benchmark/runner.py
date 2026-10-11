@@ -97,7 +97,8 @@ def _cli_launch(request, backend, evidence_root, workspace):
         return harness_port.launch(request, backend, evidence_root, workspace=workspace)
     finally:
         notes = {"rejection_reason": backend.rejection_reasons.get(request["request_id"]), "withheld": backend.withheld,
-                 "error": backend.error_details.get(request["request_id"])}  # kind, resets_at, message start
+                 "error": backend.error_details.get(request["request_id"]),  # kind, resets_at, message start
+                 "requests": backend.request_counts.get(request["request_id"])}  # OpenCode relay only, else null
         (Path(evidence_root) / "backend-notes.json").write_text(json.dumps(notes, sort_keys=True))
 
 
