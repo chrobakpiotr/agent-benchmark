@@ -23,7 +23,7 @@ from agent_benchmark.schema import ValidationError  # noqa: E402
 
 MANIFEST = ROOT / "tests" / "fixtures" / "manifest-agent-cli.json"
 FAKE_CODEX = r"""#!/usr/bin/env python3
-import json, sys
+import json, os, sys
 args = sys.argv[1:]
 if args[:2] == ["login", "status"]:
     print("Logged in using ChatGPT"); sys.exit(0)
@@ -31,6 +31,9 @@ if args and args[0] == "sandbox":
     sys.exit(0)
 if args and args[0] == "exec":
     prompt = sys.stdin.read()
+    if os.environ.get("FAKE_CODEX_LIMIT"):  # the subscription limit is exhausted mid-run
+        print(json.dumps({"type": "turn.failed", "error": {"message": "usage limit reached"}}))
+        sys.exit(1)
     assert "validate_result" in prompt and "expected" not in prompt.lower(), prompt
     with open("src/agent_harness/contract.py", "a") as f:
         f.write("# edited by the fake agent\n")
@@ -115,6 +118,19 @@ class AgentCliRun(unittest.TestCase):
         self.assertEqual(grades[0]["isolation"]["limit_fired"], None)
         self.assertEqual(len(calls), 1)
         self.assertEqual(calls[0][0], "cases.json")
+
+    def test_provider_error_stops_the_run_and_leaves_the_trial_ungraded(self):
+        m = json.loads(MANIFEST.read_text())
+        m.update(repetitions=2, task={**m["task"], "path": str((MANIFEST.parent / m["task"]["path"]).resolve())})
+        path = self.root / "m.json"
+        path.write_text(json.dumps(m))
+        with mock.patch.dict(os.environ, {"FAKE_CODEX_LIMIT": "1"}):
+            with self.assertRaisesRegex(ValidationError, "provider error; run stopped"):
+                runner.run(path, self.root / "run")
+        events = [json.loads(l) for l in (self.root / "run" / "events.jsonl").read_text().splitlines()]
+        finished = [e for e in events if e["type"] == "trial_finished"]
+        self.assertEqual([(e["outcome"], e["error_code"]) for e in finished], [("error", "PROVIDER_ERROR")])
+        self.assertFalse(any(e["type"] in ("grade", "run_finished") for e in events))  # second trial stays planned
 
     def test_run_directory_in_temp_is_refused_before_anything_starts(self):
         out = Path(tempfile.mkdtemp()) / "run"

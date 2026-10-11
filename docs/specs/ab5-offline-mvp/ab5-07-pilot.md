@@ -46,7 +46,8 @@ CLI name and version, model, flags and permissions are part of the config identi
    `workspace-write`; refuse OpenRouter model ids without `:free`.
 3. Account settings (user, verified 2026-10-10): Claude usage credits off; ChatGPT/Codex credit auto-reload off,
    credit balance 0; ChatGPT Computer history off.
-4. Quota exhausted -> the trial ends as reported by the backend and the run stops; no paid fallback, no automatic
+4. Quota exhausted -> the trial ends as reported by the backend (`error`/`PROVIDER_ERROR`) and the run stops
+   (implemented: `runner._execute` raises after any agent-cli `PROVIDER_ERROR`; only `completed` trials are graded); no paid fallback, no automatic
    extra trials. Remaining trials continue in a later window via `resume`.
 5. Cost is reported as `subscription, not priced` with token counts; never priced from API list prices.
    `total_cost_usd` may be shown only labelled as a list-price estimate.

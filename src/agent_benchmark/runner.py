@@ -165,8 +165,12 @@ def _execute(out, manifest, task, task_digest, todo, execute):
                          "source": "executor", **terminal, "finished_utc": _utc(), "duration_ms": duration_ms})
         for u in usage:
             _append(events, {"type": "usage", "trial_id": trial_id, **u})
-        if terminal["candidate_digest"]:
+        if terminal["candidate_digest"] and terminal["outcome"] == "completed":  # an aborted run's leftovers are no candidate
             _grade(out, manifest, task, trial_id, terminal["candidate_digest"])
+        if manifest["executor"]["kind"] != "fake" and terminal["error_code"] == "PROVIDER_ERROR":
+            # e.g. the subscription limit is exhausted: stop instead of burning the remaining trials; no paid fallback
+            raise ValidationError(f"{trial_id}: provider error; run stopped, `resume` continues the remaining trials "
+                                  "after the provider limit resets")
 
 
 def run(manifest_path, out_dir, execute=None):
@@ -210,7 +214,8 @@ def resume(run_dir, replace_unknown=False, execute=None):
     if [f"{c}/r{r}" for c, r in plan] != events[0]["plan"]:
         raise ValidationError("events.jsonl: recorded plan does not match the manifest plan")
     interrupted = [r for r in rows.values() if r["interrupted"]]
-    ungraded = [r for r in rows.values() if r["candidate_digest"] and r["original_grade"] is None]
+    ungraded = [r for r in rows.values()
+                if r["candidate_digest"] and r["outcome"] == "completed" and r["original_grade"] is None]
     todo = [(c, r, f"{c}/r{r}", None) for c, r in plan if f"{c}/r{r}" not in rows]
     if replace_unknown:
         for r in interrupted:
