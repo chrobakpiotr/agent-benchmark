@@ -65,5 +65,54 @@ class RealTask(unittest.TestCase):
         self.assertEqual(grades["cfg-b"], {"PASS": 0, "FAIL": 2, "INVALID": 0})  # overstrict, noop
 
 
+
+BUNDLE_2 = ROOT / "tasks" / "real-002"
+TASK_2 = validate_task(json.loads((BUNDLE_2 / "task.json").read_text()))
+FLOATS_AND_BOOL = ["result_applied_bool_for_one", "result_applied_float_limit", "result_applied_float_timeout"]
+
+
+class RealTask2(unittest.TestCase):
+    """real-002: agent-harness fix b29dfdf (two independent v2 validation gaps, one an equality-vs-type trap)."""
+
+    def grade(self, name):
+        data = (BUNDLE_2 / "reference" / f"{name}.patch").read_bytes()
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / digest(data).split(":")[1]).write_bytes(data)
+            result, criteria = grader.grade(TASK_2, d, digest(data), bundle_dir=BUNDLE_2, host_execution_allowed=True)
+        return result, {c["criterion"]: c for c in criteria}
+
+    def test_bundle_matches_pinned_digests(self):
+        verify_bundle(TASK_2, BUNDLE_2)
+
+    def test_real_fix_passes(self):
+        self.assertEqual(self.grade("good")[0], "PASS")
+
+    def test_base_half_and_overstrict_fixes_fail_on_behaviour(self):
+        for name, failed in (("noop", ["request_qualified_without_limits", *FLOATS_AND_BOOL]),
+                             ("request_only", FLOATS_AND_BOOL),
+                             ("applied_only", ["request_qualified_without_limits"]),
+                             ("overstrict", ["request_plain_without_limits", *FLOATS_AND_BOOL])):
+            result, c = self.grade(name)
+            self.assertEqual((result, c["hidden_cases_pass"]["detail"]["failed"]), ("FAIL", failed), name)
+
+    def test_test_deletion_is_out_of_scope(self):
+        result, c = self.grade("test_deletion")
+        self.assertEqual((result, c["patch_within_scope"]["detail"]), ("FAIL", ["tests/test_contract_v2.py"]))
+
+    def test_visible_checks_pass_on_base(self):
+        p = subprocess.run([sys.executable, "-m", "unittest", "tests.test_contract", "tests.test_contract_v2",
+                            "tests.test_boundaries"], cwd=BUNDLE_2 / "base",
+                           env={"PATH": "/usr/bin:/bin", "PYTHONPATH": "src", "PYTHONDONTWRITEBYTECODE": "1"},
+                           capture_output=True, text=True)
+        self.assertEqual(p.returncode, 0, p.stderr[-500:])
+
+    def test_fake_run_grades_reference_patches(self):
+        with tempfile.TemporaryDirectory() as d:
+            s = write_report(runner.run(ROOT / "tests" / "fixtures" / "manifest-real-002.json", Path(d) / "run"))
+        grades = {c["config_id"]: c["grades"] for c in s["configs"]}
+        self.assertEqual(grades["cfg-a"], {"PASS": 1, "FAIL": 1, "INVALID": 0})  # good, request_only
+        self.assertEqual(grades["cfg-b"], {"PASS": 0, "FAIL": 2, "INVALID": 0})  # applied_only, noop
+
+
 if __name__ == "__main__":
     unittest.main()

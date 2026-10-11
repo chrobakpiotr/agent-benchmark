@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-harness"
+dynamic = ["version"]
+description = "Agent execution/lifecycle/evidence library extracted from the Showcase harness."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+# Showcase target; the moved modules use 3.10+ syntax and APIs verbatim.
+requires-python = ">=3.13"
+dependencies = []
+
+[project.optional-dependencies]
+# Ed25519 grant signatures (verification.human_grants); same pin as Showcase.
+grants = ["cryptography==49.0.0"]
+
+[project.urls]
+Repository = "https://github.com/chrobakpiotr/agent-harness"
+
+[project.scripts]
+agent-harness = "agent_harness.__main__:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "agent_harness.__version__"}
+
+[tool.setuptools.package-data]
+agent_harness = ["contract_fixtures/*.json", "schemas/*.json", "constitution.md"]
+
+[tool.ruff.lint.per-file-ignores]
+# Verbatim extraction from Showcase (docs/migration/provenance.md); restyle only in a separate change.
+"src/agent_harness/verification/*.py" = ["BLE001", "C408", "F401", "F841", "I001", "PIE810", "PLW0127", "RUF007", "SIM102",
+                                         "SIM114", "TRY004"]
+"src/agent_harness/telemetry.py" = ["UP017"]
+# Showcase-only part of telemetry, verbatim in the cutover wrapper.
+"migration/showcase-wrapper/telemetry.py" = ["F401", "FURB162"]
+# Ported Showcase tests: only imports and seams changed (provenance.md).
+"tests/test_verification_authority.py" = ["I001", "SIM117"]
+"tests/test_verification_store.py" = ["B023", "F401", "F841", "I001", "RUF059", "SIM117"]

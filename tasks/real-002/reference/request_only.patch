@@ -1,0 +1,13 @@
+diff --git a/src/agent_harness/contract.py b/src/agent_harness/contract.py
+index aaa0f8e..c905a5e 100644
+--- a/src/agent_harness/contract.py
++++ b/src/agent_harness/contract.py
+@@ -82,6 +82,8 @@ def validate_request(doc):
+         _fields(doc["limits"], "request.limits", set(LIMIT_KEYS))
+         for key in LIMIT_KEYS:
+             _int(doc["limits"][key], 1, 2**53, f"request.limits.{key}")
++    if version == 2:
++        _check("qualified_isolation" not in doc["capabilities"] or doc["limits"] is not None, "request.limits: required with qualified_isolation")
+     return doc
+ 
+ 
