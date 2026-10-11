@@ -84,3 +84,30 @@ CLI name and version, model, flags and permissions are part of the config identi
   subscription login token mounted read-only in the execution phase only, no API-key variables, and usage from the
   CLI's JSON output in the result (requested 2026-10-10).
 - Grading: `patch-io` on the qualified target (AB5-05b), not on this host.
+
+## Results (2026-10-11, zero spend)
+
+Valid graded runs only (qualified grading; invalidated task-defect runs excluded, see `ab5-05a-real-task.md`):
+
+| task | description | Claude Sonnet (Pro) | Codex gpt-6.1-sol (Plus) |
+|---|---|---|---|
+| `real-001` | spec | 5/5 | 5/5 |
+| `real-002` | spec | 4/4 | 4/4 |
+| `real-002-bug` | symptom | 4/4 | 4/4 |
+| `real-003` | symptom | 2/2 completed | 4/4 |
+| `real-005` v3 | symptom | 4/4 | 4/4 |
+| `real-006` | symptom | 4/4 | 4/4 |
+| `real-007` | symptom | 4/4 | 4/4 |
+| `real-008` | symptom | 4/4 | 4/4 |
+| `real-001-bug` v2 (3 runs) | symptom, unstated domain rule | 10/28, Wilson [0.21, 0.54] | 19/27 (+1 quota error), Wilson [0.52, 0.84] |
+| builder/reviewer, `real-001-bug` v2 | symptom | Claude builds: 0/3 | Codex builds: 3/4 |
+
+- Only `real-001-bug` discriminates: a two-proportion test gives z = 2.57, p = 0.010; the conservative Wilson-overlap
+  rule of `compare` does not yet declare a difference (overlap 0.515-0.542). Every failure on that task is the
+  unstated "complete needs a summary for every attempt" rule.
+- Claude is about 2.5-4x faster on every task. Local inferences (other regex groups, other exception paths, other
+  entry points, well-known spec rules) were solved by both agents every time.
+- The third configuration (OpenCode, free OpenRouter model) cannot finish a trial within the 50-requests/day free tier
+  (see `ab5-07-openrouter.md`).
+- This is one discriminating task with 28 trials per config: evidence about these two configurations on this task,
+  not a general ranking.
