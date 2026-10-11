@@ -39,6 +39,7 @@ to a verified result, and an independent success rate. This file is a **map**. L
 - `tasks/` - task bundles pinned by digest (`reference-001`: synthetic patch task; `reference-002`: same task for
   `patch-io`, case inputs and expected values split; `real-001`, `real-002`: real agent-harness fixes `2ada5ff`, `b29dfdf`, graded by `patch-io`).
 - `src/agent_benchmark/report.py` - deterministic report (Markdown/CSV/JSON) from recorded events only.
+- `src/agent_benchmark/compare.py` - `compare RUN_A RUN_B`: comparability checks first, then correctness, then cost (AB5-08).
 - `src/agent_benchmark/cli.py` - `validate`, `run`, `report`, `resume`, `invalidate`.
 - `src/agent_benchmark/zero_spend.py` - `preflight`: no API-billing env vars, subscription CLI logins (AB5-07).
 - `experiments/` - real-run manifests (`ab5-07-pilot.json`: zero-spend agent-CLI pilot, see `ab5-07-pilot.md`).
