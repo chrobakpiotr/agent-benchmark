@@ -27,6 +27,8 @@ import json, os, sys
 args = sys.argv[1:]
 if args[:2] == ["login", "status"]:
     print("Logged in using ChatGPT"); sys.exit(0)
+if args == ["--version"]:
+    print(os.environ.get("FAKE_CODEX_VERSION", "codex-cli 0.0-fake")); sys.exit(0)
 if args and args[0] == "sandbox":
     sys.exit(0)
 if args and args[0] == "exec":
@@ -178,6 +180,16 @@ class AgentCliRun(unittest.TestCase):
         fake["configs"][0].update(workflow="builder-reviewer", reviewer={"cli": "codex", "model": "x"})
         with self.assertRaisesRegex(ValidationError, "needs the agent-cli executor"):
             validate_manifest(fake)
+
+    def test_cli_versions_are_recorded_and_resume_refuses_a_changed_cli(self):
+        with mock.patch.dict(os.environ, {"FAKE_CODEX_LIMIT": "1"}):
+            with self.assertRaises(ValidationError):
+                runner.run(self.reviewer_manifest(), self.root / "run")  # stops after the builder error
+        started = json.loads((self.root / "run" / "events.jsonl").read_text().splitlines()[0])
+        self.assertEqual(started["executor"]["cli_versions"], {"codex": "codex-cli 0.0-fake"})
+        with mock.patch.dict(os.environ, {"FAKE_CODEX_VERSION": "codex-cli 9.9-fake"}):
+            with self.assertRaisesRegex(ValidationError, "CLI versions changed"):
+                runner.resume(self.root / "run")
 
     def test_run_directory_in_temp_is_refused_before_anything_starts(self):
         out = Path(tempfile.mkdtemp()) / "run"

@@ -10,6 +10,7 @@ import json
 import os
 import random
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -103,6 +104,21 @@ def _cli_launch(request, backend, evidence_root, workspace):
 
 
 EXECUTORS = {"fake": fake_execute, "agent-cli": agent_cli_execute}
+
+
+def cli_versions(manifest):
+    """`<cli> --version` of every CLI the manifest uses (configs and reviewers); part of the run's executor identity."""
+    if manifest["executor"]["kind"] == "fake":
+        return None
+    clis = sorted({c["cli"] for c in manifest["configs"]} | {c["reviewer"]["cli"] for c in manifest["configs"] if "reviewer" in c})
+    found = {}
+    for cli in clis:
+        try:
+            p = subprocess.run([cli, "--version"], capture_output=True, text=True, timeout=30, stdin=subprocess.DEVNULL)
+            found[cli] = (p.stdout or p.stderr).strip().splitlines()[0] if p.returncode == 0 and (p.stdout or p.stderr).strip() else None
+        except (OSError, subprocess.TimeoutExpired):
+            found[cli] = None  # unknown stays unknown
+    return found
 
 
 def _live_guard(manifest, out):
@@ -229,7 +245,7 @@ def run(manifest_path, out_dir, execute=None):
     run_id = str(uuid.uuid4())
     _append(out / "events.jsonl", {"type": "run_started", "run_id": run_id, "experiment_id": manifest["experiment_id"],
                                    "manifest_digest": digest(manifest_bytes), "task_digest": digest(task_bytes),
-                                   "executor": {"kind": manifest["executor"]["kind"],
+                                   "executor": {"kind": manifest["executor"]["kind"], "cli_versions": cli_versions(manifest),
                                                 "track": FAKE_TRACK if manifest["executor"]["kind"] == "fake"
                                                 else CONTROLLED_TRACK},
                                    "plan": [f"{c}/r{r}" for c, r in plan]})
@@ -249,6 +265,10 @@ def resume(run_dir, replace_unknown=False, execute=None):
     out = Path(run_dir)
     manifest, task, events, _ = load_run(out)
     _live_guard(manifest, out)
+    recorded = events[0]["executor"].get("cli_versions")
+    if recorded is not None and cli_versions(manifest) != recorded:  # keep one run on one set of CLI versions
+        raise ValidationError(f"CLI versions changed since the run started ({recorded} -> {cli_versions(manifest)}); "
+                              "start a new run instead of resuming")
     execute = execute or EXECUTORS[manifest["executor"]["kind"]]
     rows = {r["trial_id"]: r for r in reduce_events(events)["trials"]}
     plan = plan_trials(manifest)

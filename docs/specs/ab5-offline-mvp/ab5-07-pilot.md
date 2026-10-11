@@ -119,3 +119,11 @@ Valid graded runs only (qualified grading; invalidated task-defect runs excluded
   (see `ab5-07-openrouter.md`).
 - This is one discriminating task with 28 trials per config: evidence about these two configurations on this task,
   not a general ranking.
+
+- Confounders checked after the review (2026-10-11): harness confirmed that nothing between v0.7.0 and v0.8.3 changed
+  what the agent sees or may do (command lines, sandbox and permission settings, prompt on stdin, environment; only
+  `OPENROUTER_API_KEY` stripping was added) and that no pilot output was withheld, so the cross-version pool is sound
+  with respect to the harness. CLI versions were not recorded per run during the pilot; Claude Code 2.1.289 and Codex
+  0.160.0 were installed both on 2026-10-10 (start) and after the last run, so they very probably did not change. From
+  now on every agent-cli run records `<cli> --version` in `run_started.executor.cli_versions` (part of the identity
+  `compare`/`pool` check), and `resume` refuses when the versions changed. The optional-stopping caveat above stands.
