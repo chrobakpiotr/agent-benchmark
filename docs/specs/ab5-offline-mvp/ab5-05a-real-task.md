@@ -60,8 +60,15 @@ Agent run: `experiments/real-002.json` (same configs as the AB5-07 pilot, 4 repe
 
 Hypothesis from the AB5-07 runs (16/16 PASS on `real-001`/`real-002`): the task descriptions state the required
 rules, so agents implement a specification instead of diagnosing a bug. Each real task now has a second task file
-next to `task.json`, with the same bundle, hidden cases and grader, whose description states symptoms only:
-`real-001-bug` (null cache units accepted as complete; the missing-summary case is not mentioned) and `real-002-bug`
+with a description that states symptoms only: `tasks/real-001-bug/` (own bundle, see below; the missing-summary
+case is not mentioned) and `tasks/real-002/task-bug-report.json` (same bundle as `real-002`; `real-002-bug`
 (qualified request without limits accepted; `cpus: true` accepted; the float cases are not mentioned). The runner
 stores the bound task file as the run's `task.json`. Agent runs: `experiments/real-001-bug.json`,
 `experiments/real-002-bug.json`. Evidence: `RealTask2.test_bug_report_variant_shares_the_bundle_and_is_the_task_of_its_run`.
+
+`real-001-bug` v1 (2026-10-11, same bundle as `real-001`) was defective: its description asked for complete usage
+to be "fully priceable" and the golden fixtures to stay valid, while every hidden case used `cache_semantics:
+"unknown"`, so rejecting the valid case (Codex) and allowing nulls under unknown semantics (Claude) were both
+defensible readings. Its 8 grades are invalidated with that reason in `~/agent-benchmark-runs/real-001-bug-2026-10-11`.
+v2 has its own bundle (`tasks/real-001-bug/`) whose cases use `cache_semantics: "separate"` and a description naming
+that case; evidence `RealTask1Bug.test_bundle_and_reference_patches`.

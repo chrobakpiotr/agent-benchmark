@@ -1,0 +1,14 @@
+diff --git a/src/agent_harness/contract.py b/src/agent_harness/contract.py
+index 1745870..7945988 100644
+--- a/src/agent_harness/contract.py
++++ b/src/agent_harness/contract.py
+@@ -125,6 +125,9 @@ def validate_result(doc, request):
+         _ref(ref, f"result.artifacts[{i}]", named=True)
+     _usage(usage, set(attempt_ids))
+     _check(usage or doc["usage_completeness"] == "unknown", "result.usage_completeness: no events means unknown")
++    if doc["usage_completeness"] == "complete":
++        _check(all(v is not None for e in usage for v in e["units"].values()),
++               "result.usage_completeness: complete needs integer units")
+     return doc
+ 
+ 

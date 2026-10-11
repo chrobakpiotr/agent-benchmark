@@ -1,0 +1,13 @@
+diff --git a/src/agent_harness/contract.py b/src/agent_harness/contract.py
+index 1745870..0024cea 100644
+--- a/src/agent_harness/contract.py
++++ b/src/agent_harness/contract.py
+@@ -177,7 +177,7 @@ def _usage(events, attempt_ids):
+         _fields(event["units"], where + ".units", set(_UNITS))
+         for unit in _UNITS:
+             value = event["units"][unit]
+-            _check(value is None or (type(value) is int and value >= 0), f"{where}.units.{unit}")
++            _check(type(value) is int and value >= 0, f"{where}.units.{unit}")
+         _enum(event["cache_semantics"], ("separate", "included_in_input", "unknown"), where + ".cache_semantics")
+ 
+ 

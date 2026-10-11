@@ -66,6 +66,23 @@ class RealTask(unittest.TestCase):
 
 
 
+
+class RealTask1Bug(unittest.TestCase):
+    """real-001-bug v2: symptom-only description; own bundle whose cases use cache_semantics separate (unambiguous)."""
+
+    def test_bundle_and_reference_patches(self):
+        bundle = ROOT / "tasks" / "real-001-bug"
+        task = validate_task(json.loads((bundle / "task.json").read_text()))
+        verify_bundle(task, bundle)
+        cases = json.loads((bundle / "hidden" / "cases.json").read_text())["cases"]
+        self.assertTrue(all(e["cache_semantics"] == "separate" for c in cases for e in c["args"][0]["usage_events"]))
+        for name, want in (("good", "PASS"), ("noop", "FAIL"), ("wrong", "FAIL"), ("overstrict", "FAIL")):
+            data = (bundle / "reference" / f"{name}.patch").read_bytes()
+            with tempfile.TemporaryDirectory() as d:
+                (Path(d) / digest(data).split(":")[1]).write_bytes(data)
+                self.assertEqual(grader.grade(task, d, digest(data), bundle_dir=bundle,
+                                              host_execution_allowed=True)[0], want, name)
+
 BUNDLE_2 = ROOT / "tasks" / "real-002"
 TASK_2 = validate_task(json.loads((BUNDLE_2 / "task.json").read_text()))
 FLOATS_AND_BOOL = ["result_applied_bool_for_one", "result_applied_float_limit", "result_applied_float_timeout"]

@@ -2,8 +2,8 @@
   "schema_version": "agent-benchmark/manifest/v2",
   "experiment_id": "ab5-07-real-001-bug",
   "task": {
-    "path": "../tasks/real-001/task-bug-report.json",
-    "digest": "sha256:3110a8d34790947a86083a114810a909a4a73fc6bb02eee706227eb3a8e5cc5d"
+    "path": "../tasks/real-001-bug/task.json",
+    "digest": "sha256:ed2b2eb7f767c2cc6ff10571b5fe37989b036945387a9a7d173cb84f170764a6"
   },
   "configs": [
     {

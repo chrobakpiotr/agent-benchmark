@@ -1,0 +1,27 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-001-bug",
+  "version": "2",
+  "description": "Bug report from a consumer of agent-harness: our cost report marked a trial as fully priced, but its token counts were incomplete. The result came from agent-harness and passed contract.validate_result with usage_completeness \"complete\", although its usage summary (cache_semantics \"separate\") had a null cache_read_tokens. Find out which results are wrongly accepted as complete and fix agent-harness. Change src/agent_harness/ only.",
+  "environment": "Python >= 3.9 stdlib; base tree = agent-harness af994d7 without .github, no repository history",
+  "visible_checks": [
+    "PYTHONPATH=src python -m unittest tests.test_contract tests.test_boundaries (from the workspace root)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:c7a400f047cd518957c096743dc59a94567e1e8f6eb629fea4d7f375b748d467",
+    "hidden_digest": "sha256:dcc9ba7eb0d8dded1879611a4e3d53f1cd1b3c83d446b507435dbb77851909d9",
+    "expected_digest": "sha256:5edc4b36ca14d08bbde8e287b8245059b3c462b37bfb69d44c6a76dd178c7695",
+    "scope": [
+      "src/agent_harness/contract.py",
+      "src/agent_harness/contract_fixtures/success.json"
+    ],
+    "hidden_test_count": 6,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: agent-harness commit 2ada5ffe25c5b95e42842577b494cc5dd69cff8e (fix(contract): require integer units for complete usage, 2026-10-05), base = its parent af994d7; reference/good.patch is that commit's src diff; hidden cases authored for agent-benchmark from the commit's test change (2026-10-10). Public repository, created after typical model training cutoffs but readable online: contamination possible for models with browsing or later training data; bug-report variant v2 (2026-10-11): own bundle, hidden cases use cache_semantics separate so the expected split does not depend on how unknown semantics or the golden fixtures are read (v1 was ambiguous and its runs are invalidated)",
+  "license": "MIT (agent-harness, Copyright (c) 2026 PC; base/LICENSE)"
+}
