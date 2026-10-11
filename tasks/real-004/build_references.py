@@ -21,7 +21,12 @@ REVIEW = ("    review = doc['independent_review']\n"
           "    if review is not None and review['subject'].encode() not in "
           "(root / review['evidence']['path']).resolve().read_bytes():\n"
           "        raise ContractError('BINDING_MISMATCH', 'review evidence does not name the subject')\n")
+EVERY_FILE = ("    for ref in refs:\n"
+              "        data = (root / ref['path']).resolve().read_bytes()\n"
+              "        if not all(bound.encode() in data for bound in (doc['target'], doc['tuple']['job_id'])):\n"
+              "            raise ContractError('BINDING_MISMATCH', 'evidence is not for this report')\n")
 VARIANTS = {
+    "every_file_target_and_job": EVERY_FILE,                       # every file names target and job; forgets the subject
     "job_only": PER_CHECK.format(test=f"job in {READ}"),            # relabelling reading: forgets the review
     "job_any": ANY_CHECK + REVIEW,                                 # one check naming the job is enough
     "overstrict": PER_CHECK.format(test=f"re.search(rb'(?m) ' + re.escape(job) + rb'$', {READ})") + REVIEW,

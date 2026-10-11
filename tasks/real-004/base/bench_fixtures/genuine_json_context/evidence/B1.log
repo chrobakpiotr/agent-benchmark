@@ -1,1 +1,1 @@
-check B1: {"job": "nightly-build-42", "exit": 0}
+check B1 on target bench-target: {"job": "nightly-build-42", "exit": 0}

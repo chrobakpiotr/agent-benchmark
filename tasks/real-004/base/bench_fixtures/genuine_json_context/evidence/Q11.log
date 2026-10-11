@@ -1,1 +1,1 @@
-check Q11: {"job": "nightly-build-42", "exit": 0}
+check Q11 on target bench-target: {"job": "nightly-build-42", "exit": 0}

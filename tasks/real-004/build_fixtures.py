@@ -2,7 +2,8 @@
 
 Each case is a signed qualification report whose evidence lives in base/bench_fixtures/<case>/ (outside the patch
 scope). The base code (agent-harness bb2cf18) signs the reports. Job ids never contain each other, so substring and
-whole-token matching agree on every case.
+whole-token matching agree on every case. v2: every genuine evidence file names the target and the job
+(the review also its subject), so all plausible readings of "evidence must prove it is for this report and its job" accept them.
 """
 import hashlib
 import json
@@ -40,13 +41,13 @@ def build(case, text, missing, stale):
            "tuple": {"job_id": JOB, "host": "ubuntu-24.04", "kernel": "6.8.0", "engine": "docker-29.8.2",
                      "workload_image": "sha256:" + "3" * 64},
            "checks": [{"id": i, "result": "pass",
-                       "evidence": [evidence(i, f"check {i}: " + ("raw output, exit 0\n" if i == missing else text))]}
+                       "evidence": [evidence(i, f"check {i} on target bench-target: " + ("raw output, exit 0\n" if i == missing else text))]}
                       for i in contract.QUALIFICATION_CHECKS],
            "independent_review": None, "created_at": "2026-10-06T00:00:00Z"}
     subject = contract.review_subject(doc)
     named = "sha256:" + "a" * 64 if stale else subject
     doc["independent_review"] = {"reviewer": "security-reviewer", "subject": subject, "verdict": "pass",
-                                 "evidence": evidence("review", f"review of {named}: pass\n")}
+                                 "evidence": evidence("review", f"review of {named} for target bench-target, job {JOB}: pass\n")}
     contract.validate_qualification_report(doc)
     return doc
 

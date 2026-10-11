@@ -1,7 +1,7 @@
 {
   "schema_version": "agent-benchmark/task/v1",
   "task_id": "real-004",
-  "version": "1",
+  "version": "2",
   "description": "Bug report from an operator of agent-harness: a target qualification report produced in job release-candidate-3 was copied, its job_id changed to release-candidate-4 and its independent review re-signed, and contract.qualification_passes still returned True for it. Evidence files must prove that they were produced for this report and its job. Find the problem and fix it. Change src/agent_harness/contract.py only.",
   "environment": "Python >= 3.13 stdlib; base tree = agent-harness bb2cf18 without .github plus task-owned evidence fixtures in bench_fixtures/ (built by tasks/real-004/build_fixtures.py), no repository history",
   "visible_checks": [
@@ -12,8 +12,8 @@
     "version": "1"
   },
   "bundle": {
-    "base_digest": "sha256:3b544fc4b4fca9a7330028e6a00717c757809ab42927de00f05f5ca9a0408dc7",
-    "hidden_digest": "sha256:732850c90ab3b33e3bf9892c15c2521f672b482be824a201a7d6185962adbfcf",
+    "base_digest": "sha256:41d82155c4fac08a3ad3fcfd2d7ed3ed5403e80ff3c7109b4e6498827ee5d2c8",
+    "hidden_digest": "sha256:260466523dad408fe2fced4ad6fe6c07545902d6db9196ff2fbc737b3c19998f",
     "expected_digest": "sha256:325076ba28dafd3f9be4ba671c00c9b46114a7d8c8e0ca88ed7565a717342b79",
     "scope": [
       "src/agent_harness/contract.py"
@@ -21,6 +21,6 @@
     "hidden_test_count": 5,
     "timeout_seconds": 30
   },
-  "provenance": "real fix: agent-harness commit 9e01ec4f4be286d09f7e681de2a6615f43b86a33 (fix(contract): bind qualification evidence to its job and review subject, 2026-10-06), base = its parent bb2cf18; reference/good.patch is that commit's contract.py diff; symptom-only description; hidden cases and evidence fixtures authored for agent-benchmark (2026-10-11): the reported relabelling plus inferred per-check job evidence and review-subject evidence, and two genuine reports. Public repository: contamination possible",
+  "provenance": "real fix: agent-harness commit 9e01ec4f4be286d09f7e681de2a6615f43b86a33 (fix(contract): bind qualification evidence to its job and review subject, 2026-10-06), base = its parent bb2cf18; reference/good.patch is that commit's contract.py diff; symptom-only description; hidden cases and evidence fixtures authored for agent-benchmark (2026-10-11): the reported relabelling plus inferred per-check job evidence and review-subject evidence, and two genuine reports. Public repository: contamination possible; v2 (2026-10-11): genuine evidence names the target and the job in every file (review also its subject), because v1's genuine fixtures made 'every evidence file names target and job' a defensible reading that rejected them; v1 runs are invalidated",
   "license": "MIT (agent-harness, Copyright (c) 2026 PC; base/LICENSE)"
 }

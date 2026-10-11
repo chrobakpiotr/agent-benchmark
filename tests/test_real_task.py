@@ -181,6 +181,7 @@ class RealTask4(unittest.TestCase):
         want = {"good": ("PASS", []),
                 "noop": ("FAIL", ["one_check_without_job", "relabelled_job", "stale_review_subject"]),
                 "job_only": ("FAIL", ["stale_review_subject"]), "job_any": ("FAIL", ["one_check_without_job"]),
+                "every_file_target_and_job": ("FAIL", ["stale_review_subject"]),
                 "overstrict": ("FAIL", ["genuine_json_context"])}
         for name, (result, failed) in want.items():
             data = (bundle / "reference" / f"{name}.patch").read_bytes()

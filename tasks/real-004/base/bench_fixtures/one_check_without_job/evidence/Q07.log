@@ -1,1 +1,1 @@
-check Q07: raw output, exit 0
+check Q07 on target bench-target: raw output, exit 0

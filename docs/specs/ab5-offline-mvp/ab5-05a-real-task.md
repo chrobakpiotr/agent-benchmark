@@ -114,3 +114,12 @@ plain tuple so the answers are JSON. The project's tests need pytest, which the 
 check is a stdlib smoke command. Reference outcomes: `good` PASS; `noop` fails 5; `requirement_only` fails both
 SpecifierSet cases; `overstrict` (=== must start with a digit) fails both valid cases. Built by `build_task.py`.
 Evidence: `RealTask5.test_bundle_reference_patches_and_visible_check`. Agent run: `experiments/real-005.json`.
+
+`real-004` v1 (2026-10-11) was defective like `real-001-bug` v1: its description says evidence files must prove they
+were produced for this report and its job, while the genuine fixtures' check evidence did not name the target and the
+review evidence did not name the job. Both agents rejected the genuine reports (all 4 completed trials), a defensible
+reading that no reference patch covered. Those grades are invalidated with that reason. v2 names target and job in
+every genuine evidence file (the review also its subject) and adds the reference patch
+`every_file_target_and_job`, which fails only `stale_review_subject`. Rule kept for every task: build the reference
+patches from the description *before* the hidden cases are final, one per plausible reading, and check that the
+genuine cases pass under all of them.
