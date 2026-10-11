@@ -3,7 +3,7 @@
   "experiment_id": "ab5-07-real-005",
   "task": {
     "path": "../tasks/real-005/task.json",
-    "digest": "sha256:c922b302407ae812068e3e892dc712b05f9fe43a30b7eae73f956d7776740188"
+    "digest": "sha256:ea5ca726bedb6b1530c13e486d0b695a81599e8d9d0431586e4d9b421fe72a65"
   },
   "configs": [
     {

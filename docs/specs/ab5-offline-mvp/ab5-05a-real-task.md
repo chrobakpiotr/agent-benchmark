@@ -123,3 +123,15 @@ every genuine evidence file (the review also its subject) and adds the reference
 `every_file_target_and_job`, which fails only `stale_review_subject`. Rule kept for every task: build the reference
 patches from the description *before* the hidden cases are final, one per plausible reading, and check that the
 genuine cases pass under all of them.
+
+## Status after the 2026-10-11 runs
+
+- `real-004` is **withdrawn**. In v2 both agents again rejected the genuine reports, this time by inventing their own
+  provenance formats (Claude: a report-binding digest required in every evidence file; Codex: JSON evidence envelopes
+  with a subject). "Evidence must prove it was produced for this report" admits many incompatible designs, and raw-log
+  fixtures cannot satisfy any of them, so the task has no single correct answer. Its v2 grades are invalidated with
+  that reason; the bundle stays for the record and `experiments/real-004.json` is removed.
+- `real-005` v3 adds packaging's `.gitignore` to the base. Without it, `__pycache__/*.pyc` written by the agent's own
+  Python runs entered the sealed diff (the harness diff honours the workspace's ignore rules) and failed the scope
+  check; 3 Claude grades of the v2 run are invalidated for that reason. The agent-harness bases already had a
+  `.gitignore`. Rule added: every base tree must ship the project's ignore rules for build artefacts.
