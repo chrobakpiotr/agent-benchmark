@@ -268,5 +268,31 @@ class RealTask7(unittest.TestCase):
                            env={"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
         self.assertEqual((p.returncode, p.stdout.strip()), (0, "~=1.0.post1"), p.stderr[-300:])
 
+
+class RealTask8(unittest.TestCase):
+    """real-008: python-semver fix 1d51591; the report shows a crash, SemVer ordering of long identifiers is inferred."""
+
+    def test_bundle_reference_patches_and_visible_check(self):
+        bundle = ROOT / "tasks" / "real-008"
+        task = validate_task(json.loads((bundle / "task.json").read_text()))
+        verify_bundle(task, bundle)
+        long = ["long_equal", "long_magnitude_by_length", "long_numeric_below_alphanumeric", "long_vs_short_reported",
+                "long_vs_short_reversed"]
+        want = {"good": ("PASS", []), "int_limit_off": ("PASS", []), "noop": ("FAIL", long),
+                "catch_as_string": ("FAIL", ["long_magnitude_by_length"]),
+                "lexicographic_digits": ("FAIL", ["guard_short_numeric", "long_magnitude_by_length"]),
+                "reject_long": ("FAIL", long)}
+        for name, (result, failed) in want.items():
+            data = (bundle / "reference" / f"{name}.patch").read_bytes()
+            with tempfile.TemporaryDirectory() as d:
+                (Path(d) / digest(data).split(":")[1]).write_bytes(data)
+                r, c = grader.grade(task, d, digest(data), bundle_dir=bundle, host_execution_allowed=True)
+            got = next(x["detail"]["failed"] for x in c if x["criterion"] == "hidden_cases_pass")
+            self.assertEqual((r, got), (result, failed), name)
+        p = subprocess.run([sys.executable, "-W", "ignore", "-c", "import src.semver as s; "
+                            "print(s.compare('1.0.0-alpha.2', '1.0.0-alpha.10'))"], cwd=bundle / "base",
+                           env={"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
+        self.assertEqual((p.returncode, p.stdout.strip()), (0, "-1"), p.stderr[-300:])
+
 if __name__ == "__main__":
     unittest.main()

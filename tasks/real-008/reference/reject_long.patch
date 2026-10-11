@@ -1,0 +1,13 @@
+diff --git a/src/semver/version.py b/src/semver/version.py
+index 75e73be..d3402b7 100644
+--- a/src/semver/version.py
++++ b/src/semver/version.py
+@@ -195,6 +195,8 @@ class Version:
+             else:
+                 return _cmp(a, b)
+ 
++        if any(len(x) > 4300 for x in (a or "").split(".") + (b or "").split(".")):
++            raise ValueError("prerelease identifier too long")
+         a_parts = [int(x) if x.isdigit() else x for x in (a or "").split(".")]
+         b_parts = [int(x) if x.isdigit() else x for x in (b or "").split(".")]
+ 

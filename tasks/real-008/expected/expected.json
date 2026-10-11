@@ -1,0 +1,26 @@
+{
+ "long_vs_short_reported": {
+  "value": 1
+ },
+ "long_vs_short_reversed": {
+  "value": -1
+ },
+ "long_magnitude_by_length": {
+  "value": 1
+ },
+ "long_equal": {
+  "value": 0
+ },
+ "long_numeric_below_alphanumeric": {
+  "value": -1
+ },
+ "guard_short_numeric": {
+  "value": -1
+ },
+ "guard_spec_order": {
+  "value": -1
+ },
+ "guard_release_above_rc": {
+  "value": 1
+ }
+}

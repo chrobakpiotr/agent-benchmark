@@ -160,3 +160,17 @@ own `TypeError` (constructed, not JSON-serialisable), because the parser-based g
 regex; a reference patch removing IGNORECASE passed until these cases were added. Reference outcomes: `good` and
 `ascii_flag_global` (a different correct fix) PASS; `noop` fails 5; `post_only` fails the two pre cases;
 `no_ignorecase` fails the upper-case RC/DEV cases. Calibration first (`experiments/real-007-calibration.json`).
+
+`real-007` result (2026-10-11): 8/8 PASS for both agents. Local inferences (another group of the same regex, another
+exception path of the same function) are solved every time; only a rule that is not visible next to the fixed code
+(`real-001-bug`) has discriminated so far.
+
+# `real-008` from python-semver `1d51591`
+
+Commit `1d51591` "Compare long numeric prerelease identifiers without integer conversion" (2026-10-01, BSD-3-Clause).
+The report shows only a crash (ValueError from the 4300-digit int limit). The ordering that must hold is a SemVer
+2.0.0 rule, not visible in the crashing line: digit-only identifiers compare numerically (a longer number is
+larger), and numeric identifiers rank below alphanumeric ones. Reference outcomes: `good` and `int_limit_off` (a
+different correct fix) PASS; `catch_as_string` fails only the magnitude case; `lexicographic_digits` fails the
+magnitude case and the short `2` vs `10` guard; `reject_long` and `noop` fail all five long cases. The archive's two
+test symlinks into `docs/` were removed (bundles allow no symlinks). Calibration first.

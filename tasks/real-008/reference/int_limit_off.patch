@@ -1,0 +1,14 @@
+diff --git a/src/semver/version.py b/src/semver/version.py
+index 75e73be..5e6587f 100644
+--- a/src/semver/version.py
++++ b/src/semver/version.py
+@@ -1,6 +1,9 @@
+ """Version handling by a semver compatible version class."""
+ 
+ import re
++import sys
++
++sys.set_int_max_str_digits(0)
+ from functools import wraps
+ from typing import (
+     Any,

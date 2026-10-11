@@ -1,0 +1,27 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-008",
+  "version": "1",
+  "description": "Bug report from a user of python-semver: comparing two versions whose pre-release contains a very long build counter crashes, e.g. semver.compare(\"2.0.0-build.\" + \"7\" * 6000, \"2.0.0-build.3\") raises ValueError: Exceeds the limit (4300 digits) for integer string conversion. Find the problem and fix it. Change src/semver/ only.",
+  "environment": "Python >= 3.13 stdlib; base tree = python-semver 1d51591^ (src, tests, LICENSE.txt, pyproject, README, .gitignore; two test symlinks into docs/ removed), no repository history; the project's own test suite needs pytest, which is not installed",
+  "visible_checks": [
+    "python -W ignore -c \"import src.semver as s; print(s.compare('1.0.0-alpha.2', '1.0.0-alpha.10'))\" (from the workspace root; pytest is not available)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:883b88e0be88364dbe89d1f83edc020478b3cfc7742e9c4096b4d9912a847f8a",
+    "hidden_digest": "sha256:28a0e7b3d2231e1807183d877d37ef533397b1d2e7403c542d15d33f6decbd7d",
+    "expected_digest": "sha256:79b47570e859329a4a392963c6e7bf977524e125de8057e5c009ebcacc8adde3",
+    "scope": [
+      "src/semver/version.py",
+      "src/semver/_deprecated.py"
+    ],
+    "hidden_test_count": 8,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: python-semver commit 1d51591 (Compare long numeric prerelease identifiers without integer conversion, #488, 2026-10-01); reference/good.patch is that commit's src diff; symptom-only description (a crash, no expected ordering stated); hidden cases authored for agent-benchmark (2026-10-11): the SemVer 2.0.0 precedence rules that must still hold for long identifiers (numeric order by magnitude, numeric below alphanumeric, equality) plus short-identifier guards; other reference patches built by build_task.py, incl. a different correct fix (lifting the int digit limit) that must pass. Public repository: contamination possible",
+  "license": "BSD-3-Clause (python-semver; base/LICENSE.txt)"
+}

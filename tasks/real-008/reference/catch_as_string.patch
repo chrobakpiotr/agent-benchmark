@@ -1,0 +1,21 @@
+diff --git a/src/semver/version.py b/src/semver/version.py
+index 75e73be..442b19f 100644
+--- a/src/semver/version.py
++++ b/src/semver/version.py
+@@ -195,8 +195,14 @@ class Version:
+             else:
+                 return _cmp(a, b)
+ 
+-        a_parts = [int(x) if x.isdigit() else x for x in (a or "").split(".")]
+-        b_parts = [int(x) if x.isdigit() else x for x in (b or "").split(".")]
++        def _num(x):
++            try:
++                return int(x) if x.isdigit() else x
++            except ValueError:
++                return x
++
++        a_parts = [_num(x) for x in (a or "").split(".")]
++        b_parts = [_num(x) for x in (b or "").split(".")]
+ 
+         for sub_a, sub_b in zip(a_parts, b_parts):
+             cmp_result = cmp_prerelease_tag(sub_a, sub_b)
