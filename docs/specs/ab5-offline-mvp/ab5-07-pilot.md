@@ -102,7 +102,11 @@ Valid graded runs only (qualified grading; invalidated task-defect runs excluded
 | `real-001-bug` v2 (3 runs) | symptom, unstated domain rule | 10/28, Wilson [0.21, 0.54] | 19/27 (+1 quota error), Wilson [0.52, 0.84] |
 | builder/reviewer, `real-001-bug` v2 | symptom | Claude builds: 0/3 | Codex builds: 3/4 |
 
-- Only `real-001-bug` discriminates: a two-proportion test gives z = 2.57, p = 0.010; the conservative Wilson-overlap
+- Only `real-001-bug` discriminates. Correction (same day): on the operational denominator (10/28 vs 19/28, the
+  Codex quota error counting as non-PASS) Fisher's exact test gives p = 0.032; the earlier p = 0.010 was a normal
+  approximation on graded trials only (10/28 vs 19/27). The three runs span harness v0.7.0-v0.8.3, so this pooling uses
+  `pool --ignore-backend-version`; the same-version runs alone (5/12 vs 9/12) give p = 0.21. Earlier text:
+  a two-proportion test gives z = 2.57, p = 0.010; the conservative Wilson-overlap
   rule of `compare` does not yet declare a difference (overlap 0.515-0.542). Every failure on that task is the
   unstated "complete needs a summary for every attempt" rule.
 - Claude is about 2.5-4x faster on every task. Local inferences (other regex groups, other exception paths, other

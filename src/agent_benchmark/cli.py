@@ -33,6 +33,10 @@ def main(argv=None):
     cmp.add_argument("run_a")
     cmp.add_argument("run_b")
     cmp.add_argument("--out", help="also write the Markdown comparison to this file")
+    po = sub.add_parser("pool", help="add up comparable runs per config (refuses mismatched runs unless told)")
+    po.add_argument("run_dirs", nargs="+")
+    po.add_argument("--ignore-backend-version", action="store_true", help="pool across harness versions (reported)")
+    po.add_argument("--out", help="write the Markdown here instead of stdout")
     sub.add_parser("preflight", help="check zero-spend preconditions: no API-billing env vars, subscription logins")
     args = p.parse_args(argv)
     if args.cmd == "preflight":
@@ -54,6 +58,11 @@ def main(argv=None):
             print(f"{'FAKE' if s['fake_execution'] else 'REAL agent-cli'} run resumed in {args.run_dir}")
         elif args.cmd == "compare":
             md = compare.render_markdown(compare.compare(args.run_a, args.run_b))
+            if args.out:
+                Path(args.out).write_text(md, encoding="utf-8")
+            print(md, end="")
+        elif args.cmd == "pool":
+            md = compare.render_pool_markdown(compare.pool(args.run_dirs, args.ignore_backend_version))
             if args.out:
                 Path(args.out).write_text(md, encoding="utf-8")
             print(md, end="")

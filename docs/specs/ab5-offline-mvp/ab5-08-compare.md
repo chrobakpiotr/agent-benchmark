@@ -37,3 +37,12 @@ written into either run.
 
 Not covered by a test: the "B higher/lower" branch. Fixtures with at most 3 trials per config always give overlapping
 Wilson intervals.
+
+## Pool and Fisher's exact test (2026-10-11)
+
+- `agent-benchmark pool RUN...` adds up runs whose task, graders, executor, harness version and per-config identity equal
+  the first run's; every other run is listed as excluded with its reasons. `--ignore-backend-version` pools across
+  harness versions and says so in the output.
+- `compare` and `pool` report Fisher's exact two-sided p-value (stdlib `math.comb`) next to the Wilson intervals; the
+  decision rule for "B higher/lower" stays non-overlapping Wilson intervals.
+- Evidence: `test_fisher_exact_hand_computed` (Fisher's tea tasting 4/4 vs 0/4 -> 2/70), `test_pool_adds_identical_runs_and_excludes_others`.

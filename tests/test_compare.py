@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from agent_benchmark import cli, runner  # noqa: E402
-from agent_benchmark.compare import compare  # noqa: E402
+from agent_benchmark.compare import compare, fisher_exact, pool  # noqa: E402
 from agent_benchmark.report import write_report  # noqa: E402
 
 FIXTURES = ROOT / "tests" / "fixtures"
@@ -61,6 +61,24 @@ class Compare(unittest.TestCase):
         self.assertEqual((p["cfg-a"]["pass"], p["cfg-a"]["correctness"]), (["10/10", "0/10"], "B lower"))
         p = self.pairs(self.run_offline("c", ten("noop")), self.run_offline("d", ten("good")))
         self.assertEqual(p["cfg-b"]["correctness"], "B higher")
+
+    def test_fisher_exact_hand_computed(self):
+        # Fisher's tea tasting: 4/4 vs 0/4 -> two-sided p = 2/70; 3/3 vs 0/3 -> 2/20; identical -> 1
+        self.assertEqual(fisher_exact(4, 4, 0, 4), round(2 / 70, 4))
+        self.assertEqual(fisher_exact(3, 3, 0, 3), 0.1)
+        self.assertEqual(fisher_exact(2, 4, 2, 4), 1.0)
+        self.assertIsNone(fisher_exact(0, 0, 1, 1))
+
+    def test_pool_adds_identical_runs_and_excludes_others(self):
+        a, b = self.run_offline("a"), self.run_offline("b")
+        changed = self.run_offline("c", lambda m: m["configs"][0].update(model_requested="other-model"))
+        p = pool([a, b, changed])
+        self.assertEqual((len(p["included"]), [e["reasons"] for e in p["excluded"]]),
+                         (2, [["config cfg-a: model_requested differs"]]))
+        # offline-001 oracle: cfg-a 2/3 and cfg-b 1/3 per run, so 4/6 and 2/6 pooled
+        self.assertEqual({c: (t["pass"], t["started"], t["runs"]) for c, t in p["configs"].items()},
+                         {"cfg-a": (4, 6, 2), "cfg-b": (2, 6, 2)})
+        self.assertEqual(p["pairs"][0]["fisher_p"], fisher_exact(4, 6, 2, 6))
 
     def test_changed_prompt_or_model_makes_only_that_config_not_comparable(self):
         a = self.run_offline("a")
