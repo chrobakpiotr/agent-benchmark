@@ -73,13 +73,32 @@ def agent_cli_execute(request, task, config, bundle_dir, evidence_root):
     evidence_root = Path(evidence_root)
     workspace = evidence_root.parent.parent / "workspaces" / request["request_id"]
     workspace.parent.mkdir(exist_ok=True)
-    backend = harness_port.agent_cli_backend(config, task, harness_port.prepare_workspace(bundle_dir / "base", workspace))
+    base = harness_port.prepare_workspace(bundle_dir / "base", workspace)
+    result = _cli_launch(request, harness_port.agent_cli_backend(config, task, base), evidence_root, workspace)
+    if config["workflow"] != "builder-reviewer":
+        return result
+    if result["outcome"] != "completed":  # no reviewer for a builder that did not finish
+        return [(request, result, evidence_root)]
+    # Reviewer: same workspace, same diff base, so its sealed diff is the cumulative candidate of the trial.
+    (evidence_root / "result.json").write_bytes(canonical(result))  # kept even if the reviewer launch crashes
+    rreq = harness_port.reviewer_request(request, config)
+    rev_evidence = evidence_root.parent / rreq["request_id"]
+    rev_evidence.mkdir()
+    (rev_evidence / "request.json").write_bytes(canonical(rreq))
+    (evidence_root / "reviewer.json").write_text(json.dumps({"request_id": rreq["request_id"]}))
+    backend = harness_port.agent_cli_backend(config, task, base, cli=config["reviewer"]["cli"],
+                                             prompt=harness_port.reviewer_prompt(task))
+    return [(request, result, evidence_root),
+            (rreq, _cli_launch(rreq, backend, rev_evidence, workspace), rev_evidence)]
+
+
+def _cli_launch(request, backend, evidence_root, workspace):
     try:
         return harness_port.launch(request, backend, evidence_root, workspace=workspace)
     finally:
         notes = {"rejection_reason": backend.rejection_reasons.get(request["request_id"]), "withheld": backend.withheld,
                  "error": backend.error_details.get(request["request_id"])}  # kind, resets_at, message start
-        (evidence_root / "backend-notes.json").write_text(json.dumps(notes, sort_keys=True))
+        (Path(evidence_root) / "backend-notes.json").write_text(json.dumps(notes, sort_keys=True))
 
 
 EXECUTORS = {"fake": fake_execute, "agent-cli": agent_cli_execute}
@@ -159,8 +178,19 @@ def _execute(out, manifest, task, task_digest, todo, execute):
         except Exception as exc:  # backend crashed: launch state unknown, the trial stays visible
             terminal, usage = harness_port.unknown_terminal(f"backend raised {type(exc).__name__}"), []
         else:
-            (evidence / "result.json").write_bytes(canonical(result))  # raw, even if it fails validation
-            terminal, usage = harness_port.import_result(request, result, evidence, out / "candidates")
+            # builder-reviewer: one launch per role; the trial records both, the last launch's terminal and candidate
+            launches = result if isinstance(result, list) else [(request, result, evidence)]
+            roles = ("builder", "reviewer") if isinstance(result, list) else (None,)
+            attempts, usage = [], []
+            for (req, res, ev), role in zip(launches, roles):
+                (ev / "result.json").write_bytes(canonical(res))  # raw, even if it fails validation
+                terminal, used = harness_port.import_result(req, res, ev, out / "candidates")
+                pre = f"{role}:" if role else ""
+                attempts += [{**a, "attempt_id": pre + a["attempt_id"]} for a in terminal["attempts"]]
+                usage += [{**u, "attempt_id": pre + u["attempt_id"], "usage_event_id": pre + u["usage_event_id"]}
+                          for u in used]
+                evidence = ev  # backend notes of the last launch explain a provider error
+            terminal["attempts"] = attempts
         duration_ms = (time.monotonic_ns() - t0) // 1_000_000
         _append(events, {"type": "trial_finished", "trial_id": trial_id, "request_id": request["request_id"],
                          "source": "executor", **terminal, "finished_utc": _utc(), "duration_ms": duration_ms})

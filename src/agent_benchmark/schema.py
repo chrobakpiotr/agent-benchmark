@@ -171,9 +171,17 @@ def verify_bundle(task, bundle_dir):
 
 
 def validate_config(c, path):
-    _keys(c, path, CONFIG_REQUIRED, CONFIG_NULLABLE)
+    # `reviewer` is optional (absent = single agent) so that manifests written before workflows stay valid
+    _keys({k: v for k, v in c.items() if k != "reviewer"} if isinstance(c, dict) else c, path, CONFIG_REQUIRED,
+          CONFIG_NULLABLE)
     for f in ("config_id", "model_requested", "workflow", "isolation_track"):
         _str(c[f], f"{path}.{f}")
+    if (c["workflow"] == "builder-reviewer") != ("reviewer" in c):
+        _fail(f"{path}.reviewer", "required exactly when workflow is 'builder-reviewer'")
+    if "reviewer" in c:
+        _keys(c["reviewer"], f"{path}.reviewer", ("cli", "model"))
+        _enum(c["reviewer"]["cli"], f"{path}.reviewer.cli", AGENT_CLIS)
+        _str(c["reviewer"]["model"], f"{path}.reviewer.model")
     if not CONFIG_ID.fullmatch(c["config_id"]):
         _fail(f"{path}.config_id", f"must match {CONFIG_ID.pattern}")
     for f in ("model_resolved", "cli", "cli_version", "prompt_digest"):
@@ -231,6 +239,8 @@ def validate_manifest(m, task_digest=None):
         return m
     _keys(ex, "manifest.executor", ("kind", "script"))
     for i, c in enumerate(m["configs"]):
+        if "reviewer" in c:
+            _fail(f"manifest.configs[{i}].reviewer", "a builder-reviewer workflow needs the agent-cli executor")
         if c["isolation_track"] != FAKE_TRACK:
             _fail(f"manifest.configs[{i}].isolation_track", f"fake executor requires {FAKE_TRACK!r}")
     if not isinstance(ex["script"], list):

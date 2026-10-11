@@ -82,6 +82,10 @@ def load_pricing(run_dir):
     return validate_pricing(_json(data, str(path))), digest(data)
 
 
+def _builder_attempts(row):
+    return [a for a in row["attempt_ids"] if not a.startswith("reviewer:")]
+
+
 def _processed_input(scope):
     """Input tokens the model processed, comparable across providers: cache reads/writes are added when reported
     separately, already inside `input_tokens` when `included_in_input`; unknown semantics or units -> None."""
@@ -266,8 +270,9 @@ def summarize(manifest, task, events, inputs, pricing=None, pricing_digest=None)
                 "denominator_definition": f"started trials minus outcomes {sorted(excluded_outcomes)} (predeclared)",
                 "wilson95": wilson95(sum(r["grade"] == "PASS" and r["outcome"] not in excluded_outcomes
                                          for r in rs), n - excluded)},
-            "first_attempt_pass": sum(r["grade"] == "PASS" and len(r["attempt_ids"]) == 1 for r in rs),
-            "after_retry_pass": sum(r["grade"] == "PASS" and len(r["attempt_ids"]) > 1 for r in rs),
+            # a reviewer launch is part of the workflow, not a retry of the builder
+            "first_attempt_pass": sum(r["grade"] == "PASS" and len(_builder_attempts(r)) == 1 for r in rs),
+            "after_retry_pass": sum(r["grade"] == "PASS" and len(_builder_attempts(r)) > 1 for r in rs),
             "pass_duration_ms": {"conditional_on": "PASS", "values": pass_ms, "median": _median(pass_ms),
                                  "min": pass_ms[0] if pass_ms else None, "max": pass_ms[-1] if pass_ms else None},
             "usage": {

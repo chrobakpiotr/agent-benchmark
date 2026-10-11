@@ -87,9 +87,26 @@ def prepare_workspace(base_dir, workspace):
                           text=True).stdout.strip()
 
 
-def agent_cli_backend(config, task, diff_base):
+REVIEW_INSTRUCTION = ("Another engineer has already changed the files in this directory to address the report. Review "
+                      "their change against the report, run the visible checks, fix anything wrong or missing, and "
+                      "leave the files in their final state; do not commit.\n")
+
+
+def reviewer_prompt(task):
+    """The builder's prompt plus the review instruction; still nothing from the hidden material."""
+    return agent_prompt(task) + "\n" + REVIEW_INSTRUCTION
+
+
+def reviewer_request(builder_request, config):
+    """The reviewer's own request: the builder's with a new request_id and the reviewer's CLI and model."""
+    rev = config["reviewer"]
+    return contract.validate_request({**builder_request, "request_id": f"req-{uuid.uuid4()}", "provider": rev["cli"],
+                                      "model": rev["model"]})
+
+
+def agent_cli_backend(config, task, diff_base, cli=None, prompt=None):
     """Harness AgentCliBackend for one config: the CLI's own login and sandbox, candidate = workspace diff."""
-    return execution.AgentCliBackend(config["cli"], agent_prompt(task), diff_base=diff_base)
+    return execution.AgentCliBackend(cli or config["cli"], prompt or agent_prompt(task), diff_base=diff_base)
 
 
 class GradingSession:

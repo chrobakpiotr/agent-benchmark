@@ -11,7 +11,7 @@ from pathlib import Path
 from .report import load_pricing, load_run, summarize
 
 CONFIG_IDENTITY = ("model_requested", "cli", "cli_version", "prompt_digest", "reasoning", "sampling",
-                   "tool_permissions", "workflow", "budget", "isolation_track")
+                   "tool_permissions", "workflow", "reviewer", "budget", "isolation_track")
 
 
 def _harness_versions(run_dir):
@@ -52,7 +52,7 @@ def compare(run_a, run_b):
         if cid not in a["configs"] or cid not in b["configs"]:
             pairs.append({"config_id": cid, "comparable": False, "reasons": ["config present in one run only"]})
             continue
-        reasons = run_reasons + [f"{f} changed" for f in CONFIG_IDENTITY if a["configs"][cid][f] != b["configs"][cid][f]]
+        reasons = run_reasons + [f"{f} changed" for f in CONFIG_IDENTITY if a["configs"][cid].get(f) != b["configs"][cid].get(f)]
         sa, sb = stats[0][cid], stats[1][cid]
         wa, wb = sa["operational_success"]["wilson95"], sb["operational_success"]["wilson95"]
         pair = {"config_id": cid, "comparable": not reasons, "reasons": reasons,

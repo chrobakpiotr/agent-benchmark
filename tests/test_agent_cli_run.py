@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from agent_benchmark import harness_port, runner  # noqa: E402
 from agent_benchmark.report import load_run, reduce_events, write_report  # noqa: E402
-from agent_benchmark.schema import ValidationError  # noqa: E402
+from agent_benchmark.schema import ValidationError, validate_manifest  # noqa: E402
 
 MANIFEST = ROOT / "tests" / "fixtures" / "manifest-agent-cli.json"
 FAKE_CODEX = r"""#!/usr/bin/env python3
@@ -35,7 +35,8 @@ if args and args[0] == "exec":
         print(json.dumps({"type": "turn.failed", "error": {"message": "usage limit reached"}}))
         sys.exit(1)
     assert "validate_result" in prompt and "expected" not in prompt.lower(), prompt
-    with open("src/agent_harness/contract.py", "a") as f:
+    target = "README.md" if "Another engineer" in prompt else "src/agent_harness/contract.py"  # reviewer vs builder
+    with open(target, "a") as f:
         f.write("# edited by the fake agent\n")
     print(json.dumps({"type": "thread.started", "thread_id": "t1"}))
     print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 100, "cached_input_tokens": 40,
@@ -133,6 +134,50 @@ class AgentCliRun(unittest.TestCase):
         self.assertFalse(any(e["type"] in ("grade", "run_finished") for e in events))  # second trial stays planned
         notes = json.loads(next((self.root / "run" / "evidence").glob("*/backend-notes.json")).read_text())
         self.assertIn(notes["error"]["kind"], ("quota_exhausted", "provider_error"))
+
+    def reviewer_manifest(self, **reviewer):
+        m = json.loads(MANIFEST.read_text())
+        m["task"] = {**m["task"], "path": str((MANIFEST.parent / m["task"]["path"]).resolve())}
+        m["configs"][0].update(workflow="builder-reviewer", reviewer={"cli": "codex", "model": "gpt-6.1-sol", **reviewer})
+        path = self.root / "m.json"
+        path.write_text(json.dumps(m))
+        return path
+
+    def test_builder_reviewer_trial_records_both_launches_and_the_cumulative_candidate(self):
+        out = runner.run(self.reviewer_manifest(), self.root / "run")
+        s = write_report(out)
+        row = reduce_events(load_run(out)[2])["trials"][0]
+        self.assertEqual(row["attempt_ids"], ["builder:attempt-1", "reviewer:attempt-1"])
+        self.assertEqual(row["usage"], {"input_tokens": 200, "output_tokens": 14, "cache_read_tokens": 80,
+                                        "cache_write_tokens": 0})  # both launches count towards the trial
+        patch = (out / "candidates" / row["candidate_digest"].split(":")[1]).read_text()
+        self.assertIn("contract.py", patch)  # builder edit
+        self.assertIn("README.md", patch)  # reviewer edit, sealed cumulatively from the same base
+        self.assertEqual(len(list((out / "evidence").iterdir())), 2)  # builder and reviewer evidence roots
+        self.assertEqual(s["configs"][0]["after_retry_pass"], 0)
+
+    def test_builder_error_skips_the_reviewer(self):
+        with mock.patch.dict(os.environ, {"FAKE_CODEX_LIMIT": "1"}):
+            with self.assertRaisesRegex(ValidationError, "provider error"):
+                runner.run(self.reviewer_manifest(), self.root / "run")
+        events = [json.loads(l) for l in (self.root / "run" / "events.jsonl").read_text().splitlines()]
+        finished = [e for e in events if e["type"] == "trial_finished"]
+        self.assertEqual([a["attempt_id"] for a in finished[0]["attempts"]], ["builder:attempt-1"])
+        self.assertEqual(len(list((self.root / "run" / "evidence").iterdir())), 1)
+
+    def test_reviewer_config_rules(self):
+        m = json.loads(MANIFEST.read_text())
+        for change, error in (({"workflow": "builder-reviewer"}, "required exactly when"),
+                              ({"reviewer": {"cli": "codex", "model": "x"}}, "required exactly when"),
+                              ({"workflow": "builder-reviewer", "reviewer": {"cli": "gemini", "model": "x"}}, "reviewer.cli")):
+            bad = json.loads(json.dumps(m))
+            bad["configs"][0].update(change)
+            with self.assertRaisesRegex(ValidationError, error):
+                validate_manifest(bad)
+        fake = json.loads((MANIFEST.parent / "manifest-offline-001.json").read_text())
+        fake["configs"][0].update(workflow="builder-reviewer", reviewer={"cli": "codex", "model": "x"})
+        with self.assertRaisesRegex(ValidationError, "needs the agent-cli executor"):
+            validate_manifest(fake)
 
     def test_run_directory_in_temp_is_refused_before_anything_starts(self):
         out = Path(tempfile.mkdtemp()) / "run"

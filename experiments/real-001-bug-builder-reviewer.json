@@ -1,0 +1,59 @@
+{
+  "schema_version": "agent-benchmark/manifest/v2",
+  "experiment_id": "ab5-09-real-001-bug-builder-reviewer",
+  "task": {
+    "path": "../tasks/real-001-bug/task.json",
+    "digest": "sha256:ed2b2eb7f767c2cc6ff10571b5fe37989b036945387a9a7d173cb84f170764a6"
+  },
+  "configs": [
+    {
+      "config_id": "claude-builds-codex-reviews",
+      "model_requested": "sonnet",
+      "model_resolved": null,
+      "cli": "claude",
+      "cli_version": null,
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "builder-reviewer",
+      "budget": {
+        "max_wall_seconds": 1800
+      },
+      "isolation_track": "controlled-host",
+      "reviewer": {
+        "cli": "codex",
+        "model": "gpt-6.1-sol"
+      }
+    },
+    {
+      "config_id": "codex-builds-claude-reviews",
+      "model_requested": "gpt-6.1-sol",
+      "model_resolved": null,
+      "cli": "codex",
+      "cli_version": null,
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "builder-reviewer",
+      "budget": {
+        "max_wall_seconds": 1800
+      },
+      "isolation_track": "controlled-host",
+      "reviewer": {
+        "cli": "claude",
+        "model": "sonnet"
+      }
+    }
+  ],
+  "repetitions": 4,
+  "seed": 7,
+  "retry_policy": {
+    "max_attempts": 1
+  },
+  "exclusions": [],
+  "executor": {
+    "kind": "agent-cli"
+  }
+}
