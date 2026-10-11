@@ -92,7 +92,7 @@ class AgentCliRun(unittest.TestCase):
         self.assertIn("graded only on the qualified Docker target", s["banner"])
         evidence = out / "evidence" / row["request_id"]
         self.assertEqual(json.loads((evidence / "backend-notes.json").read_text()),
-                         {"rejection_reason": None, "withheld": None})
+                         {"rejection_reason": None, "withheld": None, "error": None})
         self.assertTrue((out / "workspaces" / row["request_id"] / ".git").is_dir())  # beside, not around, evidence
 
     def test_candidate_is_graded_only_through_the_qualified_session(self):
@@ -125,12 +125,14 @@ class AgentCliRun(unittest.TestCase):
         path = self.root / "m.json"
         path.write_text(json.dumps(m))
         with mock.patch.dict(os.environ, {"FAKE_CODEX_LIMIT": "1"}):
-            with self.assertRaisesRegex(ValidationError, "provider error; run stopped"):
+            with self.assertRaisesRegex(ValidationError, r"provider error \((quota_exhausted|provider_error), resets "):
                 runner.run(path, self.root / "run")
         events = [json.loads(l) for l in (self.root / "run" / "events.jsonl").read_text().splitlines()]
         finished = [e for e in events if e["type"] == "trial_finished"]
         self.assertEqual([(e["outcome"], e["error_code"]) for e in finished], [("error", "PROVIDER_ERROR")])
         self.assertFalse(any(e["type"] in ("grade", "run_finished") for e in events))  # second trial stays planned
+        notes = json.loads(next((self.root / "run" / "evidence").glob("*/backend-notes.json")).read_text())
+        self.assertIn(notes["error"]["kind"], ("quota_exhausted", "provider_error"))
 
     def test_run_directory_in_temp_is_refused_before_anything_starts(self):
         out = Path(tempfile.mkdtemp()) / "run"

@@ -77,7 +77,8 @@ def agent_cli_execute(request, task, config, bundle_dir, evidence_root):
     try:
         return harness_port.launch(request, backend, evidence_root, workspace=workspace)
     finally:
-        notes = {"rejection_reason": backend.rejection_reasons.get(request["request_id"]), "withheld": backend.withheld}
+        notes = {"rejection_reason": backend.rejection_reasons.get(request["request_id"]), "withheld": backend.withheld,
+                 "error": backend.error_details.get(request["request_id"])}  # kind, resets_at, message start
         (evidence_root / "backend-notes.json").write_text(json.dumps(notes, sort_keys=True))
 
 
@@ -169,8 +170,12 @@ def _execute(out, manifest, task, task_digest, todo, execute):
             _grade(out, manifest, task, trial_id, terminal["candidate_digest"])
         if manifest["executor"]["kind"] != "fake" and terminal["error_code"] == "PROVIDER_ERROR":
             # e.g. the subscription limit is exhausted: stop instead of burning the remaining trials; no paid fallback
-            raise ValidationError(f"{trial_id}: provider error; run stopped, `resume` continues the remaining trials "
-                                  "after the provider limit resets")
+            notes = evidence / "backend-notes.json"
+            err = (json.loads(notes.read_text()).get("error") if notes.is_file() else None) or {}
+            reset = (time.strftime("%Y-%m-%d %H:%M %Z", time.localtime(err["resets_at"]))
+                     if err.get("resets_at") else "unknown")
+            raise ValidationError(f"{trial_id}: provider error ({err.get('kind', 'unknown')}, resets {reset}); run stopped, "
+                                  "`resume` continues the remaining trials after the provider limit resets")
 
 
 def run(manifest_path, out_dir, execute=None):
