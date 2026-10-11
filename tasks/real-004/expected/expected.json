@@ -1,0 +1,17 @@
+{
+ "genuine": {
+  "value": true
+ },
+ "genuine_json_context": {
+  "value": true
+ },
+ "relabelled_job": {
+  "raises": "ContractError"
+ },
+ "one_check_without_job": {
+  "raises": "ContractError"
+ },
+ "stale_review_subject": {
+  "raises": "ContractError"
+ }
+}

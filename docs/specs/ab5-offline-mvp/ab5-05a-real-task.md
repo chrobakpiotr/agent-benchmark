@@ -91,3 +91,13 @@ Implemented as designed (`tasks/real-003`, fixtures rebuilt by `build_fixtures.p
 `noop` fails 4; `digit_only` fails letter/prefix/hyphen; `word_boundary` (`\b`) fails only the hyphen case, which needs
 the ID alphabet inferred from the contract; `overstrict` (job id alone at line end) fails the quoted and parenthesised
 contexts. Evidence: `RealTask3.test_bundle_reference_patches_and_visible_checks`. Agent run: `experiments/real-003.json`.
+
+# `real-004` from agent-harness `9e01ec4`
+
+Source: `9e01ec4` "fix(contract): bind qualification evidence to its job and review subject" (2026-10-06, MIT); base =
+parent `bb2cf18`. Symptom-only report: a report copied from another job, relabelled and re-signed, still passed.
+Inferred (not stated): every passing check's evidence must name the job (not just one), and the review evidence must
+name the reviewed report's subject. Fixtures in `base/bench_fixtures/` (reproducible via `build_fixtures.py`), other
+reference patches via `build_references.py`. 5 hidden cases; reference outcomes: `good` PASS; `noop` fails 3;
+`job_only` fails the stale review subject; `job_any` fails the check without the job; `overstrict` fails the JSON
+context. Evidence: `RealTask4.test_bundle_reference_patches_and_visible_checks`. Agent run: `experiments/real-004.json`.
