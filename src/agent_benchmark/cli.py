@@ -1,8 +1,9 @@
-"""CLI: validate | run | report | resume | invalidate | preflight. Offline only; no model or network calls."""
+"""CLI: validate | run | report | resume | invalidate | preflight | compare. Offline only; no model or network calls."""
 import argparse
 import sys
+from pathlib import Path
 
-from . import __version__, zero_spend
+from . import __version__, compare, zero_spend
 from .report import write_report
 from .runner import invalidate, plan_trials, resume, run
 from .schema import ValidationError, load_manifest
@@ -28,6 +29,10 @@ def main(argv=None):
     inv.add_argument("run_dir")
     inv.add_argument("trial_id")
     inv.add_argument("--reason", required=True)
+    cmp = sub.add_parser("compare", help="compare two recorded runs; says first whether they are comparable")
+    cmp.add_argument("run_a")
+    cmp.add_argument("run_b")
+    cmp.add_argument("--out", help="also write the Markdown comparison to this file")
     sub.add_parser("preflight", help="check zero-spend preconditions: no API-billing env vars, subscription logins")
     args = p.parse_args(argv)
     if args.cmd == "preflight":
@@ -47,6 +52,11 @@ def main(argv=None):
         elif args.cmd == "resume":
             s = write_report(resume(args.run_dir, replace_unknown=args.replace_unknown))
             print(f"{'FAKE' if s['fake_execution'] else 'REAL agent-cli'} run resumed in {args.run_dir}")
+        elif args.cmd == "compare":
+            md = compare.render_markdown(compare.compare(args.run_a, args.run_b))
+            if args.out:
+                Path(args.out).write_text(md, encoding="utf-8")
+            print(md, end="")
         elif args.cmd == "invalidate":
             invalidate(args.run_dir, args.trial_id, args.reason)
             write_report(args.run_dir)
