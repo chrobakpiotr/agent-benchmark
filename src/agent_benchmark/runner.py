@@ -116,6 +116,11 @@ def _live_guard(manifest, out):
     if inside:
         raise ValidationError(f"{out}: agent CLIs can write {inside[0]}; put the run directory outside it")
     problems = zero_spend.problems()
+    clis = [c["cli"] for c in manifest["configs"]] + [c["reviewer"]["cli"] for c in manifest["configs"] if "reviewer" in c]
+    if "opencode" in clis:
+        problems += zero_spend.openrouter_problems(
+            [c["model_requested"] for c in manifest["configs"] if c["cli"] == "opencode"]
+            + [c["reviewer"]["model"] for c in manifest["configs"] if c.get("reviewer", {}).get("cli") == "opencode"])
     if problems:
         raise ValidationError("zero-spend preflight failed: " + "; ".join(problems))
 

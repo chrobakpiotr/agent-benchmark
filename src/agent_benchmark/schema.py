@@ -21,7 +21,7 @@ QUALITY = ("complete", "partial", "unknown")
 FAKE_CANDIDATES = ("good", "wrong", "noop", "malformed")
 FAKE_TRACK = "fake-offline"
 CONTROLLED_TRACK = "controlled-host"  # agent CLI on this host in its own sandbox (harness AgentCliBackend)
-AGENT_CLIS = ("claude", "codex")
+AGENT_CLIS = ("claude", "codex", "opencode")
 KNOWN_GRADERS = {"sort-check": "1", "patch-unittest": "1", "patch-io": "1"}
 
 CONFIG_REQUIRED = ("config_id", "model_requested", "workflow", "tool_permissions", "isolation_track", "budget")

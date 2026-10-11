@@ -1,6 +1,7 @@
 """AB5-07: zero-spend preflight refuses anything that would bill an API instead of the subscriptions."""
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -44,6 +45,34 @@ class Preflight(unittest.TestCase):
             self.assertEqual(len(found), 1, (claude, codex))
             self.assertTrue(found[0].startswith(who), found)
 
+
+
+class OpenRouterPreflight(unittest.TestCase):
+    def key_file(self, mode=0o600):
+        d = tempfile.TemporaryDirectory()
+        self.addCleanup(d.cleanup)
+        path = Path(d.name) / "openrouter.key"
+        path.write_text("sk-or-v1-test\n")
+        path.chmod(mode)
+        return path
+
+    def test_zero_limit_key_and_free_model_pass(self):
+        seen = []
+        info = lambda key: seen.append(key) or {"limit": 0, "usage": 0}
+        self.assertEqual(zero_spend.openrouter_problems(["cohere/north-mini-code:free"], self.key_file(), info), [])
+        self.assertEqual(seen, ["sk-or-v1-test"])
+
+    def test_paid_model_spending_key_and_open_file_fail(self):
+        ok = lambda key: {"limit": 0}
+        self.assertIn("not a :free model", zero_spend.openrouter_problems(["openai/gpt-x"], self.key_file(), ok)[0])
+        self.assertIn("not 0", zero_spend.openrouter_problems(["m:free"], self.key_file(), lambda k: {"limit": None})[0])
+        self.assertIn("readable by group", zero_spend.openrouter_problems(["m:free"], self.key_file(0o644), ok)[0])
+        self.assertIn("no OpenRouter key", zero_spend.openrouter_problems(["m:free"], Path("/nonexistent/key"), ok)[0])
+
+    def test_unverifiable_key_fails(self):
+        def boom(key):
+            raise OSError("offline")
+        self.assertIn("check failed", zero_spend.openrouter_problems(["m:free"], self.key_file(), boom)[0])
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,6 @@
 # AB5-07 - third configuration: a free OpenRouter model (requirements)
 
-Status: requirements; blocked on a harness backend for a third agent CLI. Budget: zero money.
+Status: integrated on harness v0.8.3 (`AgentCliBackend("opencode", ..., api_key_file=...)`); calibration on `real-001` pending. Budget: zero money.
 
 ## Facts (checked 2026-10-11)
 
@@ -59,3 +59,14 @@ Status: requirements; blocked on a harness backend for a third agent CLI. Budget
   requests 50.
 - A zero-limit key can call `:free` models: one chat completion to `cohere/north-mini-code:free` returned
   `cost: 0` and `upstream_inference_cost: 0`; account `usage` stayed 0.
+
+## Integration (harness v0.8.3)
+
+- Manifest `cli: "opencode"`, model `vendor/model:free` (no `openrouter/` prefix); the runner passes
+  `api_key_file=~/.config/agent-benchmark/openrouter.key` so the sandbox can deny reading it.
+- Preflight for any config or reviewer using OpenCode: model ends in `:free`, key file mode 600, and
+  `GET /api/v1/key` reports `limit: 0` (`zero_spend.openrouter_problems`, tests in `tests/test_zero_spend.py`).
+- Claude/Codex runs can read the key file (only OpenCode's sandbox denies it); an OpenRouter key printed by them is
+  still withheld by the harness's `\bsk-[A-Za-z0-9_-]{32,}` output pattern. A leak could not spend money (limit 0).
+- Calibration: `experiments/opencode-calibration.json` (1 trial on `real-001`); the daily counter
+  (`free_model_daily_requests.used`) is read before and after to measure the request count.

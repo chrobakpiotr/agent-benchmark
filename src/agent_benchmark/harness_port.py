@@ -1,4 +1,4 @@
-"""The single adapter between the benchmark and agent-harness (contract v2 + offline launch API, pinned v0.8.2).
+"""The single adapter between the benchmark and agent-harness (contract v2 + offline launch API, pinned v0.8.3).
 
 Public API only (`agent_harness.contract`, `agent_harness.execution`). The harness launches every trial and seals
 its candidate into the trial's evidence root; the only backend the runner uses is the harness `ScriptedBackend`
@@ -14,6 +14,7 @@ from pathlib import Path
 
 from agent_harness import contract, execution, qualification
 
+from . import zero_spend
 from .schema import ValidationError, canonical, digest
 
 # Fixed codes for scripted outcomes; a scripted `rejected` means the backend was unavailable (never launched).
@@ -106,7 +107,9 @@ def reviewer_request(builder_request, config):
 
 def agent_cli_backend(config, task, diff_base, cli=None, prompt=None):
     """Harness AgentCliBackend for one config: the CLI's own login and sandbox, candidate = workspace diff."""
-    return execution.AgentCliBackend(cli or config["cli"], prompt or agent_prompt(task), diff_base=diff_base)
+    cli = cli or config["cli"]
+    key = {"api_key_file": str(zero_spend.OPENROUTER_KEY_FILE)} if cli == "opencode" else {}  # the sandbox denies the file
+    return execution.AgentCliBackend(cli, prompt or agent_prompt(task), diff_base=diff_base, **key)
 
 
 class GradingSession:
