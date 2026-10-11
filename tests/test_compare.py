@@ -69,16 +69,26 @@ class Compare(unittest.TestCase):
         self.assertEqual(fisher_exact(2, 4, 2, 4), 1.0)
         self.assertIsNone(fisher_exact(0, 0, 1, 1))
 
-    def test_pool_adds_identical_runs_and_excludes_others(self):
+    def test_pool_groups_by_identity_independent_of_order(self):
         a, b = self.run_offline("a"), self.run_offline("b")
         changed = self.run_offline("c", lambda m: m["configs"][0].update(model_requested="other-model"))
-        p = pool([a, b, changed])
-        self.assertEqual((len(p["included"]), [e["reasons"] for e in p["excluded"]]),
-                         (2, [["config cfg-a: model_requested differs"]]))
-        # offline-001 oracle: cfg-a 2/3 and cfg-b 1/3 per run, so 4/6 and 2/6 pooled
-        self.assertEqual({c: (t["pass"], t["started"], t["runs"]) for c, t in p["configs"].items()},
-                         {"cfg-a": (4, 6, 2), "cfg-b": (2, 6, 2)})
-        self.assertEqual(p["pairs"][0]["fisher_p"], fisher_exact(4, 6, 2, 6))
+        for order in ([a, b, changed], [changed, a, b], [a, changed, b]):
+            groups = sorted(pool(order)["groups"], key=lambda g: len(g["runs"]))
+            self.assertEqual([len(g["runs"]) for g in groups], [1, 2], order)
+            # offline-001 oracle: cfg-a 2/3 and cfg-b 1/3 per run, so 4/6 and 2/6 in the two-run group
+            self.assertEqual({c: (t["pass"], t["started"], t["runs"]) for c, t in groups[1]["configs"].items()},
+                             {"cfg-a": (4, 6, 2), "cfg-b": (2, 6, 2)})
+            self.assertEqual(groups[1]["pairs"][0]["fisher_p"], fisher_exact(4, 6, 2, 6))
+
+    def test_pool_never_merges_a_differing_config_set_or_a_duplicate(self):
+        a = self.run_offline("a")
+        only_a = self.run_offline("d", lambda m: (m["configs"].pop(1), m["executor"].update(
+            script=[e for e in m["executor"]["script"] if e["config_id"] == m["configs"][0]["config_id"]])))
+        link = self.root / "a-link"
+        link.symlink_to(a)
+        p = pool([a, only_a, link])
+        self.assertEqual(len(p["groups"]), 2)  # a different config set is its own group, never summed in
+        self.assertEqual(p["excluded"], [{"run_dir": str(link), "reasons": ["same run given more than once"]}])
 
     def test_changed_prompt_or_model_makes_only_that_config_not_comparable(self):
         a = self.run_offline("a")

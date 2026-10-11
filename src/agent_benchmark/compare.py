@@ -121,46 +121,55 @@ def render_markdown(c):
 
 
 def pool(run_dirs, ignore_backend_version=False):
-    """Add up runs whose task, graders, executor, backend version and per-config identity equal the first run's."""
+    """Group runs by full identity (task, graders, executor, harness versions unless ignored, config set and every
+    config's identity) and add up each group. Every group is reported, so argument order never selects a subset;
+    the same run given twice (also through a symlink) is excluded."""
     from .report import wilson95
-    sides = [_side(r) for r in run_dirs]
-    ref = sides[0]
-    included, excluded = [], []
-    for s in sides:
-        reasons = [f"{k} differs" for k in ("task", "graders", "executor") if s[k] != ref[k]]
-        if s["versions"] != ref["versions"] and not ignore_backend_version:
-            reasons.append("execution backend version differs")
-        reasons += [f"config {cid}: {f} differs" for cid in set(s["configs"]) & set(ref["configs"])
-                    for f in CONFIG_IDENTITY if s["configs"][cid].get(f) != ref["configs"][cid].get(f)]
-        (excluded if reasons else included).append({"run_dir": s["run_dir"], "versions": s["versions"],
-                                                     "reasons": reasons, "side": s})
-    totals = {}
-    for run in included:
-        for c in run["side"]["summary"]["configs"]:
-            t = totals.setdefault(c["config_id"], {"pass": 0, "started": 0, "graded": 0, "runs": 0})
-            t["pass"] += c["operational_success"]["pass"]
-            t["started"] += c["operational_success"]["denominator"]
-            t["graded"] += c["grades"]["PASS"] + c["grades"]["FAIL"]
-            t["runs"] += 1
-    for t in totals.values():
-        t["wilson95"] = wilson95(t["pass"], t["started"])
-    ids = sorted(totals)
-    pairs = [{"a": a, "b": b, "fisher_p": fisher_exact(totals[a]["pass"], totals[a]["started"],
-                                                     totals[b]["pass"], totals[b]["started"])}
-             for i, a in enumerate(ids) for b in ids[i + 1:]]
-    return {"task": ref["task"], "ignore_backend_version": ignore_backend_version,
-            "included": [{k: r[k] for k in ("run_dir", "versions")} for r in included],
-            "excluded": [{k: r[k] for k in ("run_dir", "reasons")} for r in excluded],
-            "configs": {cid: totals[cid] for cid in ids}, "pairs": pairs}
+    groups, excluded, seen = {}, [], set()
+    for run_dir in run_dirs:
+        real = str(Path(run_dir).resolve())
+        if real in seen:
+            excluded.append({"run_dir": str(run_dir), "reasons": ["same run given more than once"]})
+            continue
+        seen.add(real)
+        s = _side(run_dir)
+        key = json.dumps([s["task"], s["graders"], s["executor"], None if ignore_backend_version else s["versions"],
+                          {cid: {f: c.get(f) for f in CONFIG_IDENTITY} for cid, c in sorted(s["configs"].items())}],
+                         sort_keys=True)
+        groups.setdefault(key, []).append(s)
+    out = []
+    for members in groups.values():
+        totals = {}
+        for s in members:
+            for c in s["summary"]["configs"]:
+                t = totals.setdefault(c["config_id"], {"pass": 0, "started": 0, "runs": 0})
+                t["pass"] += c["operational_success"]["pass"]
+                t["started"] += c["operational_success"]["denominator"]
+                t["runs"] += 1
+        for t in totals.values():
+            t["wilson95"] = wilson95(t["pass"], t["started"])
+        ids = sorted(totals)
+        out.append({"runs": [{"run_dir": s["run_dir"], "experiment_id": s["experiment_id"], "versions": s["versions"]}
+                             for s in members],
+                    "configs": {cid: totals[cid] for cid in ids},
+                    "pairs": [{"a": a, "b": b, "fisher_p": fisher_exact(totals[a]["pass"], totals[a]["started"],
+                                                                     totals[b]["pass"], totals[b]["started"])}
+                              for i, a in enumerate(ids) for b in ids[i + 1:]]})
+    return {"ignore_backend_version": ignore_backend_version, "groups": out, "excluded": excluded}
 
 
 def render_pool_markdown(p):
-    out = [f"# Pooled runs (task `{p['task']}`)", "",
-           f"- included: {len(p['included'])}; excluded: {len(p['excluded'])}"
-           + ("; backend versions deliberately ignored" if p["ignore_backend_version"] else ""), ""]
+    out = ["# Pooled runs", "", f"- groups: {len(p['groups'])}"
+           + ("; harness versions deliberately ignored when grouping" if p["ignore_backend_version"] else ""),
+           "- CLI versions are not part of the identity unless the manifest records `cli_version`."]
     out += [f"- excluded `{e['run_dir']}`: {'; '.join(e['reasons'])}" for e in p["excluded"]]
-    out += ["", "| config | runs | PASS / started | Wilson95 |", "|---|---|---|---|"]
-    out += [f"| `{cid}` | {t['runs']} | {t['pass']}/{t['started']} | {t['wilson95']} |" for cid, t in p["configs"].items()]
-    out += ["", "| A | B | Fisher exact p (two-sided) |", "|---|---|---|"]
-    out += [f"| `{x['a']}` | `{x['b']}` | {x['fisher_p']} |" for x in p["pairs"]]
+    for n, g in enumerate(p["groups"], 1):
+        out += ["", f"## Group {n}", ""]
+        out += [f"- `{r['run_dir']}` ({r['experiment_id']}; {', '.join(r['versions']) or 'no backend versions'})"
+                for r in g["runs"]]
+        out += ["", "| config | runs | PASS / started | Wilson95 |", "|---|---|---|---|"]
+        out += [f"| `{cid}` | {t['runs']} | {t['pass']}/{t['started']} | {t['wilson95']} |" for cid, t in g["configs"].items()]
+        if g["pairs"]:
+            out += ["", "| A | B | Fisher exact p (two-sided) |", "|---|---|---|"]
+            out += [f"| `{x['a']}` | `{x['b']}` | {x['fisher_p']} |" for x in g["pairs"]]
     return "\n".join(out) + "\n"

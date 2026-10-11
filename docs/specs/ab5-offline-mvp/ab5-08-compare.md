@@ -40,9 +40,10 @@ Wilson intervals.
 
 ## Pool and Fisher's exact test (2026-10-11)
 
-- `agent-benchmark pool RUN...` adds up runs whose task, graders, executor, harness version and per-config identity equal
-  the first run's; every other run is listed as excluded with its reasons. `--ignore-backend-version` pools across
-  harness versions and says so in the output.
+- `agent-benchmark pool RUN...` groups runs by full identity (task, graders, executor, harness versions, the set of
+  configs and each config's identity) and adds up every group separately, so argument order never selects a subset;
+  the same run given twice (also through a symlink) is excluded. `--ignore-backend-version` drops harness versions
+  from the identity and says so. CLI versions are part of the identity only when the manifest records `cli_version`.
 - `compare` and `pool` report Fisher's exact two-sided p-value (stdlib `math.comb`) next to the Wilson intervals; the
   decision rule for "B higher/lower" stays non-overlapping Wilson intervals.
-- Evidence: `test_fisher_exact_hand_computed` (Fisher's tea tasting 4/4 vs 0/4 -> 2/70), `test_pool_adds_identical_runs_and_excludes_others`.
+- Evidence: `test_fisher_exact_hand_computed` (Fisher's tea tasting 4/4 vs 0/4 -> 2/70), `test_pool_groups_by_identity_independent_of_order`, `test_pool_never_merges_a_differing_config_set_or_a_duplicate`.

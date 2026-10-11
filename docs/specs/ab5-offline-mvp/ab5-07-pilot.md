@@ -99,16 +99,20 @@ Valid graded runs only (qualified grading; invalidated task-defect runs excluded
 | `real-006` | symptom | 4/4 | 4/4 |
 | `real-007` | symptom | 4/4 | 4/4 |
 | `real-008` | symptom | 4/4 | 4/4 |
-| `real-001-bug` v2 (3 runs) | symptom, unstated domain rule | 10/28, Wilson [0.21, 0.54] | 19/27 (+1 quota error), Wilson [0.52, 0.84] |
+| `real-001-bug` v2 (3 runs, harness 0.7.0 and 0.8.3) | symptom, unstated domain rule | 10/28, Wilson [0.21, 0.54] | 19/28 (one of them a quota error), Wilson [0.49, 0.82] |
 | builder/reviewer, `real-001-bug` v2 | symptom | Claude builds: 0/3 | Codex builds: 3/4 |
 
-- Only `real-001-bug` discriminates. Correction (same day): on the operational denominator (10/28 vs 19/28, the
-  Codex quota error counting as non-PASS) Fisher's exact test gives p = 0.032; the earlier p = 0.010 was a normal
-  approximation on graded trials only (10/28 vs 19/27). The three runs span harness v0.7.0-v0.8.3, so this pooling uses
-  `pool --ignore-backend-version`; the same-version runs alone (5/12 vs 9/12) give p = 0.21. Earlier text:
-  a two-proportion test gives z = 2.57, p = 0.010; the conservative Wilson-overlap
-  rule of `compare` does not yet declare a difference (overlap 0.515-0.542). Every failure on that task is the
-  unstated "complete needs a summary for every attempt" rule.
+- Only `real-001-bug` shows a difference, and it is **not established**. Per same-version group (`agent-benchmark pool`,
+  operational denominator, Fisher's exact two-sided p): harness 0.7.0, 2 runs, Claude 5/12 vs Codex 9/12, p = 0.21;
+  harness 0.8.3, the 16-repetition run added to check significance, 5/16 vs 10/16, p = 0.16. Pooling all three across
+  harness versions (`--ignore-backend-version`) gives 10/28 vs 19/28, p = 0.031, but that pool mixes backend versions
+  and extends the sample after the first look (optional stopping), so it is exploratory only. The Wilson rule of
+  `compare` declares no difference. Every failure on that task is the unstated "complete needs a summary for every
+  attempt" rule, and the direction (Codex more often right) held in every run.
+- Correction history (2026-10-11): first reported as p = 0.010 (normal approximation, graded trials only, 10/28 vs
+  19/27), then as p = 0.032 (cross-version pool, double-rounded); both overstated the evidence. An independent review
+  found this and two bugs in the first `pool` (unchecked configs missing from the first run, duplicate runs counted
+  twice); `pool` now groups runs by full identity and reports every group.
 - Claude is about 2.5-4x faster on every task. Local inferences (other regex groups, other exception paths, other
   entry points, well-known spec rules) were solved by both agents every time.
 - The third configuration (OpenCode, free OpenRouter model) cannot finish a trial within the 50-requests/day free tier
