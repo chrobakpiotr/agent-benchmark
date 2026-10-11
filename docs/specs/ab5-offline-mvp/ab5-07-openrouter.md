@@ -35,7 +35,11 @@ Status: requirements; blocked on a harness backend for a third agent CLI. Budget
   `"limit": 0` (a key created with a zero credit limit cannot spend, even if the account later holds credits), and
   the configured model id must end in `:free`; otherwise refuse. `is_free_tier` alone is not enough: per the docs it
   only means the all-time purchase is below the threshold. `free_model_daily_requests.remaining` is recorded before
-  each trial and a trial is not started below 80 remaining requests.
+  each trial, and a trial starts only with the full daily allowance left (right after the UTC reset).
+- Feasibility risk: a trial cannot span days (a quota error ends it), so a trial that needs more than 50 requests can
+  never complete on the free tier. The first calibration trial measures OpenCode's request count on `real-001`; if it
+  exceeds 50, this configuration is dropped rather than paid for. Also to verify then: that a zero-limit key can call
+  `:free` models.
 - Config `openrouter-free`: `cli: "opencode"`, pinned model, track `controlled-host` (or the container track the
   harness provides), at most one trial per day; the run stops on quota and `resume` continues.
 
