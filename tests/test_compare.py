@@ -48,6 +48,20 @@ class Compare(unittest.TestCase):
         self.assertEqual(p["cfg-a"]["correctness"], "no evidence of a difference")
         self.assertEqual(p["cfg-a"]["cost"], "not compared: not fully priced on both sides")
 
+    def test_separated_wilson_intervals_claim_a_direction(self):
+        def ten(candidate):
+            def mutate(m):
+                m["repetitions"] = 10
+                m["executor"]["script"] = [{"config_id": c["config_id"], "repetition": r, "outcome": "completed",
+                                            "candidate": candidate, "completion": None, "usage": None}
+                                           for c in m["configs"] for r in range(1, 11)]
+            return mutate
+        p = self.pairs(self.run_offline("a", ten("good")), self.run_offline("b", ten("noop")))
+        # hand-computed Wilson 95%: 10/10 -> [0.7225, 1.0], 0/10 -> [0.0, 0.2775]; they do not overlap
+        self.assertEqual((p["cfg-a"]["pass"], p["cfg-a"]["correctness"]), (["10/10", "0/10"], "B lower"))
+        p = self.pairs(self.run_offline("c", ten("noop")), self.run_offline("d", ten("good")))
+        self.assertEqual(p["cfg-b"]["correctness"], "B higher")
+
     def test_changed_prompt_or_model_makes_only_that_config_not_comparable(self):
         a = self.run_offline("a")
         prompt = self.pairs(a, self.run_offline("b", lambda m: m["configs"][0].update(prompt_digest="sha256:" + "1" * 64)))
