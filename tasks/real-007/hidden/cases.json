@@ -1,0 +1,89 @@
+{
+ "module": "src.packaging.requirements",
+ "cases": [
+  {
+   "id": "post_long_s_reported",
+   "function": "SpecifierSet",
+   "args": [
+    "~=1.0.po\u017ft1"
+   ]
+  },
+  {
+   "id": "post_long_s_in_set",
+   "function": "SpecifierSet",
+   "args": [
+    ">=1,~=2.0.po\u017ft3"
+   ]
+  },
+  {
+   "id": "post_long_s_requirement",
+   "function": "Requirement",
+   "args": [
+    "pkg~=1.0.po\u017ft1"
+   ]
+  },
+  {
+   "id": "pre_dotless_i",
+   "function": "SpecifierSet",
+   "args": [
+    "~=1.0.prev\u0131ew1"
+   ]
+  },
+  {
+   "id": "pre_dotted_capital_i",
+   "function": "SpecifierSet",
+   "args": [
+    "~=1.0.prev\u0130ew1"
+   ]
+  },
+  {
+   "id": "valid_upper_rc",
+   "function": "SpecifierSet",
+   "args": [
+    "~=1.0RC1"
+   ]
+  },
+  {
+   "id": "valid_upper_dev",
+   "function": "SpecifierSet",
+   "args": [
+    "~=1.0.DEV1"
+   ]
+  },
+  {
+   "id": "valid_preview",
+   "function": "SpecifierSet",
+   "args": [
+    "~=1.0.preview1"
+   ]
+  },
+  {
+   "id": "guard_post",
+   "function": "_parse_requirement",
+   "args": [
+    "pkg~=1.0.post1"
+   ]
+  },
+  {
+   "id": "guard_upper_rc",
+   "function": "_parse_requirement",
+   "args": [
+    "pkg~=1.0RC1"
+   ]
+  },
+  {
+   "id": "guard_upper_dev",
+   "function": "_parse_requirement",
+   "args": [
+    "pkg~=1.0.DEV1"
+   ]
+  },
+  {
+   "id": "guard_preview",
+   "function": "_parse_requirement",
+   "args": [
+    "pkg~=1.0.preview1"
+   ]
+  }
+ ]
+}

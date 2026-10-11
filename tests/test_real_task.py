@@ -244,5 +244,29 @@ class RealTask6(unittest.TestCase):
                            capture_output=True, text=True)
         self.assertEqual((p.returncode, p.stdout.strip()), (0, "1.0rc1"), p.stderr[-300:])
 
+
+class RealTask7(unittest.TestCase):
+    """real-007: pypa/packaging fix f14a093; the report shows the post group only, the pre group is inferred."""
+
+    def test_bundle_reference_patches_and_visible_check(self):
+        bundle = ROOT / "tasks" / "real-007"
+        task = validate_task(json.loads((bundle / "task.json").read_text()))
+        verify_bundle(task, bundle)
+        pre = ["pre_dotless_i", "pre_dotted_capital_i"]
+        want = {"good": ("PASS", []), "ascii_flag_global": ("PASS", []),
+                "noop": ("FAIL", ["post_long_s_in_set", "post_long_s_reported", "post_long_s_requirement"] + pre),
+                "post_only": ("FAIL", pre), "no_ignorecase": ("FAIL", ["valid_upper_dev", "valid_upper_rc"])}
+        for name, (result, failed) in want.items():
+            data = (bundle / "reference" / f"{name}.patch").read_bytes()
+            with tempfile.TemporaryDirectory() as d:
+                (Path(d) / digest(data).split(":")[1]).write_bytes(data)
+                r, c = grader.grade(task, d, digest(data), bundle_dir=bundle, host_execution_allowed=True)
+            got = next(x["detail"]["failed"] for x in c if x["criterion"] == "hidden_cases_pass")
+            self.assertEqual((r, got), (result, failed), name)
+        p = subprocess.run([sys.executable, "-c", "from src.packaging.specifiers import SpecifierSet; "
+                            "print(SpecifierSet('~=1.0.post1'))"], cwd=bundle / "base",
+                           env={"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
+        self.assertEqual((p.returncode, p.stdout.strip()), (0, "~=1.0.post1"), p.stderr[-300:])
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,13 @@
+diff --git a/src/packaging/specifiers.py b/src/packaging/specifiers.py
+index dd46b56..827fa6b 100644
+--- a/src/packaging/specifiers.py
++++ b/src/packaging/specifiers.py
+@@ -298,7 +298,7 @@ class Specifier(BaseSpecifier):
+                     [-_\.]?
+                     [0-9]*
+                 )?
+-                (?:                                   # post release
++                (?a:                                   # post release
+                     (?:-[0-9]+)|(?:[-_\.]?(post|rev|r)[-_\.]?[0-9]*)
+                 )?
+                 (?:[-_\.]?dev[-_\.]?[0-9]*)?          # dev release

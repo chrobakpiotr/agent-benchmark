@@ -1,0 +1,62 @@
+{
+ "post_long_s_reported": {
+  "raises": "InvalidSpecifier"
+ },
+ "post_long_s_in_set": {
+  "raises": "InvalidSpecifier"
+ },
+ "post_long_s_requirement": {
+  "raises": "InvalidRequirement"
+ },
+ "pre_dotless_i": {
+  "raises": "InvalidSpecifier"
+ },
+ "pre_dotted_capital_i": {
+  "raises": "InvalidSpecifier"
+ },
+ "valid_upper_rc": {
+  "raises": "TypeError"
+ },
+ "valid_upper_dev": {
+  "raises": "TypeError"
+ },
+ "valid_preview": {
+  "raises": "TypeError"
+ },
+ "guard_post": {
+  "value": [
+   "pkg",
+   "",
+   [],
+   "~=1.0.post1",
+   null
+  ]
+ },
+ "guard_upper_rc": {
+  "value": [
+   "pkg",
+   "",
+   [],
+   "~=1.0RC1",
+   null
+  ]
+ },
+ "guard_upper_dev": {
+  "value": [
+   "pkg",
+   "",
+   [],
+   "~=1.0.DEV1",
+   null
+  ]
+ },
+ "guard_preview": {
+  "value": [
+   "pkg",
+   "",
+   [],
+   "~=1.0.preview1",
+   null
+  ]
+ }
+}

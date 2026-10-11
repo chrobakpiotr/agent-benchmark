@@ -1,0 +1,26 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-007",
+  "version": "1",
+  "description": "Bug report from a user of the packaging library: SpecifierSet(\"~=1.0.po\u017ft1\") is accepted - the version was pasted from a document and contains the Latin long s \"\u017f\" instead of \"s\" - although Version(\"1.0.po\u017ft1\") is rejected as invalid. Find the problem and fix it. Change src/packaging/specifiers.py only.",
+  "environment": "Python >= 3.13 stdlib; base tree = pypa/packaging f14a093^ (src, tests, licenses, pyproject, README, .gitignore), no repository history; the project's own test suite needs pytest, which is not installed",
+  "visible_checks": [
+    "python -c \"from src.packaging.specifiers import SpecifierSet; print(SpecifierSet('~=1.0.post1'))\" (from the workspace root; pytest is not available)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:cfe17f6710a24a567d92cfdd88cc0a9962992b43c335b0dd3843ede85bd9cba1",
+    "hidden_digest": "sha256:38b4987f5112bf517aa26f98cafbf9b02a7514f2967ed9d5586c061cffdaeb1f",
+    "expected_digest": "sha256:edf08898cf7cce2cdc6cddd772f68ac5c07cd2d112eb14129511d217d6a52b10",
+    "scope": [
+      "src/packaging/specifiers.py"
+    ],
+    "hidden_test_count": 12,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: pypa/packaging commit f14a093 (fix(specifiers): scope ~= groups with (?a:...), #1384, 2026-08-12); reference/good.patch is that commit's src diff; symptom-only description with one example (post release, long s) and no general rule; hidden cases authored for agent-benchmark (2026-10-11): the same Unicode case-folding in the pre-release group (dotless/dotted i in 'preview'), other entry points, ASCII upper-case guards; other reference patches built by build_task.py, incl. a different correct fix (global re.ASCII) that must pass. Public repository: contamination possible; valid SpecifierSet cases expect the driver's TypeError (the object constructed but is not JSON-serialisable) because the parser-based guards do not exercise the Specifier regex; a candidate raising TypeError itself would pass those three cases spuriously",
+  "license": "Apache-2.0 OR BSD-2-Clause (pypa/packaging; base/LICENSE, base/LICENSE.APACHE, base/LICENSE.BSD)"
+}

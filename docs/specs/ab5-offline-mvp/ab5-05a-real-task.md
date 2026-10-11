@@ -145,3 +145,18 @@ TypeError misses them (inferred, not stated). Cases go through `src.packaging.ut
 `canonicalize_version` as a string-valued guard); arguments are JSON. Reference outcomes: `good` PASS; `noop` fails 6;
 `float_only` fails 5; `catch_typeerror` fails only the two list cases; `coerce_to_str` fails float and int. Built by
 `build_task.py`. Calibration run first (`experiments/real-006-calibration.json`), then `experiments/real-006.json`.
+
+`real-006` result (2026-10-11): 8/8 PASS for both agents. Its description added a general rule ("invalid input must
+always raise InvalidVersion"), which states what was meant to be inferred. Rule from now on: the description is the
+symptom with one example and nothing general.
+
+# `real-007` from pypa/packaging `f14a093`
+
+Commit `f14a093` "fix(specifiers): scope ~= groups with (?a:...)" (2026-08-12). The `~=` branch of the specifier
+regex is compiled with IGNORECASE, so in Unicode mode `ſ` matches `s` (post release) and `ı`/`İ` match `i` (pre
+release `preview`). The report shows only `~=1.0.poſt1`, with no general rule; the pre-release cases are inferred.
+The dev group has no Unicode case-folding match and is not tested. Valid `SpecifierSet` cases expect the driver's
+own `TypeError` (constructed, not JSON-serialisable), because the parser-based guards never reach the Specifier
+regex; a reference patch removing IGNORECASE passed until these cases were added. Reference outcomes: `good` and
+`ascii_flag_global` (a different correct fix) PASS; `noop` fails 5; `post_only` fails the two pre cases;
+`no_ignorecase` fails the upper-case RC/DEV cases. Calibration first (`experiments/real-007-calibration.json`).
