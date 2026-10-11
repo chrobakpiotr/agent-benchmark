@@ -1,0 +1,35 @@
+{
+ "requirement_empty": {
+  "raises": "InvalidRequirement"
+ },
+ "requirement_empty_spaced": {
+  "raises": "InvalidRequirement"
+ },
+ "requirement_empty_in_list": {
+  "raises": "InvalidRequirement"
+ },
+ "specifierset_empty": {
+  "raises": "InvalidSpecifier"
+ },
+ "specifierset_empty_in_list": {
+  "raises": "InvalidSpecifier"
+ },
+ "parse_arbitrary_word": {
+  "value": [
+   "pkg",
+   "",
+   [],
+   "===anything",
+   null
+  ]
+ },
+ "parse_arbitrary_in_list": {
+  "value": [
+   "pkg",
+   "",
+   [],
+   ">=1,===local+thing",
+   null
+  ]
+ }
+}

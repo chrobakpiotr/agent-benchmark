@@ -1,0 +1,29 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-005",
+  "version": "1",
+  "description": "Bug report from a user of the packaging library: Requirement(\"demo-lib===\") is accepted and prints back as demo-lib===, although the arbitrary equality operator === must be followed by a version string. Find the problem and fix it. Change files under src/packaging/ only.",
+  "environment": "Python >= 3.13 stdlib; base tree = pypa/packaging 2c87a33 (src, tests, licenses, pyproject, README), no repository history; the project's own test suite needs pytest, which is not installed",
+  "visible_checks": [
+    "python -c \"from src.packaging.requirements import Requirement; print(Requirement('demo-lib>=1'))\" (from the workspace root; pytest is not available)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:8b4b36321141d267f85961b063f77c766ad37daa922dbcdebce1203f208e133b",
+    "hidden_digest": "sha256:338affce25f64b7c211de27b521cf13e9328c53d9b9a875d10c862f747e9caac",
+    "expected_digest": "sha256:2fdab822be6654d69954da4a148030f1108be0ddf1186a9a5ec540935b1c41a1",
+    "scope": [
+      "src/packaging/specifiers.py",
+      "src/packaging/requirements.py",
+      "src/packaging/_parser.py",
+      "src/packaging/_tokenizer.py"
+    ],
+    "hidden_test_count": 7,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: pypa/packaging commit 2aada00 (fix: reject empty arbitrary versions in requirements, #1430, 2026-10-06), base = its parent 2c87a33; reference/good.patch is that commit's src diff; symptom-only description naming Requirement only; hidden cases authored for agent-benchmark (2026-10-11): the reported entry point, the inferred SpecifierSet entry point and two non-empty === guards; other reference patches built by build_task.py. Public repository: contamination possible",
+  "license": "Apache-2.0 OR BSD-2-Clause (pypa/packaging; base/LICENSE, base/LICENSE.APACHE, base/LICENSE.BSD)"
+}

@@ -1,0 +1,54 @@
+{
+ "module": "src.packaging.requirements",
+ "cases": [
+  {
+   "id": "requirement_empty",
+   "function": "Requirement",
+   "args": [
+    "pkg==="
+   ]
+  },
+  {
+   "id": "requirement_empty_spaced",
+   "function": "Requirement",
+   "args": [
+    "pkg === "
+   ]
+  },
+  {
+   "id": "requirement_empty_in_list",
+   "function": "Requirement",
+   "args": [
+    "pkg>=2,==="
+   ]
+  },
+  {
+   "id": "specifierset_empty",
+   "function": "SpecifierSet",
+   "args": [
+    "==="
+   ]
+  },
+  {
+   "id": "specifierset_empty_in_list",
+   "function": "SpecifierSet",
+   "args": [
+    ">=1,==="
+   ]
+  },
+  {
+   "id": "parse_arbitrary_word",
+   "function": "_parse_requirement",
+   "args": [
+    "pkg===anything"
+   ]
+  },
+  {
+   "id": "parse_arbitrary_in_list",
+   "function": "_parse_requirement",
+   "args": [
+    "pkg>=1,===local+thing"
+   ]
+  }
+ ]
+}

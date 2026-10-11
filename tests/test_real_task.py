@@ -195,5 +195,29 @@ class RealTask4(unittest.TestCase):
                            capture_output=True, text=True)
         self.assertEqual(p.returncode, 0, p.stderr[-500:])
 
+
+class RealTask5(unittest.TestCase):
+    """real-005: pypa/packaging fix 2aada00, symptom names Requirement only; the SpecifierSet entry point is inferred."""
+
+    def test_bundle_reference_patches_and_visible_check(self):
+        bundle = ROOT / "tasks" / "real-005"
+        task = validate_task(json.loads((bundle / "task.json").read_text()))
+        verify_bundle(task, bundle)
+        rejects = ["requirement_empty", "requirement_empty_in_list", "requirement_empty_spaced"]
+        sets = ["specifierset_empty", "specifierset_empty_in_list"]
+        want = {"good": ("PASS", []), "noop": ("FAIL", rejects + sets), "requirement_only": ("FAIL", sets),
+                "overstrict": ("FAIL", ["parse_arbitrary_in_list", "parse_arbitrary_word"])}
+        for name, (result, failed) in want.items():
+            data = (bundle / "reference" / f"{name}.patch").read_bytes()
+            with tempfile.TemporaryDirectory() as d:
+                (Path(d) / digest(data).split(":")[1]).write_bytes(data)
+                r, c = grader.grade(task, d, digest(data), bundle_dir=bundle, host_execution_allowed=True)
+            got = next(x["detail"]["failed"] for x in c if x["criterion"] == "hidden_cases_pass")
+            self.assertEqual((r, got), (result, failed), name)
+        p = subprocess.run([sys.executable, "-c", "from src.packaging.requirements import Requirement; "
+                            "print(Requirement('demo-lib>=1'))"], cwd=bundle / "base",
+                           env={"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
+        self.assertEqual((p.returncode, p.stdout.strip()), (0, "demo-lib>=1"), p.stderr[-300:])
+
 if __name__ == "__main__":
     unittest.main()

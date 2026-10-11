@@ -1,0 +1,13 @@
+diff --git a/src/packaging/requirements.py b/src/packaging/requirements.py
+index 124de66..947b764 100644
+--- a/src/packaging/requirements.py
++++ b/src/packaging/requirements.py
+@@ -100,6 +100,8 @@ class Requirement:
+             """A :class:`~.SpecifierSet` of the version specified by the requirement."""
+         except InvalidSpecifier as e:
+             raise InvalidRequirement(str(e)) from e
++        if any(s.operator == "===" and not s.version for s in self.specifier):
++            raise InvalidRequirement("=== needs a version")
+         self.marker: Marker | None = None
+         """A :class:`~.Marker` for the requirement, or ``None``."""
+         if parsed.marker is not None:

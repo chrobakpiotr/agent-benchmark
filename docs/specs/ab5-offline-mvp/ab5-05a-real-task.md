@@ -101,3 +101,16 @@ name the reviewed report's subject. Fixtures in `base/bench_fixtures/` (reproduc
 reference patches via `build_references.py`. 5 hidden cases; reference outcomes: `good` PASS; `noop` fails 3;
 `job_only` fails the stale review subject; `job_any` fails the check without the job; `overstrict` fails the JSON
 context. Evidence: `RealTask4.test_bundle_reference_patches_and_visible_checks`. Agent run: `experiments/real-004.json`.
+
+# `real-005` from pypa/packaging `2aada00`
+
+First task from outside agent-harness: pypa/packaging (Apache-2.0 OR BSD-2-Clause), commit `2aada00` "fix: reject
+empty arbitrary versions in requirements" (2026-10-06), base = parent `2c87a33`. Symptom-only report names
+`Requirement("demo-lib===")`; the real fix is in the shared specifier regex, so `SpecifierSet("===")` must be
+rejected too (inferred, not stated). Scope covers every file a plausible fix touches (`specifiers.py`,
+`requirements.py`, `_parser.py`, `_tokenizer.py`) so a Requirement-only fix is judged on behaviour. Cases go through
+`src.packaging.requirements` (`Requirement`, `SpecifierSet`, `_parse_requirement`); valid cases use the parser's
+plain tuple so the answers are JSON. The project's tests need pytest, which the agents' sandbox lacks, so the visible
+check is a stdlib smoke command. Reference outcomes: `good` PASS; `noop` fails 5; `requirement_only` fails both
+SpecifierSet cases; `overstrict` (=== must start with a digit) fails both valid cases. Built by `build_task.py`.
+Evidence: `RealTask5.test_bundle_reference_patches_and_visible_check`. Agent run: `experiments/real-005.json`.
