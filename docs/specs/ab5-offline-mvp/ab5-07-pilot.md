@@ -130,3 +130,7 @@ Valid graded runs only (qualified grading; invalidated task-defect runs excluded
 
 - Confirmatory test (pre-registered, 2026-10-12, `ab5-07-confirmatory.md`): Claude 8/49 vs Codex 25/47 on
   `real-001-bug`, Fisher p = 0.0002, Wilson intervals separated; the difference on this task is now established.
+- Third configuration (`opencode-nemotron-free`, free OpenRouter model, about two trials per day): `real-001` 1/1 PASS
+  (calibration, 21 requests); `real-001-bug` 0/1 (31 requests, 402 s), failing `complete_null_input`,
+  `complete_without_summary` and the valid `partial_null_units_valid` (partial and over-strict at once). One trial is
+  an observation, not a rate.
