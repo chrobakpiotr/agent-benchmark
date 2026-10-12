@@ -1,0 +1,35 @@
+{
+  "schema_version": "agent-benchmark/manifest/v2",
+  "experiment_id": "ab5-07-real-001-bug-nemotron",
+  "task": {
+    "path": "../tasks/real-001-bug/task.json",
+    "digest": "sha256:ed2b2eb7f767c2cc6ff10571b5fe37989b036945387a9a7d173cb84f170764a6"
+  },
+  "configs": [
+    {
+      "config_id": "opencode-nemotron-free",
+      "model_requested": "nvidia/nemotron-3-super-120b-a12b:free",
+      "model_resolved": null,
+      "cli": "opencode",
+      "cli_version": null,
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 1800
+      },
+      "isolation_track": "controlled-host"
+    }
+  ],
+  "repetitions": 1,
+  "seed": 7,
+  "retry_policy": {
+    "max_attempts": 1
+  },
+  "exclusions": [],
+  "executor": {
+    "kind": "agent-cli"
+  }
+}
