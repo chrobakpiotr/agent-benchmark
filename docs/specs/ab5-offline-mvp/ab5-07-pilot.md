@@ -127,3 +127,6 @@ Valid graded runs only (qualified grading; invalidated task-defect runs excluded
   0.160.0 were installed both on 2026-10-10 (start) and after the last run, so they very probably did not change. From
   now on every agent-cli run records `<cli> --version` in `run_started.executor.cli_versions` (part of the identity
   `compare`/`pool` check), and `resume` refuses when the versions changed. The optional-stopping caveat above stands.
+
+- Confirmatory test (pre-registered, 2026-10-12, `ab5-07-confirmatory.md`): Claude 8/49 vs Codex 25/47 on
+  `real-001-bug`, Fisher p = 0.0002, Wilson intervals separated; the difference on this task is now established.

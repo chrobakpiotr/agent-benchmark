@@ -26,3 +26,25 @@ question but are not evidence for it.
 
 Zero money (subscriptions, preflight enforced). About 100 trials: roughly 2 hours plus grading; it will span more than
 one Claude Pro / ChatGPT Plus usage window, using `resume` after each quota stop.
+
+## Result (run 2026-10-12, `~/agent-benchmark-runs/real-001-bug-confirmatory-2026-10-12`)
+
+| config | PASS / non-excluded | Wilson 95% | excluded (outcome `error`) | operational |
+|---|---|---|---|---|
+| `claude-sonnet-pinned` | 8/49 (16.3%) | [0.085, 0.290] | 1 (Claude Pro quota) | 8/50 |
+| `codex-sol-pinned` | 25/47 (53.2%) | [0.392, 0.667] | 3 (OpenAI "model at capacity" x2, 503 x1) | 25/50 |
+
+- Primary analysis (Fisher's exact, two-sided, non-excluded trials): **p = 0.0002**, a significant difference at
+  alpha = 0.05. Secondary: operational 8/50 vs 25/50, p = 0.0006; the Wilson intervals do not overlap, so the
+  conservative `compare` rule also declares a difference.
+- Validity conditions held: 49 and 47 non-excluded trials (>= 45); every Claude trial resolved to `claude-sonnet-5-5`;
+  CLI versions `2.1.289 (Claude Code)` / `codex-cli 0.160.0` for the whole run (resume refuses a change); one harness
+  version (v0.8.4).
+- All 63 failures are the same case, `complete_without_summary` (the rule the report does not state).
+- Deviations, disclosed: (1) the owner asked for interim PASS percentages during the run; they were shown but no
+  decision depended on them and the run was not stopped early; (2) the plan named quota stops as the reason to
+  resume; the run was also resumed after OpenAI capacity errors, twice with a delay (20 and 45 minutes); four resumes
+  in total.
+- Conclusion: on `real-001-bug` (v2), with these pinned versions, Codex gpt-6.1-sol on ChatGPT Plus infers the unstated
+  rule more often than Claude Sonnet 5.5 on Claude Pro. This is one task; it says nothing about other tasks, where both
+  passed every valid trial.
