@@ -302,12 +302,10 @@ class RealTask9(unittest.TestCase):
         bundle = ROOT / "tasks" / "real-009"
         task = validate_task(json.loads((bundle / "task.json").read_text()))
         verify_bundle(task, bundle)
-        want = {"good": ("PASS", []),
-                "noop": ("FAIL", ["eq_empty_dict_reported", "eq_non_numeric_list", "gt_single_letter",
-                                  "lt_non_numeric_list", "ne_unknown_key"]),
-                "catch_return_false": ("FAIL", ["gt_single_letter", "lt_empty_dict", "lt_non_numeric_list",
-                                                "ne_unknown_key"]),
-                "raise_typeerror": ("FAIL", ["eq_empty_dict_reported", "eq_non_numeric_list", "ne_unknown_key"])}
+        eq_ne = ["eq_empty_dict_reported", "eq_unknown_key", "ne_empty_dict", "ne_unknown_key"]
+        want = {"good": ("PASS", []), "notimplemented_on_typeerror": ("PASS", []), "noop": ("FAIL", eq_ne),
+                "catch_return_false": ("FAIL", ["gt_unknown_key", "lt_empty_dict", "ne_empty_dict", "ne_unknown_key"]),
+                "raise_typeerror": ("FAIL", eq_ne)}
         for name, (result, failed) in want.items():
             data = (bundle / "reference" / f"{name}.patch").read_bytes()
             with tempfile.TemporaryDirectory() as d:

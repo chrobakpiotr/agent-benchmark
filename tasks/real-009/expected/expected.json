@@ -2,19 +2,19 @@
  "eq_empty_dict_reported": {
   "value": false
  },
- "eq_non_numeric_list": {
+ "eq_unknown_key": {
   "value": false
  },
  "ne_unknown_key": {
   "value": true
  },
- "lt_non_numeric_list": {
-  "raises": "TypeError"
- },
- "gt_single_letter": {
-  "raises": "TypeError"
+ "ne_empty_dict": {
+  "value": true
  },
  "lt_empty_dict": {
+  "raises": "TypeError"
+ },
+ "gt_unknown_key": {
   "raises": "TypeError"
  },
  "guard_eq_tuple": {

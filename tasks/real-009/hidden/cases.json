@@ -10,15 +10,14 @@
    ]
   },
   {
-   "id": "eq_non_numeric_list",
+   "id": "eq_unknown_key",
    "function": "eq",
    "args": [
     "1.2.3",
-    [
-     "a",
-     "b",
-     "c"
-    ]
+    {
+     "major": 1,
+     "foo": 2
+    }
    ]
   },
   {
@@ -33,25 +32,11 @@
    ]
   },
   {
-   "id": "lt_non_numeric_list",
-   "function": "lt",
+   "id": "ne_empty_dict",
+   "function": "ne",
    "args": [
     "1.2.3",
-    [
-     "a",
-     "b",
-     "c"
-    ]
-   ]
-  },
-  {
-   "id": "gt_single_letter",
-   "function": "gt",
-   "args": [
-    "1.2.3",
-    [
-     "x"
-    ]
+    {}
    ]
   },
   {
@@ -60,6 +45,17 @@
    "args": [
     "1.2.3",
     {}
+   ]
+  },
+  {
+   "id": "gt_unknown_key",
+   "function": "gt",
+   "args": [
+    "1.2.3",
+    {
+     "major": 1,
+     "foo": 2
+    }
    ]
   },
   {

@@ -1,7 +1,7 @@
 {
   "schema_version": "agent-benchmark/task/v1",
   "task_id": "real-009",
-  "version": "1",
+  "version": "2",
   "description": "Bug report from a user of python-semver: checking Version.parse(\"2.0.0\") == {} in our config loader crashes with TypeError: Version.__init__() missing 1 required positional argument: 'major', coming from inside the library. Find the problem and fix it. Change src/semver/ only.",
   "environment": "Python >= 3.13 stdlib; base tree = python-semver 0aa17a3^ (src, tests, LICENSE.txt, pyproject, README, .gitignore; two test symlinks into docs/ removed) plus the task-owned helper bench_fixtures/ops.py, no repository history; the project's own test suite needs pytest, which is not installed",
   "visible_checks": [
@@ -13,8 +13,8 @@
   },
   "bundle": {
     "base_digest": "sha256:f2560847c59153c063bf3c053d09d4ad67027d12f33297ac1710984784dfb558",
-    "hidden_digest": "sha256:a75cd3b1069f3bfd80a491ad8a2544e08fc80ebdba6c62eb0c9ddf9a327658b9",
-    "expected_digest": "sha256:7dbbcd951187fbf50d96bdcebfbc73a416cb1d38231e723054ab4e77efc9f2fa",
+    "hidden_digest": "sha256:c37aafbac683567571e921dc4b369857c168efc87ecd274742fe85b159bfc354",
+    "expected_digest": "sha256:787d05a1780f7c9f6d96f564c5a7a35a4668a28a921ae8984b5430ba4e39da49",
     "scope": [
       "src/semver/version.py",
       "src/semver/_types.py"
@@ -22,6 +22,6 @@
     "hidden_test_count": 10,
     "timeout_seconds": 30
   },
-  "provenance": "real fix: python-semver commit 0aa17a3 (Handle malformed collection operands in Version comparisons, #479, 2026-09-12); reference/good.patch is that commit's src diff; symptom-only description (== with an empty dict crashes); hidden cases authored for agent-benchmark (2026-10-12): Python's data-model rule for unsupported operands (== False, != True, ordering raises TypeError) that the report does not state, plus guards; cases run through the task-owned helper bench_fixtures/ops.py; other reference patches built by build_task.py. Public repository: contamination possible",
+  "provenance": "real fix: python-semver commit 0aa17a3 (Handle malformed collection operands in Version comparisons, #479, 2026-09-12); reference/good.patch is that commit's src diff; symptom-only description (== with an empty dict crashes); hidden cases authored for agent-benchmark (2026-10-12): Python's data-model rule for unsupported operands (== False, != True, ordering raises TypeError) that the report does not state, plus guards; cases run through the task-owned helper bench_fixtures/ops.py; other reference patches built by build_task.py. Public repository: contamination possible; v2 (2026-10-12, after a calibration in which both agents failed the same cases): cases with non-numeric list parts were removed, because they raise ValueError like an invalid version string, which the library keeps raising, so treating them alike was a defensible reading",
   "license": "BSD-3-Clause (python-semver; base/LICENSE.txt)"
 }

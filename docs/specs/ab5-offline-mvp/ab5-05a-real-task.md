@@ -186,3 +186,10 @@ decorator already returns NotImplemented for other unsupported types. Operators 
 run through the task-owned helper `base/bench_fixtures/ops.py` (outside the patch scope). Reference outcomes: `good`
 PASS; `noop` fails 5; `catch_return_false` fails `!=` and every ordering case; `raise_typeerror` fails `==`/`!=`.
 Calibration first (`experiments/real-009-calibration.json`).
+
+`real-009` v1 calibration (2026-10-12): both agents failed the same three cases, lists with non-numeric parts. At the
+base those raise ValueError, exactly like an invalid version string, which the library (also after the real fix)
+keeps raising; catching only the structural TypeError was therefore a defensible reading. v2 keeps only malformed
+structures (empty dict, unknown key) for `==`, `!=` and ordering, and adds the reference patch
+`notimplemented_on_typeerror`, which must PASS. The two calibration grades are invalidated. Calibration is what
+caught this before any full run.
