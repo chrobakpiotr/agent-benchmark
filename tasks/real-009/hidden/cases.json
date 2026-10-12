@@ -1,0 +1,113 @@
+{
+ "module": "bench_fixtures.ops",
+ "cases": [
+  {
+   "id": "eq_empty_dict_reported",
+   "function": "eq",
+   "args": [
+    "1.2.3",
+    {}
+   ]
+  },
+  {
+   "id": "eq_non_numeric_list",
+   "function": "eq",
+   "args": [
+    "1.2.3",
+    [
+     "a",
+     "b",
+     "c"
+    ]
+   ]
+  },
+  {
+   "id": "ne_unknown_key",
+   "function": "ne",
+   "args": [
+    "1.2.3",
+    {
+     "major": 1,
+     "foo": 2
+    }
+   ]
+  },
+  {
+   "id": "lt_non_numeric_list",
+   "function": "lt",
+   "args": [
+    "1.2.3",
+    [
+     "a",
+     "b",
+     "c"
+    ]
+   ]
+  },
+  {
+   "id": "gt_single_letter",
+   "function": "gt",
+   "args": [
+    "1.2.3",
+    [
+     "x"
+    ]
+   ]
+  },
+  {
+   "id": "lt_empty_dict",
+   "function": "lt",
+   "args": [
+    "1.2.3",
+    {}
+   ]
+  },
+  {
+   "id": "guard_eq_tuple",
+   "function": "eq",
+   "args": [
+    "1.2.3",
+    [
+     1,
+     2,
+     3
+    ]
+   ]
+  },
+  {
+   "id": "guard_eq_short_list",
+   "function": "eq",
+   "args": [
+    "1.2.3",
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  {
+   "id": "guard_lt_dict",
+   "function": "lt",
+   "args": [
+    "1.2.3",
+    {
+     "major": 2,
+     "minor": 0,
+     "patch": 0
+    }
+   ]
+  },
+  {
+   "id": "guard_gt_list",
+   "function": "gt",
+   "args": [
+    "1.2.3",
+    [
+     1,
+     0,
+     0
+    ]
+   ]
+  }
+ ]
+}

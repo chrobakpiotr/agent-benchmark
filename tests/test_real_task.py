@@ -294,5 +294,31 @@ class RealTask8(unittest.TestCase):
                            env={"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
         self.assertEqual((p.returncode, p.stdout.strip()), (0, "-1"), p.stderr[-300:])
 
+
+class RealTask9(unittest.TestCase):
+    """real-009: python-semver fix 0aa17a3; the report shows == crashing, Python's operand rule for the rest is inferred."""
+
+    def test_bundle_reference_patches_and_visible_check(self):
+        bundle = ROOT / "tasks" / "real-009"
+        task = validate_task(json.loads((bundle / "task.json").read_text()))
+        verify_bundle(task, bundle)
+        want = {"good": ("PASS", []),
+                "noop": ("FAIL", ["eq_empty_dict_reported", "eq_non_numeric_list", "gt_single_letter",
+                                  "lt_non_numeric_list", "ne_unknown_key"]),
+                "catch_return_false": ("FAIL", ["gt_single_letter", "lt_empty_dict", "lt_non_numeric_list",
+                                                "ne_unknown_key"]),
+                "raise_typeerror": ("FAIL", ["eq_empty_dict_reported", "eq_non_numeric_list", "ne_unknown_key"])}
+        for name, (result, failed) in want.items():
+            data = (bundle / "reference" / f"{name}.patch").read_bytes()
+            with tempfile.TemporaryDirectory() as d:
+                (Path(d) / digest(data).split(":")[1]).write_bytes(data)
+                r, c = grader.grade(task, d, digest(data), bundle_dir=bundle, host_execution_allowed=True)
+            got = next(x["detail"]["failed"] for x in c if x["criterion"] == "hidden_cases_pass")
+            self.assertEqual((r, got), (result, failed), name)
+        p = subprocess.run([sys.executable, "-W", "ignore", "-c", "from src.semver import Version; "
+                            "print(Version.parse('1.2.3') < (2, 0, 0))"], cwd=bundle / "base",
+                           env={"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
+        self.assertEqual((p.returncode, p.stdout.strip()), (0, "True"), p.stderr[-300:])
+
 if __name__ == "__main__":
     unittest.main()

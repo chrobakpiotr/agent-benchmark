@@ -1,0 +1,16 @@
+diff --git a/src/semver/version.py b/src/semver/version.py
+index 2a2c154..a4c783a 100644
+--- a/src/semver/version.py
++++ b/src/semver/version.py
+@@ -54,7 +54,10 @@ def _comparator(operator: Comparator) -> Comparator:
+         )
+         if not isinstance(other, comparable_types):
+             return NotImplemented
+-        return operator(self, other)
++        try:
++            return operator(self, other)
++        except (TypeError, ValueError):
++            return False
+ 
+     return wrapper
+ 

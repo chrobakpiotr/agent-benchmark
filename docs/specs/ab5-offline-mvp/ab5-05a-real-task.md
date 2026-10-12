@@ -174,3 +174,15 @@ larger), and numeric identifiers rank below alphanumeric ones. Reference outcome
 different correct fix) PASS; `catch_as_string` fails only the magnitude case; `lexicographic_digits` fails the
 magnitude case and the short `2` vs `10` guard; `reject_long` and `noop` fail all five long cases. The archive's two
 test symlinks into `docs/` were removed (bundles allow no symlinks). Calibration first.
+
+`real-008` result (2026-10-11): 8/8 PASS for both agents; the SemVer rule (a longer number is larger) is well known.
+
+# `real-009` from python-semver `0aa17a3`
+
+Commit `0aa17a3` "Handle malformed collection operands in Version comparisons" (2026-09-12, BSD-3-Clause). The
+report shows only `Version.parse("2.0.0") == {}` crashing inside the library. The rule to infer is Python's data
+model for an unsupported operand: `==` is False, `!=` True, and ordering raises the standard TypeError; the same
+decorator already returns NotImplemented for other unsupported types. Operators are not module functions, so cases
+run through the task-owned helper `base/bench_fixtures/ops.py` (outside the patch scope). Reference outcomes: `good`
+PASS; `noop` fails 5; `catch_return_false` fails `!=` and every ordering case; `raise_typeerror` fails `==`/`!=`.
+Calibration first (`experiments/real-009-calibration.json`).
