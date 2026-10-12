@@ -79,3 +79,10 @@ The relay mapped OpenRouter's 429 to `quota_exhausted` with `resets_at` = next U
 designed; account `usage` stayed 0 (no spend). Conclusion: on the free tier (50 requests/day) this model cannot
 complete even the simplest task in one day, so the configuration is dropped as specified rather than paid for
 (1000/day would need a one-off credit purchase). A different free model would need its own calibration.
+
+## Second calibration (2026-10-12, harness v0.8.4)
+
+`opencode-nemotron-free` (`nvidia/nemotron-3-super-120b-a12b:free`) on `real-001`: completed in 158 s and graded
+**PASS** on the qualified target, using **21 requests** (harness `request_counts` and OpenRouter's daily counter agree);
+account `usage` stayed 0. This model fits the free tier at about two trials per day, so the third configuration is
+kept with this model; runs of more than two trials span days (`resume` after each daily quota stop).
