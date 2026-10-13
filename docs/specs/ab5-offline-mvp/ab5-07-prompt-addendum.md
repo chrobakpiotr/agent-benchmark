@@ -19,3 +19,16 @@ prompt raise its PASS rate?
 - Power (Monte Carlo, 2000 draws, n = 20 per arm, alpha 0.025): 44% for 0.16 -> 0.50, 68% for 0.16 -> 0.60, 89% for
   0.37 -> 0.90, 49% for 0.37 -> 0.75. Only a large effect is likely to be detected; a non-significant result is not
   evidence that the instruction does nothing.
+
+## Result: `real-012` (run 2026-10-13, 40 trials)
+
+| arm | PASS / non-excluded | excluded | Wilson 95% |
+|---|---|---|---|
+| `claude-sonnet-pinned` (baseline) | 2/19 | 1 (`PROVIDER_ERROR`, usage limit, r20) | [0.029, 0.314] |
+| `claude-sonnet-pinned-check-related` (addendum) | 16/20 | 0 | [0.584, 0.919] |
+
+Primary analysis: Fisher exact two-sided p = 1.7e-5 < 0.025, so the instruction raised Claude's PASS rate on this task.
+Both arms have at least 18 non-excluded trials. Secondary (descriptive, different run): Codex's confirmatory rate
+was 20/20. The addendum arm's median PASS time was 37.8 s, against 30.4 s for the baseline.
+Deviations: the run stopped on the usage limit at its last trial and was not resumed. Interim PASS counts were
+looked at during the run; the analysis and threshold were not changed.
