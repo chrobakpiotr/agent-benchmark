@@ -369,5 +369,17 @@ class RealTask11(unittest.TestCase):
                            capture_output=True, text=True)
         self.assertEqual((p.returncode, p.stdout.strip()), (0, "2026-01-01 00:20:00"), p.stderr[-300:])
 
+
+class BundlesAreTracked(unittest.TestCase):
+    def test_no_bundle_file_is_hidden_by_a_gitignore(self):
+        """A bundle's own .gitignore (e.g. src/*/_version.py) must not keep a needed file out of the repository:
+        the digest would then differ in a fresh checkout (CI) although it matches locally."""
+        p = subprocess.run(["git", "ls-files", "--others", "--ignored", "--exclude-standard", "tasks"], cwd=ROOT,
+                           capture_output=True, text=True)
+        if p.returncode != 0:
+            self.skipTest("not a git checkout")
+        hidden = [f for f in p.stdout.splitlines() if "__pycache__" not in f and not f.endswith(".pyc")]
+        self.assertEqual(hidden, [], "add them with git add -f")
+
 if __name__ == "__main__":
     unittest.main()
