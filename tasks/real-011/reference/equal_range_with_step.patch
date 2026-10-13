@@ -1,0 +1,13 @@
+diff --git a/src/croniter/croniter.py b/src/croniter/croniter.py
+index 33edd35..5dc461a 100644
+--- a/src/croniter/croniter.py
++++ b/src/croniter/croniter.py
+@@ -1131,6 +1131,8 @@ class croniter:
+                         rng += list(range(cls.RANGES[field_index][0] + to_skip, high + 1, step))
+                     # if we include a range type: Jan-Jan, or Sun-Sun,
+                     #  it means the whole cycle (all days of week, # all monthes of year, etc)
++                    elif low == high and step > 1:
++                        rng = [low]
+                     elif low == high:
+                         rng = list(
+                             range(cls.RANGES[field_index][0], cls.RANGES[field_index][1] + 1, step)

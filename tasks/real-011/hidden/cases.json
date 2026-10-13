@@ -1,0 +1,86 @@
+{
+ "module": "bench_fixtures.cron",
+ "cases": [
+  {
+   "id": "minute_max_reported",
+   "function": "next_runs",
+   "args": [
+    "59/15 * * * *",
+    "2026-01-01T00:00:00",
+    3
+   ]
+  },
+  {
+   "id": "hour_max",
+   "function": "next_runs",
+   "args": [
+    "0 23/6 * * *",
+    "2026-01-01T00:00:00",
+    3
+   ]
+  },
+  {
+   "id": "day_of_month_max",
+   "function": "next_runs",
+   "args": [
+    "0 0 31/5 * *",
+    "2026-01-01T00:00:00",
+    3
+   ]
+  },
+  {
+   "id": "month_max",
+   "function": "next_runs",
+   "args": [
+    "0 0 1 DEC/3 *",
+    "2026-01-01T00:00:00",
+    3
+   ]
+  },
+  {
+   "id": "day_of_week_max",
+   "function": "next_runs",
+   "args": [
+    "0 0 * * SAT/2",
+    "2026-01-01T00:00:00",
+    3
+   ]
+  },
+  {
+   "id": "guard_explicit_equal_range",
+   "function": "next_runs",
+   "args": [
+    "0 0 1 JAN-JAN *",
+    "2026-01-01T00:00:00",
+    3
+   ]
+  },
+  {
+   "id": "guard_explicit_equal_range_step",
+   "function": "next_runs",
+   "args": [
+    "0 0 1 JAN-JAN/2 *",
+    "2026-01-01T00:00:00",
+    3
+   ]
+  },
+  {
+   "id": "guard_start_below_max",
+   "function": "next_runs",
+   "args": [
+    "58/15 * * * *",
+    "2026-01-01T00:00:00",
+    3
+   ]
+  },
+  {
+   "id": "guard_plain_step",
+   "function": "next_runs",
+   "args": [
+    "*/20 * * * *",
+    "2026-01-01T00:00:00",
+    3
+   ]
+  }
+ ]
+}

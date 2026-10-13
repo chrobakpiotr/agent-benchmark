@@ -343,5 +343,31 @@ class RealTask10(unittest.TestCase):
                            env={"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
         self.assertEqual((p.returncode, p.stdout.strip()), (0, "1.5 kB"), p.stderr[-300:])
 
+
+class RealTask11(unittest.TestCase):
+    """real-011: croniter fix f64665e; other fields and croniter's deliberate whole-cycle equal range are inferred."""
+
+    def test_bundle_reference_patches_and_visible_check(self):
+        bundle = ROOT / "tasks" / "real-011"
+        task = validate_task(json.loads((bundle / "task.json").read_text()))
+        verify_bundle(task, bundle)
+        want = {"good": ("PASS", []),
+                "noop": ("FAIL", ["day_of_month_max", "day_of_week_max", "hour_max", "minute_max_reported", "month_max"]),
+                "equal_range_single": ("FAIL", ["guard_explicit_equal_range", "guard_explicit_equal_range_step"]),
+                "equal_range_with_step": ("FAIL", ["guard_explicit_equal_range_step"])}
+        for name, (result, failed) in want.items():
+            data = (bundle / "reference" / f"{name}.patch").read_bytes()
+            with tempfile.TemporaryDirectory() as d:
+                (Path(d) / digest(data).split(":")[1]).write_bytes(data)
+                r, c = grader.grade(task, d, digest(data), bundle_dir=bundle, host_execution_allowed=True)
+            got = next(x["detail"]["failed"] for x in c if x["criterion"] == "hidden_cases_pass")
+            self.assertEqual((r, got), (result, failed), name)
+        p = subprocess.run([sys.executable, "-W", "ignore", "-c", "from datetime import datetime; from croniter import "
+                            "croniter; print(croniter('*/20 * * * *', datetime(2026, 1, 1)).get_next(datetime))"],
+                           cwd=bundle / "base", env={"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1",
+                                                     "PYTHONPATH": "bench_fixtures/vendor:src"},
+                           capture_output=True, text=True)
+        self.assertEqual((p.returncode, p.stdout.strip()), (0, "2026-01-01 00:20:00"), p.stderr[-300:])
+
 if __name__ == "__main__":
     unittest.main()

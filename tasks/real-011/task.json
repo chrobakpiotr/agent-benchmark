@@ -1,0 +1,26 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-011",
+  "version": "1",
+  "description": "Bug report from a user of croniter: the job \"59/15 * * * *\" was meant to run at minute 59 of every hour, but it runs at :00, :15, :30 and :45 instead. Find the problem and fix it. Change src/croniter/croniter.py only.",
+  "environment": "Python >= 3.13 stdlib; base tree = pallets-eco/croniter f64665e^ (src incl. tests, LICENSE, pyproject, README, .gitignore) plus vendored python-dateutil 2.9.0.post0 and six 1.17.0 with their licenses in bench_fixtures/vendor (the grading container has no network) and the task-owned helper bench_fixtures/cron.py; no repository history; the project's own test suite needs pytest",
+  "visible_checks": [
+    "PYTHONPATH=bench_fixtures/vendor:src python -c \"from datetime import datetime; from croniter import croniter; print(croniter('*/20 * * * *', datetime(2026, 1, 1)).get_next(datetime))\" (from the workspace root; pytest is not available)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:394fd292d65207969644ba85fef47a127ea2f6f3941b98779a1fea8bb3159d70",
+    "hidden_digest": "sha256:8e6c12c54cdfcffe6b03a31d37583fa0603e5ea1154bd81342614ab6012a2ad3",
+    "expected_digest": "sha256:33aa8c5d95c0fd4dde07211da98ebb18d3e2cf38ca59a1d0033f6ce2baa95f9d",
+    "scope": [
+      "src/croniter/croniter.py"
+    ],
+    "hidden_test_count": 9,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: pallets-eco/croniter commit f64665e (Fix \"{start}/{step}\" expanding to the whole field when start is the field maximum, #246, 2026-08-01); reference/good.patch is that commit's croniter.py diff; symptom-only description (minute field only); hidden cases authored for agent-benchmark (2026-10-13): the same defect in the hour, day-of-month, month and day-of-week fields, and croniter's deliberate, project-specific rule that an explicit equal range such as JAN-JAN (also JAN-JAN/2) means the whole cycle, which a naive fix breaks; other reference patches built by build_task.py. Public repository: contamination possible",
+  "license": "MIT (croniter; base/LICENSE); vendored python-dateutil Apache-2.0 OR BSD-3-Clause, six MIT"
+}

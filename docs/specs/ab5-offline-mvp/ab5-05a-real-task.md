@@ -204,3 +204,17 @@ requested format actually rounds to (no rollover at `%.3f` for 999999 bytes, rol
 binary, GNU and negative sizes too. `src/humanize/_version.py` (built by hatch-vcs in the real package, git-ignored) and
 the helper `bench_fixtures/hz.py` (puts `src/` on the path) are task-owned. Reference outcomes: `good` PASS; `noop`
 fails 7; `threshold_default` fails 3; `round_one_decimal` fails 2. Calibration first.
+
+`real-010` result (2026-10-13): 8/8 PASS for both agents.
+
+# `real-011` from croniter `f64665e`
+
+Commit `f64665e` "Fix \"{start}/{step}\" expanding to the whole field when start is the field maximum" (2026-08-01,
+MIT). The report shows only the minute field (`59/15 * * * *` runs at :00/:15/:30/:45). Inferred: the same defect in
+the hour, day-of-month, month and day-of-week fields, and croniter's deliberate, project-specific convention, stated
+only in a code comment, that an explicitly written equal range such as `JAN-JAN` (also `JAN-JAN/2`) means the whole
+cycle. The obvious fix "an equal range is one value" repairs every reported field and breaks that convention. The
+grading container has no network, so python-dateutil 2.9.0.post0 and six 1.17.0 are vendored with their licenses in
+`base/bench_fixtures/vendor`; cases run through `bench_fixtures/cron.py` (next three runs as ISO strings). Reference
+outcomes: `good` PASS; `noop` fails the five field cases; `equal_range_single` fails both whole-cycle guards;
+`equal_range_with_step` fails `JAN-JAN/2`. Calibration first.
