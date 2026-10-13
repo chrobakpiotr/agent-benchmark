@@ -318,5 +318,30 @@ class RealTask9(unittest.TestCase):
                            env={"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
         self.assertEqual((p.returncode, p.stdout.strip()), (0, "True"), p.stderr[-300:])
 
+
+class RealTask10(unittest.TestCase):
+    """real-010: python-humanize fix 823ad60; the report shows the default format, format-dependent rollover is inferred."""
+
+    def test_bundle_reference_patches_and_visible_check(self):
+        bundle = ROOT / "tasks" / "real-010"
+        task = validate_task(json.loads((bundle / "task.json").read_text()))
+        verify_bundle(task, bundle)
+        want = {"good": ("PASS", []),
+                "noop": ("FAIL", ["binary", "default_edge", "default_reported", "format_no_decimals",
+                                  "format_two_decimals", "gnu", "negative"]),
+                "threshold_default": ("FAIL", ["format_no_decimals", "guard_binary_below", "guard_more_precision"]),
+                "round_one_decimal": ("FAIL", ["format_no_decimals", "guard_more_precision"])}
+        for name, (result, failed) in want.items():
+            data = (bundle / "reference" / f"{name}.patch").read_bytes()
+            with tempfile.TemporaryDirectory() as d:
+                (Path(d) / digest(data).split(":")[1]).write_bytes(data)
+                r, c = grader.grade(task, d, digest(data), bundle_dir=bundle, host_execution_allowed=True)
+            got = next(x["detail"]["failed"] for x in c if x["criterion"] == "hidden_cases_pass")
+            self.assertEqual((r, got), (result, failed), name)
+        p = subprocess.run([sys.executable, "-c", "import sys; sys.path.insert(0, 'src'); import humanize; "
+                            "print(humanize.naturalsize(1500))"], cwd=bundle / "base",
+                           env={"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
+        self.assertEqual((p.returncode, p.stdout.strip()), (0, "1.5 kB"), p.stderr[-300:])
+
 if __name__ == "__main__":
     unittest.main()

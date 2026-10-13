@@ -1,0 +1,38 @@
+{
+ "default_reported": {
+  "value": "1.0 MB"
+ },
+ "default_edge": {
+  "value": "1.0 MB"
+ },
+ "negative": {
+  "value": "-1.0 MB"
+ },
+ "binary": {
+  "value": "1.0 MiB"
+ },
+ "gnu": {
+  "value": "1.0M"
+ },
+ "format_no_decimals": {
+  "value": "1 MB"
+ },
+ "format_two_decimals": {
+  "value": "1.00 GB"
+ },
+ "guard_below_edge": {
+  "value": "999.9 kB"
+ },
+ "guard_more_precision": {
+  "value": "999.999 kB"
+ },
+ "guard_no_decimals_below": {
+  "value": "999 kB"
+ },
+ "guard_binary_below": {
+  "value": "1023.5 KiB"
+ },
+ "guard_largest_unit": {
+  "value": "1.0 QB"
+ }
+}

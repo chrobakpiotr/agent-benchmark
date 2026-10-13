@@ -1,0 +1,26 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-010",
+  "version": "1",
+  "description": "Bug report from a user of humanize: humanize.naturalsize(999999) returns \"1000.0 kB\". A file manager showing that label next to \"1.0 MB\" for a slightly larger file confuses users. Find the problem and fix it. Change src/humanize/ only.",
+  "environment": "Python >= 3.13 stdlib; base tree = python-humanize 823ad60^ (src, tests, LICENCE, pyproject, README, .gitignore) plus src/humanize/_version.py (generated at build time by hatch-vcs in the real package; git-ignored) and the task-owned helper bench_fixtures/hz.py; no repository history; the project's own test suite needs pytest, which is not installed",
+  "visible_checks": [
+    "python -c \"import sys; sys.path.insert(0, 'src'); import humanize; print(humanize.naturalsize(1500))\" (from the workspace root; pytest is not available)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:ab6663634f155d81d3dceaf70801a6beb24db50710a5c8093ecad18d70c0f171",
+    "hidden_digest": "sha256:f56c57185c4fca7590dc478d1436f74e8a2a6cc26929ab64252d41e8a2432b5b",
+    "expected_digest": "sha256:33b0bbe444e7c75b82cd0a437f50d4066c2b45a84fa2393df1bf3a846d5fe42e",
+    "scope": [
+      "src/humanize/filesize.py"
+    ],
+    "hidden_test_count": 12,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: python-humanize commit 823ad60 (Fix naturalsize() rounding rollover at unit boundaries, #329, 2026-06-30); reference/good.patch is that commit's src diff; symptom-only description (default format, decimal units); hidden cases authored for agent-benchmark (2026-10-13): the rollover must follow the requested format's rounding (no rollover at %.3f, rollover at 999500 with %.0f) and apply to binary, GNU and negative sizes; other reference patches built by build_task.py. Public repository: contamination possible",
+  "license": "MIT (python-humanize; base/LICENCE)"
+}

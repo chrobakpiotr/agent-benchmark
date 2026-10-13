@@ -1,0 +1,13 @@
+diff --git a/src/humanize/filesize.py b/src/humanize/filesize.py
+index c495fed..38ff4f5 100644
+--- a/src/humanize/filesize.py
++++ b/src/humanize/filesize.py
+@@ -97,6 +97,8 @@ def naturalsize(
+         return f"{int(bytes_)}B" if gnu else _("%d Bytes") % int(bytes_)
+ 
+     exp = int(min(log(abs_bytes, base), len(suffix)))
++    if exp < len(suffix) and abs_bytes / (base**exp) >= 999.95:
++        exp += 1
+     space = "" if gnu else " "
+     ret: str = format % (bytes_ / (base**exp)) + space + _(suffix[exp - 1])
+     return ret

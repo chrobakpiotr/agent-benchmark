@@ -193,3 +193,14 @@ keeps raising; catching only the structural TypeError was therefore a defensible
 structures (empty dict, unknown key) for `==`, `!=` and ordering, and adds the reference patch
 `notimplemented_on_typeerror`, which must PASS. The two calibration grades are invalidated. Calibration is what
 caught this before any full run.
+
+`real-009` v2 result (2026-10-12): 8/8 PASS for both agents.
+
+# `real-010` from python-humanize `823ad60`
+
+Commit `823ad60` "Fix naturalsize() rounding rollover at unit boundaries" (2026-06-30, MIT). The report shows only
+the default format: `naturalsize(999999)` gives "1000.0 kB". The rule to infer: the unit must follow what the
+requested format actually rounds to (no rollover at `%.3f` for 999999 bytes, rollover at 999500 with `%.0f`), for
+binary, GNU and negative sizes too. `src/humanize/_version.py` (built by hatch-vcs in the real package, git-ignored) and
+the helper `bench_fixtures/hz.py` (puts `src/` on the path) are task-owned. Reference outcomes: `good` PASS; `noop`
+fails 7; `threshold_default` fails 3; `round_one_decimal` fails 2. Calibration first.

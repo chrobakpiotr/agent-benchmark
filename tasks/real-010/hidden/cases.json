@@ -1,0 +1,105 @@
+{
+ "module": "bench_fixtures.hz",
+ "cases": [
+  {
+   "id": "default_reported",
+   "function": "naturalsize",
+   "args": [
+    999999
+   ]
+  },
+  {
+   "id": "default_edge",
+   "function": "naturalsize",
+   "args": [
+    999950
+   ]
+  },
+  {
+   "id": "negative",
+   "function": "naturalsize",
+   "args": [
+    -999999
+   ]
+  },
+  {
+   "id": "binary",
+   "function": "naturalsize",
+   "args": [
+    1048575,
+    true
+   ]
+  },
+  {
+   "id": "gnu",
+   "function": "naturalsize",
+   "args": [
+    1048575,
+    false,
+    true
+   ]
+  },
+  {
+   "id": "format_no_decimals",
+   "function": "naturalsize",
+   "args": [
+    999500,
+    false,
+    false,
+    "%.0f"
+   ]
+  },
+  {
+   "id": "format_two_decimals",
+   "function": "naturalsize",
+   "args": [
+    999999999,
+    false,
+    false,
+    "%.2f"
+   ]
+  },
+  {
+   "id": "guard_below_edge",
+   "function": "naturalsize",
+   "args": [
+    999949
+   ]
+  },
+  {
+   "id": "guard_more_precision",
+   "function": "naturalsize",
+   "args": [
+    999999,
+    false,
+    false,
+    "%.3f"
+   ]
+  },
+  {
+   "id": "guard_no_decimals_below",
+   "function": "naturalsize",
+   "args": [
+    999499,
+    false,
+    false,
+    "%.0f"
+   ]
+  },
+  {
+   "id": "guard_binary_below",
+   "function": "naturalsize",
+   "args": [
+    1048064,
+    true
+   ]
+  },
+  {
+   "id": "guard_largest_unit",
+   "function": "naturalsize",
+   "args": [
+    1000000000000000000000000000000
+   ]
+  }
+ ]
+}
