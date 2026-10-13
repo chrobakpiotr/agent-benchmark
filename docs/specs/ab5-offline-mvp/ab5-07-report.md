@@ -34,6 +34,7 @@ Zero-spend live pilot comparing agent-CLI configurations on real bug-fix tasks. 
 | real-010 | symptom | 4/4 | 4/4 | 16 / 120 |
 | real-011 | symptom | 4/4 | 4/4 | 20 / 76 |
 | **real-001-bug v2, confirmatory** | symptom, rule only in the contract's meaning | **8/49** | **25/47** | 22 / 120 |
+| **real-012, confirmatory** (Python-Markdown) | symptom, other shapes of the same bug | **7/19** | **20/20** | ~30 / ~100 |
 
 - The only discriminating task was decided by the pre-registered test: Fisher exact two-sided p = 0.0002, Wilson
   intervals [0.09, 0.29] vs [0.39, 0.67]. Every failure is the same unstated rule.
@@ -67,3 +68,11 @@ Zero-spend live pilot comparing agent-CLI configurations on real bug-fix tasks. 
 
 Find more tasks whose correct behaviour is defined only in project documentation (ADRs, format specs), measure cost
 and time on the existing set, and continue the free third configuration at its daily pace.
+
+## Addendum (2026-10-13): a second discriminating task
+
+`real-012` (Python-Markdown `7c265bc`, unterminated end tags drop the rest of the document) discriminated in its
+calibration and full run (Claude 0/5, Codex 5/5) and was then tested with a pre-registered confirmatory run
+(`ab5-07-confirmatory-real-012.md`): Claude 7/19 vs Codex 20/20, Fisher p = 1.3e-5. Both discriminating tasks point the
+same way: Codex covers unstated parts of a reported bug more often, Claude is several times faster. Two tasks out of
+13 are still a narrow base.

@@ -17,3 +17,19 @@ and for one with a trailing slash.
 - Inconclusive, not extended, if either config has fewer than 18 non-excluded trials or a pinned version could not be
   held. Resumes after quota or capacity stops are allowed; interim looks, if any, are disclosed.
 - Power (Monte Carlo, 2000 draws): about 100% if the true rates are 0.10 vs 0.90; 85% if 0.30 vs 0.80.
+
+## Result (run 2026-10-13, `~/agent-benchmark-runs/real-012-confirmatory-2026-10-13`)
+
+| config | PASS / non-excluded | Wilson 95% | excluded | operational |
+|---|---|---|---|---|
+| `claude-sonnet-pinned` | 7/19 (36.8%) | [0.19, 0.59] | 1 (Claude Pro quota) | 7/20 |
+| `codex-sol-pinned` | 20/20 (100%) | [0.84, 1.00] | 0 | 20/20 |
+
+- Primary analysis (Fisher exact, two-sided): **p = 1.3e-5**; Wilson intervals separated. Validity conditions held
+  (19 and 20 non-excluded trials, >= 18; Claude resolved to `claude-sonnet-5-5` throughout; pinned CLI versions; one
+  harness version; one resume after the quota stop, as allowed).
+- All 12 Claude failures are the same two cases: an unterminated end tag with a later `>` and one with a trailing
+  slash still drop the rest of the document (the reported data loss).
+- Disclosed deviation: the owner asked for interim status six times; no decision depended on it.
+- Conclusion: on `real-012`, with these pinned versions, Codex gpt-6.1-sol covers the unstated variants of the reported
+  bug more reliably than Claude Sonnet 5.5. Second task, same direction as `real-001-bug`.
