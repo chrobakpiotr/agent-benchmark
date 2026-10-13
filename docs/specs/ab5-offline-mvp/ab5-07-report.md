@@ -76,3 +76,11 @@ calibration and full run (Claude 0/5, Codex 5/5) and was then tested with a pre-
 (`ab5-07-confirmatory-real-012.md`): Claude 7/19 vs Codex 20/20, Fisher p = 1.3e-5. Both discriminating tasks point the
 same way: Codex covers unstated parts of a reported bug more often, Claude is several times faster. Two tasks out of
 13 are still a narrow base.
+
+## Addendum (2026-10-13): one general instruction closes most of the gap
+
+A pre-registered experiment (`ab5-07-prompt-addendum.md`) added one sentence to Claude's prompt asking it to find
+other inputs with the same underlying problem. Against a same-run baseline it raised PASS from 2/19 to 16/20 on
+`real-012` (Fisher p = 1.7e-5) and from 3/20 to 16/19 on `real-001-bug` (p = 1.9e-5), with each p below the
+Bonferroni threshold of 0.025. The difference between the agents on these tasks is mostly a default level of
+thoroughness that one instruction can change, not a difference in what they can fix.

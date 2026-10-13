@@ -32,3 +32,25 @@ Both arms have at least 18 non-excluded trials. Secondary (descriptive, differen
 was 20/20. The addendum arm's median PASS time was 37.8 s, against 30.4 s for the baseline.
 Deviations: the run stopped on the usage limit at its last trial and was not resumed. Interim PASS counts were
 looked at during the run; the analysis and threshold were not changed.
+
+## Result: `real-001-bug` (run 2026-10-13, 40 trials)
+
+| arm | PASS / non-excluded | excluded | Wilson 95% |
+|---|---|---|---|
+| `claude-sonnet-pinned` (baseline) | 3/20 | 0 | [0.052, 0.360] |
+| `claude-sonnet-pinned-check-related` (addendum) | 16/19 | 1 (`PROVIDER_ERROR`, usage limit, r1) | [0.624, 0.945] |
+
+Primary analysis: Fisher exact two-sided p = 1.9e-5 < 0.025, so the instruction raised Claude's PASS rate on this task
+as well. Both arms have at least 18 non-excluded trials. Secondary (descriptive, different run): Codex's confirmatory
+rate was 25/47. Median PASS time was 31.0 s with the addendum and 29.8 s without it.
+Deviations: the run stopped on the usage limit after its first trial and was resumed once after the reset. Interim
+PASS counts were looked at during the run; the analysis and threshold were not changed.
+
+## Conclusion
+
+On both discriminating tasks, one general instruction that names no case moved Claude from about 15% to about 80%
+PASS. That is in line with Codex on `real-012` (20/20) and above Codex's earlier rate on `real-001-bug` (25/47); those
+comparisons come from different runs and are descriptive only. Most of Claude's gap on these tasks is therefore
+explained by how far it looks for other inputs with the same problem when not asked, rather than by whether it can fix
+them. Limits: two tasks, one model and one wording; it is not known whether the instruction changes behaviour on
+tasks where the report is already complete. Codex was not run with the addendum.
