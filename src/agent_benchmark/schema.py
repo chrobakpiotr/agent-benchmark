@@ -171,13 +171,16 @@ def verify_bundle(task, bundle_dir):
 
 
 def validate_config(c, path):
-    # `reviewer` is optional (absent = single agent) so that manifests written before workflows stay valid
-    _keys({k: v for k, v in c.items() if k != "reviewer"} if isinstance(c, dict) else c, path, CONFIG_REQUIRED,
+    # `reviewer` and `prompt_addendum` are optional so that manifests written before them stay valid
+    _keys({k: v for k, v in c.items() if k not in ("reviewer", "prompt_addendum")} if isinstance(c, dict) else c,
+          path, CONFIG_REQUIRED,
           CONFIG_NULLABLE)
     for f in ("config_id", "model_requested", "workflow", "isolation_track"):
         _str(c[f], f"{path}.{f}")
     if (c["workflow"] == "builder-reviewer") != ("reviewer" in c):
         _fail(f"{path}.reviewer", "required exactly when workflow is 'builder-reviewer'")
+    if "prompt_addendum" in c:  # one extra instruction for the agent; part of the config identity
+        _str(c["prompt_addendum"], f"{path}.prompt_addendum")
     if "reviewer" in c:
         _keys(c["reviewer"], f"{path}.reviewer", ("cli", "model"))
         _enum(c["reviewer"]["cli"], f"{path}.reviewer.cli", AGENT_CLIS)

@@ -68,11 +68,13 @@ def launch(request, backend, evidence_root, workspace=None):
         raise
 
 
-def agent_prompt(task):
-    """What the agent is told: the task text and its visible checks, nothing from the hidden material."""
+def agent_prompt(task, addendum=None):
+    """What the agent is told: the task text and its visible checks, nothing from the hidden material; a config may
+    add one general instruction (`prompt_addendum`)."""
     checks = "\n".join(f"- {c}" for c in task["visible_checks"])
     return (f"{task['description']}\n\nVisible checks you may run:\n{checks}\n\n"
-            "Work only in the current directory. Edit the files in place; do not commit.\n")
+            + (f"{addendum}\n\n" if addendum else "")
+            + "Work only in the current directory. Edit the files in place; do not commit.\n")
 
 
 def prepare_workspace(base_dir, workspace):
@@ -109,7 +111,8 @@ def agent_cli_backend(config, task, diff_base, cli=None, prompt=None):
     """Harness AgentCliBackend for one config: the CLI's own login and sandbox, candidate = workspace diff."""
     cli = cli or config["cli"]
     key = {"api_key_file": str(zero_spend.OPENROUTER_KEY_FILE)} if cli == "opencode" else {}  # the sandbox denies the file
-    return execution.AgentCliBackend(cli, prompt or agent_prompt(task), diff_base=diff_base, **key)
+    return execution.AgentCliBackend(cli, prompt or agent_prompt(task, config.get("prompt_addendum")),
+                                     diff_base=diff_base, **key)
 
 
 class GradingSession:

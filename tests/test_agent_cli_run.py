@@ -202,6 +202,19 @@ class AgentCliRun(unittest.TestCase):
         with mock.patch.dict(os.environ, {"FAKE_CODEX_VERSION": "codex-cli 1.2.3"}):
             runner.run(path, self.root / "run2")  # matching version runs
 
+    def test_prompt_addendum_reaches_the_agent_and_is_part_of_the_identity(self):
+        from agent_benchmark import harness_port as hp
+        task = {"description": "Fix it.", "visible_checks": ["run x"]}
+        plain, extra = hp.agent_prompt(task), hp.agent_prompt(task, "Check related inputs too.")
+        self.assertNotIn("related", plain)
+        self.assertIn("run x\n\nCheck related inputs too.\n\nWork only", extra)
+        from agent_benchmark.compare import CONFIG_IDENTITY
+        self.assertIn("prompt_addendum", CONFIG_IDENTITY)
+        m = json.loads(MANIFEST.read_text())
+        m["configs"][0]["prompt_addendum"] = 7
+        with self.assertRaisesRegex(ValidationError, "prompt_addendum"):
+            validate_manifest(m)
+
     def test_run_directory_in_temp_is_refused_before_anything_starts(self):
         out = Path(tempfile.mkdtemp()) / "run"
         try:

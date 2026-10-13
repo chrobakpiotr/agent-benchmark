@@ -14,7 +14,7 @@ from pathlib import Path
 from .report import load_pricing, load_run, summarize
 
 CONFIG_IDENTITY = ("model_requested", "cli", "cli_version", "prompt_digest", "reasoning", "sampling",
-                   "tool_permissions", "workflow", "reviewer", "budget", "isolation_track")
+                   "tool_permissions", "workflow", "reviewer", "prompt_addendum", "budget", "isolation_track")
 
 
 def _harness_versions(run_dir):
