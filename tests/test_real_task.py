@@ -370,6 +370,31 @@ class RealTask11(unittest.TestCase):
         self.assertEqual((p.returncode, p.stdout.strip()), (0, "2026-01-01 00:20:00"), p.stderr[-300:])
 
 
+
+class RealTask12(unittest.TestCase):
+    """real-012: Python-Markdown fix 7c265bc; other unterminated end-tag shapes (also outside code) are inferred."""
+
+    def test_bundle_reference_patches_and_visible_checks(self):
+        bundle = ROOT / "tasks" / "real-012"
+        task = validate_task(json.loads((bundle / "task.json").read_text()))
+        verify_bundle(task, bundle)
+        want = {"good": ("PASS", []),
+                "noop": ("FAIL", ["code_span_later_gt", "code_span_path_reported", "code_span_space_in_name",
+                                  "code_span_trailing_slash", "plain_text_unterminated"]),
+                "slash_path_only": ("FAIL", ["code_span_later_gt", "code_span_space_in_name", "plain_text_unterminated"]),
+                "gt_lookahead": ("FAIL", ["code_span_later_gt", "code_span_trailing_slash"])}
+        for name, (result, failed) in want.items():
+            data = (bundle / "reference" / f"{name}.patch").read_bytes()
+            with tempfile.TemporaryDirectory() as d:
+                (Path(d) / digest(data).split(":")[1]).write_bytes(data)
+                r, c = grader.grade(task, d, digest(data), bundle_dir=bundle, host_execution_allowed=True)
+            got = next(x["detail"]["failed"] for x in c if x["criterion"] == "hidden_cases_pass")
+            self.assertEqual((r, got), (result, failed), name)
+        p = subprocess.run([sys.executable, "-m", "unittest", "tests.test_syntax.blocks.test_html_blocks",
+                            "tests.test_syntax.inline.test_code"], cwd=bundle / "base",
+                           env={"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
+        self.assertEqual(p.returncode, 0, p.stderr[-500:])
+
 class BundlesAreTracked(unittest.TestCase):
     def test_no_bundle_file_is_hidden_by_a_gitignore(self):
         """A bundle's own .gitignore (e.g. src/*/_version.py) must not keep a needed file out of the repository:

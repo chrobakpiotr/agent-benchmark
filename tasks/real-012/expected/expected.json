@@ -1,0 +1,29 @@
+{
+ "code_span_path_reported": {
+  "value": "<p>Run <code>cmd 2&lt;/dev/null</code> here.</p>\n<p>This paragraph should not disappear.</p>"
+ },
+ "code_span_space_in_name": {
+  "value": "<p><code>&lt;/ab c</code> z</p>\n<p>next</p>"
+ },
+ "code_span_trailing_slash": {
+  "value": "<p><code>&lt;/dev/</code> &gt; q</p>\n<p>next</p>"
+ },
+ "code_span_later_gt": {
+  "value": "<p><code>&lt;/dev</code> z &gt; q</p>\n<p>next</p>"
+ },
+ "plain_text_unterminated": {
+  "value": "<p>x &lt;/em y</p>\n<p>next</p>"
+ },
+ "guard_bare_slash": {
+  "value": "<p>a &lt;/ b</p>\n<p>next</p>"
+ },
+ "guard_real_end_tag": {
+  "value": "<p><em>ok</em> fine</p>\n<p>next</p>"
+ },
+ "guard_start_tag_in_code": {
+  "value": "<p><code>&lt;b&gt;</code> code</p>\n<p>next</p>"
+ },
+ "guard_less_than": {
+  "value": "<p>plain 2&lt;3 text</p>\n<p>next</p>"
+ }
+}

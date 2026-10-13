@@ -1,0 +1,68 @@
+{
+ "module": "markdown",
+ "cases": [
+  {
+   "id": "code_span_path_reported",
+   "function": "markdown",
+   "args": [
+    "Run `cmd 2</dev/null` here.\n\nThis paragraph should not disappear."
+   ]
+  },
+  {
+   "id": "code_span_space_in_name",
+   "function": "markdown",
+   "args": [
+    "`</ab c` z\n\nnext"
+   ]
+  },
+  {
+   "id": "code_span_trailing_slash",
+   "function": "markdown",
+   "args": [
+    "`</dev/` > q\n\nnext"
+   ]
+  },
+  {
+   "id": "code_span_later_gt",
+   "function": "markdown",
+   "args": [
+    "`</dev` z > q\n\nnext"
+   ]
+  },
+  {
+   "id": "plain_text_unterminated",
+   "function": "markdown",
+   "args": [
+    "x </em y\n\nnext"
+   ]
+  },
+  {
+   "id": "guard_bare_slash",
+   "function": "markdown",
+   "args": [
+    "a </ b\n\nnext"
+   ]
+  },
+  {
+   "id": "guard_real_end_tag",
+   "function": "markdown",
+   "args": [
+    "<em>ok</em> fine\n\nnext"
+   ]
+  },
+  {
+   "id": "guard_start_tag_in_code",
+   "function": "markdown",
+   "args": [
+    "`<b>` code\n\nnext"
+   ]
+  },
+  {
+   "id": "guard_less_than",
+   "function": "markdown",
+   "args": [
+    "plain 2<3 text\n\nnext"
+   ]
+  }
+ ]
+}

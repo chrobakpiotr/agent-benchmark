@@ -1,0 +1,29 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-012",
+  "version": "1",
+  "description": "Bug report from a user of Python-Markdown: rendering \"Run `cmd 2</dev/null` here.\\n\\nThis paragraph should not disappear.\" with markdown.markdown() returns only \"<p>Run `cmd 2</p>\": the rest of the line and the whole next paragraph are dropped. Find the problem and fix it. Change markdown/ only.",
+  "environment": "Python >= 3.13 stdlib; base tree = Python-Markdown 7c265bc^ (markdown, tests, LICENSE.md, pyproject, README, .gitignore), no repository history; extensions loaded through entry points need an installed package, so only core test modules run from the source tree",
+  "visible_checks": [
+    "python -m unittest tests.test_syntax.blocks.test_html_blocks tests.test_syntax.inline.test_code (from the workspace root)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:8347c8c62631b84de7f133a8eb2dd5cde44b8aca80111549a4f177a772f566cf",
+    "hidden_digest": "sha256:bb007cbf8a3976df35d45f29c39ba415f2e9adb3f904bb7758ae6de30e9ee69a",
+    "expected_digest": "sha256:05c6347d92ae627bd725119a9dcbc6d86febf175d6265fd5d2f497a4842ac37e",
+    "scope": [
+      "markdown/htmlparser.py",
+      "markdown/blockprocessors.py",
+      "markdown/inlinepatterns.py",
+      "markdown/preprocessors.py"
+    ],
+    "hidden_test_count": 9,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: Python-Markdown commit 7c265bc (Ensure that unterminated HTML tags do not cause text to be dropped, #1651, 2026-10-05); reference/good.patch is that commit's markdown/ diff; symptom-only description (one code span with a path); hidden cases authored for agent-benchmark (2026-10-13) from the commit's tests plus an unterminated end tag outside code and guards; other reference patches built by build_task.py. Public repository: contamination possible",
+  "license": "BSD-3-Clause (Python-Markdown; base/LICENSE.md)"
+}

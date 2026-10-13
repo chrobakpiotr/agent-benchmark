@@ -218,3 +218,14 @@ grading container has no network, so python-dateutil 2.9.0.post0 and six 1.17.0 
 `base/bench_fixtures/vendor`; cases run through `bench_fixtures/cron.py` (next three runs as ISO strings). Reference
 outcomes: `good` PASS; `noop` fails the five field cases; `equal_range_single` fails both whole-cycle guards;
 `equal_range_with_step` fails `JAN-JAN/2`. Calibration first.
+
+`real-011` result (2026-10-13): 8/8 PASS for both agents; both kept croniter's whole-cycle equal range.
+
+# `real-012` from Python-Markdown `7c265bc`
+
+Commit `7c265bc` "Ensure that unterminated HTML tags do not cause text to be dropped" (2026-10-05, BSD-3-Clause). The
+report shows one code span with a path (`cmd 2</dev/null`) after which the rest of the document disappears. Inferred:
+other unterminated end-tag shapes (a space in the name, a trailing slash, a later `>`), also outside code spans.
+Python-Markdown has no dependencies and its core tests use unittest, so the visible check runs the project's own HTML
+block and code-span tests. Reference outcomes: `good` PASS; `noop` fails 5; `slash_path_only` fails 3; `gt_lookahead`
+fails 2. Calibration first.
