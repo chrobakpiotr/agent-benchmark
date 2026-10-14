@@ -84,3 +84,6 @@ other inputs with the same underlying problem. Against a same-run baseline it ra
 `real-012` (Fisher p = 1.7e-5) and from 3/20 to 16/19 on `real-001-bug` (p = 1.9e-5), with each p below the
 Bonferroni threshold of 0.025. The difference between the agents on these tasks is mostly a default level of
 thoroughness that one instruction can change, not a difference in what they can fix.
+A pre-registered safety check (`ab5-07-prompt-addendum-safety.md`) ran the same instruction on the nine symptom tasks
+Claude already passed: 26/26 with the instruction and 27/27 without it. The cost is time: the median PASS was
+1.06-2.01x slower (median 1.47x).
