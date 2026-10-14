@@ -87,3 +87,8 @@ thoroughness that one instruction can change, not a difference in what they can 
 A pre-registered safety check (`ab5-07-prompt-addendum-safety.md`) ran the same instruction on the nine symptom tasks
 Claude already passed: 26/26 with the instruction and 27/27 without it. The cost is time: the median PASS was
 1.06-2.01x slower (median 1.47x).
+The same instruction **lowered** Codex on `real-001-bug` from 16/20 to 3/20 (pre-registered, Fisher p = 8.8e-5,
+`ab5-07-prompt-addendum-codex.md`). With it, Codex nearly always also accepted results that have no usage summary,
+which the contract rejects. So the instruction's effect depends on the agent. It makes an agent search more widely,
+but it does not tell the agent which reading of the newly found cases is correct. The earlier "mostly thoroughness"
+reading holds for Claude only.

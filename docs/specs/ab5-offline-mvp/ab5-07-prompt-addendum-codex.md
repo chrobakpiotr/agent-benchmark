@@ -17,3 +17,31 @@ already passed it 20/20.
 - Inconclusive if an arm has fewer than 18 non-excluded trials.
 - Power (Monte Carlo, 2000 draws, baseline 0.53, n = 20 per arm): 35% for 0.80, 67% for 0.90, 99% for 1.00. A
   non-significant result is not evidence that the instruction does nothing for Codex.
+
+## Result (run 2026-10-14, 40 trials)
+
+| arm | PASS / non-excluded | excluded | Wilson 95% | median PASS s |
+|---|---|---|---|---|
+| `codex-sol-pinned` (baseline) | 16/20 | 0 | [0.584, 0.919] | 87.5 |
+| `codex-sol-pinned-check-related` (addendum) | 3/20 | 0 | [0.052, 0.360] | 86.2 |
+
+Primary analysis: Fisher exact two-sided p = 8.8e-5 < 0.05, but in the opposite direction from the question: on this
+task the instruction **lowered** Codex's PASS rate. Both arms have 20 non-excluded trials.
+
+Every FAIL in both arms fails the same hidden case, `complete_without_summary`. That result has
+`usage_completeness: "complete"` and stream events with integer units, but no summary event, so the contract rejects
+it. In the failing candidates, a missing summary falls back to the attempt's stream events, so that result is
+accepted. Candidates whose added lines mention stream events:
+
+| arm | PASS with / without stream logic | FAIL with / without stream logic |
+|---|---|---|
+| baseline | 3 / 13 | 4 / 0 |
+| addendum | 1 / 2 | 17 / 0 |
+
+Asked to look for other inputs with the same problem, Codex nearly always went on to define completeness for results
+without a summary. It chose the reading the contract rejects. The instruction widened the search but did not
+supply the rule.
+
+Secondary, descriptive: the baseline's 16/20 is above Codex's confirmatory 25/47 (different run, different day).
+Claude with the addendum passed 16/19. The instruction did not change Codex's time.
+Deviations: none. The run finished without a stop; no interim look was taken.
