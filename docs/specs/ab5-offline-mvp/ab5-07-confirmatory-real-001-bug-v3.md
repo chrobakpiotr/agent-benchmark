@@ -18,3 +18,24 @@ from v2 trials and a case added afterwards, so they motivate this test but do no
 - Inconclusive if a config has fewer than 18 non-excluded trials.
 - Power (Monte Carlo, 2000 draws, n = 20 per config, alpha 0.05, Codex 0.95): 99% for Claude 0.33, 89% for 0.50, 70%
   for 0.60.
+
+## Result (run 2026-10-17, `~/agent-benchmark-runs/real-001-bug-v3-confirmatory-2026-10-17`)
+
+Calibration (`real-001-bug-v3-calibration-2026-10-17`): both trials completed and were graded on the qualified target
+(Claude FAIL, Codex PASS). Not counted.
+
+| config | PASS / non-excluded | Wilson 95% | median PASS s |
+|---|---|---|---|
+| `claude-sonnet-pinned` | 7/20 | [0.181, 0.567] | 33.1 |
+| `codex-sol-pinned` | 20/20 | [0.839, 1.000] | 67.9 |
+
+Primary analysis: Fisher exact two-sided p = 1.3e-5 < 0.05. On v3 Codex passes more often than Claude. Both configs
+have 20 non-excluded trials.
+Secondary: all 13 Claude FAILs fail only `complete_summary_overrides_null_stream`. Claude rejects a result whose summary
+has integer units because an informational stream event has a null unit, which ADR 0002 makes valid. Every Claude
+FAIL is this case, as the re-grade predicted.
+Deviations: none. No quota stop, no resume, no interim look.
+
+Conclusion: `real-001-bug` v3 discriminates for a reason stated in the project's documentation. It is a second
+confirmed discriminating task next to `real-012`. In both, Claude's fix differs from the documented behaviour on an
+input the report does not show: in `real-012` it misses forms of the bug, and in v3 it rejects valid input.

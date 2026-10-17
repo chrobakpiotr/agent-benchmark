@@ -99,3 +99,10 @@ The `complete_without_summary` case has a second plausible reading that no refer
 instruction experiments) are therefore about which reading an agent picks: the upstream fix's or the stream-fallback
 one. They are not about correctness. `real-012` is not affected and is the only confirmed discriminating task: there,
 Claude covers fewer forms of the bug than Codex, and the check-related instruction closes that gap.
+
+## Addendum (2026-10-17): `real-001-bug` v3
+
+v3 removes the ambiguous case and adds two cases that ADR 0002 settles. It was then tested in a pre-registered run
+(`ab5-07-confirmatory-real-001-bug-v3.md`): Claude 7/20 vs Codex 20/20, Fisher p = 1.3e-5. Every Claude FAIL rejects
+a valid result in which a summary overrides a stream event with a null unit. `real-001-bug` v3 and `real-012` are the
+two confirmed discriminating tasks.
