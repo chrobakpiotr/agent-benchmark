@@ -229,3 +229,9 @@ other unterminated end-tag shapes (a space in the name, a trailing slash, a late
 Python-Markdown has no dependencies and its core tests use unittest, so the visible check runs the project's own HTML
 block and code-span tests. Reference outcomes: `good` PASS; `noop` fails 5; `slash_path_only` fails 3; `gt_lookahead`
 fails 2. Calibration first.
+
+## Correction (2026-10-17): `real-001-bug` v2 is ambiguous in one case
+
+The `complete_without_summary` case has a second plausible reading that no reference patch covers. Its input has `usage_completeness: "complete"` and one `stream` event with integer units and no `summary`. ADR 0002 in the base says only that a summary, *if present*, is authoritative and that stream events are informational. Neither the base code nor its docs say that `complete` requires a summary. "Without a summary, the stream events are the usage" is therefore consistent with the docs, and patches that read it that way fail this case. Every real-001-bug FAIL in every run fails exactly this case. So real-001-bug v2 measures which of two defensible readings an agent picks, not whether its fix is correct.
+The grades stay valid as records of that choice and are not invalidated, because the grader did what the task
+specified. Results on this task are reported as a reading preference.

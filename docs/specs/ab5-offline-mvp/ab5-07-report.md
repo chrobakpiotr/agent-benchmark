@@ -33,7 +33,7 @@ Zero-spend live pilot comparing agent-CLI configurations on real bug-fix tasks. 
 | real-009 v2 | symptom | 4/4 | 4/4 | 22 / 65 |
 | real-010 | symptom | 4/4 | 4/4 | 16 / 120 |
 | real-011 | symptom | 4/4 | 4/4 | 20 / 76 |
-| **real-001-bug v2, confirmatory** | symptom, rule only in the contract's meaning | **8/49** | **25/47** | 22 / 120 |
+| **real-001-bug v2, confirmatory** (ambiguous, see correction) | symptom, rule only in the contract's meaning | **8/49** | **25/47** | 22 / 120 |
 | **real-012, confirmatory** (Python-Markdown) | symptom, other shapes of the same bug | **7/19** | **20/20** | ~30 / ~100 |
 
 - The only discriminating task was decided by the pre-registered test: Fisher exact two-sided p = 0.0002, Wilson
@@ -92,3 +92,10 @@ The same instruction **lowered** Codex on `real-001-bug` from 16/20 to 3/20 (pre
 which the contract rejects. So the instruction's effect depends on the agent. It makes an agent search more widely,
 but it does not tell the agent which reading of the newly found cases is correct. The earlier "mostly thoroughness"
 reading holds for Claude only.
+
+## Correction (2026-10-17): `real-001-bug` v2 measures a reading preference
+
+The `complete_without_summary` case has a second plausible reading that no reference patch covers. Its input has `usage_completeness: "complete"` and one `stream` event with integer units and no `summary`. ADR 0002 in the base says only that a summary, *if present*, is authoritative and that stream events are informational. Neither the base code nor its docs say that `complete` requires a summary. "Without a summary, the stream events are the usage" is therefore consistent with the docs, and patches that read it that way fail this case. Every real-001-bug FAIL in every run fails exactly this case. All `real-001-bug` results in this report (confirmatory 8/49 vs 25/47, builder/reviewer, nemotron, both
+instruction experiments) are therefore about which reading an agent picks: the upstream fix's or the stream-fallback
+one. They are not about correctness. `real-012` is not affected and is the only confirmed discriminating task: there,
+Claude covers fewer forms of the bug than Codex, and the check-related instruction closes that gap.

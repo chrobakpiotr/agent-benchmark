@@ -45,3 +45,8 @@ supply the rule.
 Secondary, descriptive: the baseline's 16/20 is above Codex's confirmatory 25/47 (different run, different day).
 Claude with the addendum passed 16/19. The instruction did not change Codex's time.
 Deviations: none. The run finished without a stop; no interim look was taken.
+
+## Correction (2026-10-17)
+
+The `complete_without_summary` case has a second plausible reading that no reference patch covers. Its input has `usage_completeness: "complete"` and one `stream` event with integer units and no `summary`. ADR 0002 in the base says only that a summary, *if present*, is authoritative and that stream events are informational. Neither the base code nor its docs say that `complete` requires a summary. "Without a summary, the stream events are the usage" is therefore consistent with the docs, and patches that read it that way fail this case. Every real-001-bug FAIL in every run fails exactly this case. The result above therefore shows how often each arm chose the reading the task's hidden case expects (the
+upstream fix's reading). It does not show correctness. See `ab5-05a-real-task.md`.

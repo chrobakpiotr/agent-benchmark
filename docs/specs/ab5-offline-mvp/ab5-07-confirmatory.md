@@ -48,3 +48,8 @@ one Claude Pro / ChatGPT Plus usage window, using `resume` after each quota stop
 - Conclusion: on `real-001-bug` (v2), with these pinned versions, Codex gpt-6.1-sol on ChatGPT Plus infers the unstated
   rule more often than Claude Sonnet 5.5 on Claude Pro. This is one task; it says nothing about other tasks, where both
   passed every valid trial.
+
+## Correction (2026-10-17)
+
+The `complete_without_summary` case has a second plausible reading that no reference patch covers. Its input has `usage_completeness: "complete"` and one `stream` event with integer units and no `summary`. ADR 0002 in the base says only that a summary, *if present*, is authoritative and that stream events are informational. Neither the base code nor its docs say that `complete` requires a summary. "Without a summary, the stream events are the usage" is therefore consistent with the docs, and patches that read it that way fail this case. Every real-001-bug FAIL in every run fails exactly this case. The result above therefore shows how often each arm chose the reading the task's hidden case expects (the
+upstream fix's reading). It does not show correctness. See `ab5-05a-real-task.md`.
