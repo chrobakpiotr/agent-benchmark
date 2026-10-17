@@ -1,0 +1,57 @@
+{
+  "schema_version": "agent-benchmark/manifest/v2",
+  "experiment_id": "ab5-07-prompt-addendum-docs-claude-real-012",
+  "task": {
+    "path": "../tasks/real-012/task.json",
+    "digest": "sha256:b384125a19fb5b6c2ddea23515a594c2a3aa4adf9069a053bef7b2f2c48b6006"
+  },
+  "configs": [
+    {
+      "config_id": "claude-sonnet-pinned",
+      "model_requested": "claude-sonnet-5-5",
+      "model_resolved": null,
+      "cli": "claude",
+      "cli_version": "2.1.289 (Claude Code)",
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 1800
+      },
+      "isolation_track": "controlled-host"
+    },
+    {
+      "config_id": "claude-sonnet-pinned-check-related-docs",
+      "model_requested": "claude-sonnet-5-5",
+      "model_resolved": null,
+      "cli": "claude",
+      "cli_version": "2.1.289 (Claude Code)",
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 1800
+      },
+      "isolation_track": "controlled-host",
+      "prompt_addendum": "The report shows one example. The same underlying problem may show up with other inputs: before you finish, find them and make sure they are fixed too, without changing behaviour that was correct. Take the correct behaviour for those inputs from the project's documentation and contracts, not from a guess."
+    }
+  ],
+  "repetitions": 15,
+  "seed": 780,
+  "retry_policy": {
+    "max_attempts": 1
+  },
+  "exclusions": [
+    {
+      "outcome": "error",
+      "reason": "provider or quota error before a result; predeclared, analysed as excluded"
+    }
+  ],
+  "executor": {
+    "kind": "agent-cli"
+  }
+}
