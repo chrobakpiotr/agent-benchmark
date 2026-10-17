@@ -26,3 +26,31 @@ behaviour comes from keep Claude's gain without hurting Codex?
 - Power (Monte Carlo, 2000 draws, n = 15 per arm, alpha 0.0125): 41% for 0.15 -> 0.60, 86% for 0.15 -> 0.80; a Codex
   drop is detected with 50% probability for 0.80 -> 0.30, 86% for 0.80 -> 0.15, and 14% for 1.00 -> 0.70. Moderate
   harm to Codex can go undetected.
+
+## Result (runs 2026-10-17, 120 trials)
+
+| run | baseline PASS | v2 PASS | Fisher p | median PASS s baseline / v2 |
+|---|---|---|---|---|
+| Claude `real-001-bug` | 8/15 | 13/15 | 0.11 | 27.7 / 31.0 |
+| Claude `real-012` | 3/15 | 8/14 (1 excluded, quota) | 0.060 | 37.9 / 47.2 |
+| Codex `real-001-bug` | 12/15 | **0/15** | **1.1e-5** | 71.8 / n/a |
+| Codex `real-012` | 15/15 | 14/14 (1 excluded, quota) | 1.0 | 55.8 / 136.5 |
+
+Primary analysis (alpha 0.0125 per run): neither Claude run is significantly higher, and Codex on `real-001-bug` is
+significantly lower. The verdict is therefore **not "helps both"**. Every arm has at least 13 non-excluded trials.
+Descriptively, v2 helped Claude less than v1 (v1: 16/20 and 16/19), and Codex fell even further than with v1 (0/15).
+On `real-012` there was no harm to Codex, but its trials took 2.4x longer.
+
+Failures by hidden case:
+- Every Codex v2 FAIL and every `real-001-bug` FAIL is `complete_without_summary`. Pointed at the documentation,
+  Codex always took the stream-fallback reading that ADR 0002 permits (see the correction in `ab5-05a-real-task.md`).
+- Claude's `real-012` FAILs miss `code_span_later_gt` and `code_span_trailing_slash`, as in the earlier runs.
+
+The `real-001-bug` rows measure a reading preference, not correctness.
+
+Deviations:
+- Both Claude and Codex stopped on quota during `real-012` and were resumed after the reset.
+- Two completed Claude `real-012` trials were left ungraded when they finished and were graded by a later `resume`
+  (offline, same qualified target).
+- Interim results of the `real-001-bug` runs were looked at before the `real-012` runs finished; the analysis was not
+  changed.

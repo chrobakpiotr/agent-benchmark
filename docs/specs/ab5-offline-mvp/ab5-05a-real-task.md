@@ -254,3 +254,16 @@ Reference patches:
 
 Manifests pinned to v2 stay as the record of the v2 runs and no longer validate. Evidence:
 `RealTask1Bug.test_bundle_and_reference_patches`.
+
+### v2 candidates re-graded against v3 (post hoc, descriptive)
+
+All 222 valid v2 candidates were re-graded on the qualified target against the v3 bundle (offline, no new trials).
+Script and records: `~/agent-benchmark-runs/regrade-real-001-bug-v3-2026-10-17/`.
+- Codex: 144/144 PASS, all runs and arms included.
+- Claude without an addendum: 37/112 PASS. 73 of the 75 FAILs reject `complete_summary_overrides_null_stream`: they
+  check nulls in every event, including stream events that a present summary makes informational.
+- Claude with an addendum: 32/34 PASS.
+- Builder/reviewer pairs: 7/7 PASS. Nemotron: 0/2.
+
+v3 was designed after the v2 runs. These numbers come from a case added afterwards, which no pre-registration
+covered, so they are a hypothesis for a pre-registered v3 run and not a result.
