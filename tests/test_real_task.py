@@ -68,7 +68,8 @@ class RealTask(unittest.TestCase):
 
 
 class RealTask1Bug(unittest.TestCase):
-    """real-001-bug v2: symptom-only description; own bundle whose cases use cache_semantics separate (unambiguous)."""
+    """real-001-bug v3: symptom-only description; cases use cache_semantics separate, and both readings of a missing
+    summary (upstream: complete needs one; stream fallback: the streams are the usage) pass."""
 
     def test_bundle_and_reference_patches(self):
         bundle = ROOT / "tasks" / "real-001-bug"
@@ -76,12 +77,17 @@ class RealTask1Bug(unittest.TestCase):
         verify_bundle(task, bundle)
         cases = json.loads((bundle / "hidden" / "cases.json").read_text())["cases"]
         self.assertTrue(all(e["cache_semantics"] == "separate" for c in cases for e in c["args"][0]["usage_events"]))
-        for name, want in (("good", "PASS"), ("noop", "FAIL"), ("wrong", "FAIL"), ("overstrict", "FAIL")):
+        override = "complete_summary_overrides_null_stream"
+        for name, want in (("good", []), ("stream_fallback", []),
+                           ("noop", ["complete_null_cache_read", "complete_null_input",
+                                     "complete_stream_only_null_cache_read"]),
+                           ("wrong", [override]), ("overstrict", [override, "partial_null_units_valid"])):
             data = (bundle / "reference" / f"{name}.patch").read_bytes()
             with tempfile.TemporaryDirectory() as d:
                 (Path(d) / digest(data).split(":")[1]).write_bytes(data)
-                self.assertEqual(grader.grade(task, d, digest(data), bundle_dir=bundle,
-                                              host_execution_allowed=True)[0], want, name)
+                result, criteria = grader.grade(task, d, digest(data), bundle_dir=bundle, host_execution_allowed=True)
+            failed = {c["criterion"]: c for c in criteria}["hidden_cases_pass"].get("detail", {}).get("failed", [])
+            self.assertEqual((result, failed), ("FAIL" if want else "PASS", want), name)
 
 BUNDLE_2 = ROOT / "tasks" / "real-002"
 TASK_2 = validate_task(json.loads((BUNDLE_2 / "task.json").read_text()))

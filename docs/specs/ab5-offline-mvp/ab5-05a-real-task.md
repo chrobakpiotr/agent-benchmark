@@ -235,3 +235,22 @@ fails 2. Calibration first.
 The `complete_without_summary` case has a second plausible reading that no reference patch covers. Its input has `usage_completeness: "complete"` and one `stream` event with integer units and no `summary`. ADR 0002 in the base says only that a summary, *if present*, is authoritative and that stream events are informational. Neither the base code nor its docs say that `complete` requires a summary. "Without a summary, the stream events are the usage" is therefore consistent with the docs, and patches that read it that way fail this case. Every real-001-bug FAIL in every run fails exactly this case. So real-001-bug v2 measures which of two defensible readings an agent picks, not whether its fix is correct.
 The grades stay valid as records of that choice and are not invalidated, because the grader did what the task
 specified. Results on this task are reported as a reading preference.
+
+## `real-001-bug` v3 (2026-10-17)
+
+The description and base are unchanged. Hidden cases (7):
+- `complete_without_summary` is removed.
+- `complete_stream_only_null_cache_read` is added: a stream-only result under `complete` with a null unit. Both readings
+  reject it.
+- `complete_summary_overrides_null_stream` is added: a summary with integer units next to a stream event with a null
+  unit. It is valid because ADR 0002 makes a present summary authoritative.
+
+Reference patches:
+- `good` is the upstream fix and passes.
+- `stream_fallback` passes. It is a Codex candidate from the 2026-10-14 run and implements the second reading.
+- `noop` fails the three null cases.
+- `wrong` fails the override case because it checks nulls in every event.
+- `overstrict` fails the override and partial cases.
+
+Manifests pinned to v2 stay as the record of the v2 runs and no longer validate. Evidence:
+`RealTask1Bug.test_bundle_and_reference_patches`.

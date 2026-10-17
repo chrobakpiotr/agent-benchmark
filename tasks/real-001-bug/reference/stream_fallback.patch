@@ -1,0 +1,66 @@
+diff --git a/src/agent_harness/contract.py b/src/agent_harness/contract.py
+index 1745870..04a2644 100644
+--- a/src/agent_harness/contract.py
++++ b/src/agent_harness/contract.py
+@@ -97,6 +97,7 @@ def validate_result(doc, request):
+     attempts = _list(doc["attempts"], "result.attempts")
+     artifacts = _list(doc["artifacts"], "result.artifacts")
+     usage = _list(doc["usage_events"], "result.usage_events")
++    _check(usage or doc["usage_completeness"] == "unknown", "result.usage_completeness: no events means unknown")
+ 
+     if outcome == "rejected":
+         _check(doc["execution_id"] is None and doc["started_at"] is None and doc["ended_at"] is None
+@@ -123,8 +124,9 @@ def validate_result(doc, request):
+         _ref(doc["candidate"], "result.candidate", named=False)
+     for i, ref in enumerate(artifacts):
+         _ref(ref, f"result.artifacts[{i}]", named=True)
+-    _usage(usage, set(attempt_ids))
+-    _check(usage or doc["usage_completeness"] == "unknown", "result.usage_completeness: no events means unknown")
++    usage_complete = _usage(usage, set(attempt_ids))
++    _check(doc["usage_completeness"] != "complete" or usage_complete,
++           "result.usage_completeness: incomplete authoritative usage")
+     return doc
+ 
+ 
+@@ -160,7 +162,13 @@ def validate_repo_context(doc):
+ 
+ 
+ def _usage(events, attempt_ids):
+-    event_ids, summaries = set(), set()
++    """Validate events and check completeness using each attempt's authoritative usage.
++
++    A summary overrides streams; otherwise every stream must have input/output counts.
++    Separate cache accounting also requires both cache counts. Other cache semantics
++    retain nullable cache counts. Every attempt must be represented for complete usage.
++    """
++    event_ids, summaries, streams = set(), {}, {}
+     for i, event in enumerate(events):
+         where = f"result.usage_events[{i}]"
+         _fields(event, where, {"contract_version", "event_id", "attempt_id", "source", "kind", "units",
+@@ -171,14 +179,23 @@ def _usage(events, attempt_ids):
+         event_ids.add(event_id)
+         _check(event["attempt_id"] in attempt_ids, where + ".attempt_id: unknown attempt")
+         _enum(event["source"], ("provider", "harness"), where + ".source")
+-        if _enum(event["kind"], ("stream", "summary"), where + ".kind") == "summary":
++        kind = _enum(event["kind"], ("stream", "summary"), where + ".kind")
++        if kind == "summary":
+             _check(event["attempt_id"] not in summaries, where + ": one summary per attempt")
+-            summaries.add(event["attempt_id"])
+         _fields(event["units"], where + ".units", set(_UNITS))
+         for unit in _UNITS:
+             value = event["units"][unit]
+             _check(value is None or (type(value) is int and value >= 0), f"{where}.units.{unit}")
+-        _enum(event["cache_semantics"], ("separate", "included_in_input", "unknown"), where + ".cache_semantics")
++        semantics = _enum(event["cache_semantics"], ("separate", "included_in_input", "unknown"),
++                          where + ".cache_semantics")
++        required = _UNITS if semantics == "separate" else _UNITS[:2]
++        complete = all(event["units"][unit] is not None for unit in required)
++        attempt_id = event["attempt_id"]
++        if kind == "summary":
++            summaries[attempt_id] = complete
++        else:
++            streams[attempt_id] = streams.get(attempt_id, True) and complete
++    return all(summaries.get(attempt_id, streams.get(attempt_id, False)) for attempt_id in attempt_ids)
+ 
+ 
+ def _ref(ref, where, named):
