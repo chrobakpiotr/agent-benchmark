@@ -28,3 +28,25 @@ instruction (`ab5-07-prompt-addendum.md`) close Claude's gap without hurting Cod
   - Claude, n = 20 per arm: 87% for 0.35 -> 0.90, 44% for 0.35 -> 0.75.
   - Codex, n = 15 per arm: a drop from 1.00 is detected with 13% probability at 0.70 and 71% at 0.50.
   - Moderate harm to Codex can go undetected.
+
+## Result (runs 2026-10-18, 100 trials)
+
+| run | baseline PASS | with instruction | Fisher p | median PASS s baseline / instruction |
+|---|---|---|---|---|
+| Claude `real-001-bug` v3 | 7/20 | **19/20** | **1.4e-4** | 25.3 / 26.9 |
+| Codex `real-001-bug` v3 | 15/15 | 15/15 | 1.0 | 68.6 / 75.2 |
+| Codex `real-012` | 15/15 | 14/14 (1 excluded, quota) | 1.0 | 81.9 / 140.6 |
+
+Primary analysis (alpha 0.0167 per run): the Claude run is significantly higher, and neither Codex run is lower. The
+verdict is therefore **"closes the gap; no harm to Codex detected"**. Every arm has at least the required number of
+non-excluded trials.
+Secondary:
+- Claude's baseline FAILs: 11 on `complete_summary_overrides_null_stream` and 2 on
+  `complete_stream_only_null_cache_read`. The one FAIL with the instruction is the override case.
+- On `real-012` Codex took 1.7x longer with the instruction; on `real-001-bug` v3, 1.1x.
+- Together with Claude on `real-012` (2/19 -> 16/20), the instruction lifted Claude to Codex's level on both confirmed
+  tasks.
+Deviations:
+- The Codex `real-012` run stopped on quota after 9 trials. A delayed resume scheduled for the reset did not fire
+  while the host slept, so the run was resumed by hand at 15:59, after the reset.
+- Interim results of the finished runs were looked at before `real-012` finished; the analysis was not changed.

@@ -58,11 +58,15 @@ behaviour that was correct."
 |---|---|---|---|
 | Claude, `real-012` (`ab5-07-prompt-addendum.md`) | 2/19 | 16/20 | 1.7e-5 |
 | Claude, 9 symptom tasks it already passed (`ab5-07-prompt-addendum-safety.md`) | 27/27 | 26/26 | 1.0; 1.47x slower |
-| Claude and Codex, both confirmed tasks (`ab5-07-prompt-addendum-v1-confirmed-tasks.md`) | pending | pending | pending |
+| Claude, `real-001-bug` v3 (`ab5-07-prompt-addendum-v1-confirmed-tasks.md`) | 7/20 | 19/20 | 1.4e-4 |
+| Codex, `real-001-bug` v3 / `real-012` (same document) | 15/15, 15/15 | 15/15, 14/14 | 1.0, 1.0; up to 1.7x slower |
 
 - **Instruction v2 did not help both agents** (`ab5-07-prompt-addendum-docs.md`). v2 added "take the correct
   behaviour from the project's documentation and contracts". It gave Claude a smaller gain than v1 and, on the
   ambiguous v2 task, drove Codex to the reading the docs permit: 0/15.
+- **Verdict on both confirmed tasks:** one general sentence that names no case lifts Claude to Codex's level
+  (16/20 and 19/20), with no harm detected for Codex. The gap is mostly what Claude does by default, not what it
+  can do.
 - **What the instructions do.** They make an agent search more widely. They do not settle which reading of the newly
   found cases is right; that has to come from the task.
 
