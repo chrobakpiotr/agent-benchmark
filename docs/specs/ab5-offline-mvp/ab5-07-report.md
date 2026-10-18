@@ -115,3 +115,11 @@ benchmark uses (`contract`, `execution` with `AgentCliBackend` and `QualifiedDoc
 
 Every run now records the harness version and commit in `run_started` and in its report. `resume` refuses a changed
 harness. All results above were recorded under v0.8.4 or earlier.
+
+Second upgrade (2026-10-18): the pin moved to v0.12.0 (`1c569f2`).
+- `contract`, `execution` and `qualification` are byte-identical between v0.11.0 and v0.12.0.
+- Every harness name the benchmark uses is in the supported API that v0.12.0 defines (README, ADR 0001 amendment
+  2026-10-18). `test_only_the_supported_harness_api_is_used` now enforces this.
+- The full suite passes, and the 40 `real-001-bug` v3 candidates re-graded on the qualified target under v0.12.0 again
+  give the recorded 40 grades.
+- No live trial was repeated, because the code paths are identical.

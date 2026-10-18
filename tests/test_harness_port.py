@@ -46,10 +46,19 @@ def ledger(request, terminal, usage):
 
 class Pin(unittest.TestCase):
     def test_installed_contract_matches_pin(self):
-        self.assertEqual((agent_harness.__version__, contract.CONTRACT_VERSION), ("0.11.0", 1))
+        self.assertEqual((agent_harness.__version__, contract.CONTRACT_VERSION), ("0.12.0", 1))
         direct = json.loads(metadata.distribution("agent-harness").read_text("direct_url.json") or "{}")
         if "vcs_info" in direct:  # installed from git: must be exactly the pinned commit
             self.assertEqual(direct["vcs_info"]["commit_id"], PINNED_SHA)
+
+    def test_only_the_supported_harness_api_is_used(self):
+        """agent-harness README / ADR 0001 amendment 2026-10-18: everything else is internal and may change."""
+        supported = {"execution": {"launch", "ScriptedBackend", "ProcessBackend", "AgentCliBackend",
+                                   "QualifiedDockerBackend", "QUALIFIED_LIMITS"},
+                     "qualification": {"qualify", "probe_digest", "DEFAULT_IMAGE", "DEFAULT_TARGET", "reference"}}
+        for path in (ROOT / "src" / "agent_benchmark").glob("*.py"):
+            for module, name in re.findall(r"\b(execution|qualification)\.([A-Za-z_]+)", path.read_text()):
+                self.assertIn(name, supported[module], f"{path.name}: {module}.{name}")
 
     def test_constitution_is_an_exact_copy_of_the_pinned_one(self):
         check = subprocess.run([sys.executable, "-m", "agent_harness", "constitution", "--check",
