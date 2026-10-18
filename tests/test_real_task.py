@@ -495,6 +495,31 @@ class RealTask16(unittest.TestCase):
         self.assertEqual(p.returncode, 0, p.stderr[-500:])
 
 
+class RealTask17(unittest.TestCase):
+    """real-017: agent-harness fix e48a7f5; Codex cache writes are counted, a turn without them stays unknown."""
+
+    def test_bundle_reference_patches_and_visible_checks(self):
+        bundle = ROOT / "tasks" / "real-017"
+        task = validate_task(json.loads((bundle / "task.json").read_text()))
+        verify_bundle(task, bundle)
+        want = {"good": ("PASS", []),
+                "noop": ("FAIL", ["write_reported_every_turn", "write_reported_one_turn", "write_reported_zero",
+                                  "write_with_failed_turn"]),
+                "zero_fill": ("FAIL", ["guard_older_cli_no_write", "guard_write_missing_in_first_turn",
+                                       "guard_write_missing_in_second_turn"])}
+        for name, (result, failed) in want.items():
+            data = (bundle / "reference" / f"{name}.patch").read_bytes()
+            with tempfile.TemporaryDirectory() as d:
+                (Path(d) / digest(data).split(":")[1]).write_bytes(data)
+                r, c = grader.grade(task, d, digest(data), bundle_dir=bundle, host_execution_allowed=True)
+            got = next(x["detail"]["failed"] for x in c if x["criterion"] == "hidden_cases_pass")
+            self.assertEqual((r, got), (result, failed), name)
+        p = subprocess.run([sys.executable, "-m", "unittest", "tests.test_agent_cli"], cwd=bundle / "base",
+                           capture_output=True, text=True,
+                           env={"PATH": "/usr/bin:/bin", "PYTHONPATH": "src", "PYTHONDONTWRITEBYTECODE": "1"})
+        self.assertEqual(p.returncode, 0, p.stderr[-500:])
+
+
 class BundlesAreTracked(unittest.TestCase):
     def test_no_bundle_file_is_hidden_by_a_gitignore(self):
         """A bundle's own .gitignore (e.g. src/*/_version.py) must not keep a needed file out of the repository:

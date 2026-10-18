@@ -1,0 +1,179 @@
+{
+ "module": "bench_fixtures.cx",
+ "cases": [
+  {
+   "id": "write_reported_one_turn",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "turn.completed",
+      "usage": {
+       "input_tokens": 500,
+       "cached_input_tokens": 300,
+       "output_tokens": 40,
+       "cache_write_input_tokens": 25
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "write_reported_every_turn",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "turn.completed",
+      "usage": {
+       "input_tokens": 500,
+       "cached_input_tokens": 300,
+       "output_tokens": 40,
+       "cache_write_input_tokens": 25
+      }
+     },
+     {
+      "type": "turn.completed",
+      "usage": {
+       "input_tokens": 700,
+       "cached_input_tokens": 650,
+       "output_tokens": 60,
+       "cache_write_input_tokens": 5
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "write_reported_zero",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "turn.completed",
+      "usage": {
+       "input_tokens": 500,
+       "cached_input_tokens": 300,
+       "output_tokens": 40,
+       "cache_write_input_tokens": 0
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "write_with_failed_turn",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "turn.completed",
+      "usage": {
+       "input_tokens": 500,
+       "cached_input_tokens": 300,
+       "output_tokens": 40,
+       "cache_write_input_tokens": 7
+      }
+     },
+     {
+      "type": "turn.failed"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "guard_write_missing_in_second_turn",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "turn.completed",
+      "usage": {
+       "input_tokens": 500,
+       "cached_input_tokens": 300,
+       "output_tokens": 40,
+       "cache_write_input_tokens": 25
+      }
+     },
+     {
+      "type": "turn.completed",
+      "usage": {
+       "input_tokens": 700,
+       "cached_input_tokens": 650,
+       "output_tokens": 60
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "guard_write_missing_in_first_turn",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "turn.completed",
+      "usage": {
+       "input_tokens": 500,
+       "cached_input_tokens": 300,
+       "output_tokens": 40
+      }
+     },
+     {
+      "type": "turn.completed",
+      "usage": {
+       "input_tokens": 700,
+       "cached_input_tokens": 650,
+       "output_tokens": 60,
+       "cache_write_input_tokens": 5
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "guard_older_cli_no_write",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "turn.completed",
+      "usage": {
+       "input_tokens": 500,
+       "cached_input_tokens": 300,
+       "output_tokens": 40
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "guard_negative_input_fails",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "turn.completed",
+      "usage": {
+       "input_tokens": -1,
+       "cached_input_tokens": 300,
+       "output_tokens": 40,
+       "cache_write_input_tokens": 2
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "guard_no_turns",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "thread.started"
+     }
+    ]
+   ]
+  }
+ ]
+}

@@ -373,3 +373,22 @@ Evidence: `RealTask16.test_bundle_reference_patches_and_visible_checks`. Calibra
 Both trials were first left ungraded: the qualification probes timed out while another workload held the host load
 near 460 (`warnings.log`). A `resume` graded them after the load fell. The task discriminated in calibration; a
 pre-registered confirmatory run is the next step.
+
+# `real-017` from agent-harness `e48a7f5` (implemented 2026-10-18)
+
+A sibling of `real-016` with the same rule from ADR 0002 (a missing count is unknown, never 0), in the Codex parser.
+
+Report: codex-cli 0.160 reports `cache_write_input_tokens`, but the parser always returns `cache_write_tokens` null.
+Hidden cases (9):
+- 4 bug cases: one turn, a sum over turns, a zero count, a failed turn;
+- 5 guards, including two turns where only one reports the field: unknown, not a partial sum.
+
+Malformed write counts and turns without `cached_input_tokens` are excluded as ambiguous.
+
+Reference patches:
+- `good` (upstream, which also changes the sandbox probe) passes.
+- `zero_fill` (a missing field adds 0) fails the 3 guards with a missing field.
+- `noop` fails the 4 bug cases.
+
+Evidence: `RealTask17.test_bundle_reference_patches_and_visible_checks`. Calibration manifest:
+`experiments/real-017-calibration.json`, not yet run.

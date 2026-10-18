@@ -1,0 +1,32 @@
+diff --git a/src/agent_harness/execution.py b/src/agent_harness/execution.py
+index 47a07b0..ed8e210 100644
+--- a/src/agent_harness/execution.py
++++ b/src/agent_harness/execution.py
+@@ -557,7 +557,7 @@ def _claude_report(data):
+ 
+ def _codex_report(data):
+     """(units, failed, model) summed over ``turn.completed`` events of ``codex exec --json``."""
+-    totals, turns, failed = {"input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0}, 0, False
++    totals, turns, failed = {"input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "cache_write_tokens": 0}, 0, False
+     for line in data.splitlines():
+         try:
+             event = json.loads(line)
+@@ -568,7 +568,8 @@ def _codex_report(data):
+             failed = True
+         elif kind == "turn.completed":
+             usage = event.get("usage") or {}
+-            values = (usage.get("input_tokens"), usage.get("output_tokens"), usage.get("cached_input_tokens", 0))
++            values = (usage.get("input_tokens"), usage.get("output_tokens"), usage.get("cached_input_tokens", 0),
++                      usage.get("cache_write_input_tokens", 0))
+             if any(type(v) is not int or v < 0 for v in values):
+                 return None, True, None
+             for key, value in zip(totals, values):
+@@ -576,7 +577,7 @@ def _codex_report(data):
+             turns += 1
+     if not turns:
+         return None, True, None
+-    return {**totals, "cache_write_tokens": None}, failed, None
++    return totals, failed, None
+ 
+ 
+ def _group_alive(pgid):

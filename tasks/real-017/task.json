@@ -1,0 +1,26 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-017",
+  "version": "1",
+  "description": "Bug report from a user of agent-harness: Codex runs never get complete usage. codex-cli 0.160 reports cache writes in each turn.completed event, for example {\"type\": \"turn.completed\", \"usage\": {\"input_tokens\": 500, \"cached_input_tokens\": 300, \"cache_write_input_tokens\": 25, \"output_tokens\": 40}}, but execution._codex_report always returns cache_write_tokens None. Find the problem and fix it. Change src/agent_harness/ only.",
+  "environment": "Python >= 3.13 stdlib; base tree = agent-harness e48a7f5^ (src, docs, tests, AGENTS.md, CLAUDE.md, LICENSE, README, pyproject, .gitignore) plus the task-owned helper bench_fixtures/cx.py; no repository history",
+  "visible_checks": [
+    "PYTHONPATH=src python -m unittest tests.test_agent_cli (from the workspace root)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:d31933dfdf8aa9696be889424cd0f130f7dc9fde01c6f271dc80b0cdb6301e98",
+    "hidden_digest": "sha256:75d67fc387f55379334579c273cabe295a073ecb79a6c6878631b2377127c88f",
+    "expected_digest": "sha256:582e63fa0b46a0b3246b08401d0fd87c7a024bdbd28afaaeba81f7b5eb1ea7c7",
+    "scope": [
+      "src/agent_harness/execution.py"
+    ],
+    "hidden_test_count": 9,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: agent-harness commit e48a7f5 (fix(execution): probe codex sandbox with the 0.160 syntax and count codex cache writes, 2026-10-10); reference/good.patch is that commit's src/ diff (its sandbox-probe part is not exercised); symptom-only description (one turn with the new field); hidden cases authored for agent-benchmark (2026-10-18): sums over turns, a zero count, a failed turn, and guards where one turn lacks the field (unknown, ADR 0002) or an older CLI reports none; malformed write counts and turns without cached_input_tokens are excluded as ambiguous; the fix commit changes no ADR, only a work packet; other reference patches built by build_task.py. Public repository: contamination possible",
+  "license": "MIT (agent-harness, Copyright (c) 2026 PC; base/LICENSE)"
+}
