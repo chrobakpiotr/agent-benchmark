@@ -392,3 +392,9 @@ Reference patches:
 
 Evidence: `RealTask17.test_bundle_reference_patches_and_visible_checks`. Calibration manifest:
 `experiments/real-017-calibration.json`, not yet run.
+
+## Calibration of `real-017` (2026-10-18, harness v0.12.0)
+
+`~/agent-benchmark-runs/real-017-calibration-2026-10-18`: Claude PASS (19 s) and Codex PASS (47 s). The task did not
+discriminate in calibration, so no confirmatory run is planned. The report names the new field, and both agents kept a
+turn without it as unknown.
