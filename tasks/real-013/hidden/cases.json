@@ -1,0 +1,110 @@
+{
+ "module": "bench_fixtures.md",
+ "cases": [
+  {
+   "id": "reported_shape_other_text",
+   "function": "html",
+   "args": [
+    "*a***a*"
+   ]
+  },
+  {
+   "id": "in_sentence",
+   "function": "html",
+   "args": [
+    "x *a***a* y"
+   ]
+  },
+  {
+   "id": "strong_closer_remainder",
+   "function": "html",
+   "args": [
+    "**a***a**"
+   ]
+  },
+  {
+   "id": "opener_run_consumed_first",
+   "function": "html",
+   "args": [
+    "a***b*c*"
+   ]
+  },
+  {
+   "id": "opener_run_triple",
+   "function": "html",
+   "args": [
+    "***a*a*a"
+   ]
+  },
+  {
+   "id": "double_opener_single_closer",
+   "function": "html",
+   "args": [
+    "**a* a*a"
+   ]
+  },
+  {
+   "id": "underscore_content",
+   "function": "html",
+   "args": [
+    "*_***_*"
+   ]
+  },
+  {
+   "id": "closer_run_consumed_first",
+   "function": "html",
+   "args": [
+    "a*a *a**"
+   ]
+  },
+  {
+   "id": "closer_run_triple",
+   "function": "html",
+   "args": [
+    "*a *a***a"
+   ]
+  },
+  {
+   "id": "guard_four_star_middle",
+   "function": "html",
+   "args": [
+    "*a****a*"
+   ]
+  },
+  {
+   "id": "guard_alternating",
+   "function": "html",
+   "args": [
+    "*a***a***a*"
+   ]
+  },
+  {
+   "id": "guard_triple_both",
+   "function": "html",
+   "args": [
+    "***a***"
+   ]
+  },
+  {
+   "id": "guard_nested_strong",
+   "function": "html",
+   "args": [
+    "*a **b** c*"
+   ]
+  },
+  {
+   "id": "guard_underscore_intraword",
+   "function": "html",
+   "args": [
+    "_foo___bar_"
+   ]
+  },
+  {
+   "id": "guard_spec_rule_9",
+   "function": "html",
+   "args": [
+    "*foo**bar***baz*"
+   ]
+  }
+ ]
+}

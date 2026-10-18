@@ -1,0 +1,26 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-013",
+  "version": "1",
+  "description": "Bug report from a user of mistune: mistune.html(\"*foo***bar*\") returns \"<p><em>foo</em>**bar*</p>\\n\", but CommonMark renders this input as \"<p><em>foo</em>*<em>bar</em></p>\". Find the problem and fix it. Change src/mistune/ only.",
+  "environment": "Python >= 3.13 stdlib; base tree = mistune 2d26bc8^ (src, tests, docs, LICENSE, README, pyproject, .gitignore) plus the task-owned helper bench_fixtures/md.py; no repository history",
+  "visible_checks": [
+    "PYTHONPATH=src python -m unittest tests.test_commonmark tests.test_syntax (from the workspace root)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:ca37c34b8b745f41340eb72638d6dd1914a2feec8168ed0fa6c666e0649829c3",
+    "hidden_digest": "sha256:e706ac33ba2ed1e3bc0bdb30806130b5a37ab87361ac8cca114b38f413adad7b",
+    "expected_digest": "sha256:2cf47322a688598035ece8e0e8eea516ab6d70ae5a7c2ca56927285099f48676",
+    "scope": [
+      "src/mistune/inline_parser.py"
+    ],
+    "hidden_test_count": 15,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: lepture/mistune commit 2d26bc8 (fix(inline): use original run length in emphasis multiple-of-3 rule, 2026-06-26); reference/good.patch is that commit's src/ diff; symptom-only description (one input and the CommonMark output); hidden cases authored for agent-benchmark (2026-10-18): other partially consumed runs (closer and opener side, strong, mixed content) plus guards, every expected value equal to both the fixed tree and commonmark.py 0.9.1; the rule (CommonMark rules 9 and 10) is in the CommonMark spec, whose examples ship in the base as tests/fixtures/commonmark.json; other reference patches built by build_task.py. Public repository: contamination possible",
+  "license": "BSD-3-Clause (mistune; base/LICENSE)"
+}

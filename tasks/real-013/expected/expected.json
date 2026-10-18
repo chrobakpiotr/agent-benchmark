@@ -1,0 +1,47 @@
+{
+ "reported_shape_other_text": {
+  "value": "<p><em>a</em>*<em>a</em></p>\n"
+ },
+ "in_sentence": {
+  "value": "<p>x <em>a</em>*<em>a</em> y</p>\n"
+ },
+ "strong_closer_remainder": {
+  "value": "<p><strong>a</strong><em>a</em>*</p>\n"
+ },
+ "opener_run_consumed_first": {
+  "value": "<p>a*<em><em>b</em>c</em></p>\n"
+ },
+ "opener_run_triple": {
+  "value": "<p>*<em><em>a</em>a</em>a</p>\n"
+ },
+ "double_opener_single_closer": {
+  "value": "<p>*<em>a</em> a*a</p>\n"
+ },
+ "underscore_content": {
+  "value": "<p><em>_</em>*<em>_</em></p>\n"
+ },
+ "closer_run_consumed_first": {
+  "value": "<p>a*a <em>a</em>*</p>\n"
+ },
+ "closer_run_triple": {
+  "value": "<p><em>a <em>a</em></em>*a</p>\n"
+ },
+ "guard_four_star_middle": {
+  "value": "<p><em>a</em>**<em>a</em></p>\n"
+ },
+ "guard_alternating": {
+  "value": "<p><em>a</em><strong>a</strong><em>a</em></p>\n"
+ },
+ "guard_triple_both": {
+  "value": "<p><em><strong>a</strong></em></p>\n"
+ },
+ "guard_nested_strong": {
+  "value": "<p><em>a <strong>b</strong> c</em></p>\n"
+ },
+ "guard_underscore_intraword": {
+  "value": "<p><em>foo___bar</em></p>\n"
+ },
+ "guard_spec_rule_9": {
+  "value": "<p><em>foo<strong>bar</strong></em>baz*</p>\n"
+ }
+}

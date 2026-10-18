@@ -273,3 +273,26 @@ check: "complete requires a summary for every attempt with every unit an integer
 unknown". The task base is the tree before that commit, so it carries the earlier, ambiguous wording by design. v2's
 hidden case took its rule from a documentation change that the agents never saw. v3 accepts both readings, which is
 right for a task frozen at that point.
+
+# `real-013` from mistune `2d26bc8` (implemented 2026-10-18)
+
+Selection: an offline scan of 2026-06..10 fix commits in 22 pure-Python projects. Kept were commits that touch tests
+and at most two source files, change no docs, and enforce a rule that the base already documents. For mistune, that
+rule is CommonMark rules 9 and 10, whose spec examples ship in `tests/fixtures/commonmark.json`.
+
+Report: one input (`*foo***bar*`) and its CommonMark output. Hidden cases (15):
+- 9 bug cases where a partially consumed delimiter run must still use its original length: the remainder of a closer
+  and of an opener, strong runs, mixed content;
+- 6 guards.
+
+Every expected value equals both the fixed tree and the CommonMark reference implementation (commonmark.py 0.9.1). No
+case therefore depends on a mistune-only reading.
+
+Reference patches (`build_task.py`):
+- `good` (upstream) passes.
+- `closer_only` and `opener_only` fail one side each.
+- `no_rule` fails a guard from the spec.
+- `noop` fails all 9 bug cases.
+
+Evidence: `RealTask13.test_bundle_reference_patches_and_visible_checks`. Calibration manifest:
+`experiments/real-013-calibration.json`, 1 trial per agent, not yet run.

@@ -401,6 +401,33 @@ class RealTask12(unittest.TestCase):
                            env={"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
         self.assertEqual(p.returncode, 0, p.stderr[-500:])
 
+
+class RealTask13(unittest.TestCase):
+    """real-013: mistune fix 2d26bc8; the CommonMark multiple-of-3 rule on both sides of a partially consumed run."""
+
+    def test_bundle_reference_patches_and_visible_checks(self):
+        bundle = ROOT / "tasks" / "real-013"
+        task = validate_task(json.loads((bundle / "task.json").read_text()))
+        verify_bundle(task, bundle)
+        opener = ["double_opener_single_closer", "in_sentence", "opener_run_consumed_first", "opener_run_triple",
+                  "reported_shape_other_text", "strong_closer_remainder", "underscore_content"]
+        closer = ["closer_run_consumed_first", "closer_run_triple"]
+        want = {"good": ("PASS", []), "noop": ("FAIL", sorted(opener + closer)), "closer_only": ("FAIL", opener),
+                "opener_only": ("FAIL", closer),
+                "no_rule": ("FAIL", ["closer_run_consumed_first", "double_opener_single_closer", "guard_spec_rule_9"])}
+        for name, (result, failed) in want.items():
+            data = (bundle / "reference" / f"{name}.patch").read_bytes()
+            with tempfile.TemporaryDirectory() as d:
+                (Path(d) / digest(data).split(":")[1]).write_bytes(data)
+                r, c = grader.grade(task, d, digest(data), bundle_dir=bundle, host_execution_allowed=True)
+            got = next(x["detail"]["failed"] for x in c if x["criterion"] == "hidden_cases_pass")
+            self.assertEqual((r, got), (result, failed), name)
+        p = subprocess.run([sys.executable, "-m", "unittest", "tests.test_commonmark", "tests.test_syntax"],
+                           cwd=bundle / "base", capture_output=True, text=True,
+                           env={"PATH": "/usr/bin:/bin", "PYTHONPATH": "src", "PYTHONDONTWRITEBYTECODE": "1"})
+        self.assertEqual(p.returncode, 0, p.stderr[-500:])
+
+
 class BundlesAreTracked(unittest.TestCase):
     def test_no_bundle_file_is_hidden_by_a_gitignore(self):
         """A bundle's own .gitignore (e.g. src/*/_version.py) must not keep a needed file out of the repository:
