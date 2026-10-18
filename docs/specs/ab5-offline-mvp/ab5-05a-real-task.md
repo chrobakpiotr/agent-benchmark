@@ -341,3 +341,24 @@ One trial per agent and task (`~/agent-benchmark-runs/real-01{3,4,5}-calibration
 passed every hidden case. Median trial time was Claude 18-30 s and Codex 40-57 s. None of the three tasks
 discriminated in calibration. The cases are spec-backed forms of the same bug, and both agents covered them without
 being asked.
+
+# `real-016` from agent-harness `91bb3e1` (implemented 2026-10-18)
+
+Type: a rule stated only in the project's own documentation, the same type as `real-001-bug` v3. ADR 0002 in the
+base says "A null unit always means unknown", and unknown is never 0. The fix commit changes no ADR, only one
+work-packet line.
+
+Report: an OpenCode run whose step has no cache field records no usage at all. Hidden cases (12):
+- 6 bug cases: a missing cache object, a cache object missing `read` or `write`, an empty cache object, mixed steps,
+  and reasoning tokens;
+- 6 guards: malformed values still fail, an error event marks the run failed, and full counts are summed.
+
+A `cache: null` step is excluded, because reading it as unknown or as malformed are both defensible.
+
+Reference patches:
+- `good` passes.
+- `zero_fill` (missing count = 0, against the ADR) and `noop` fail all 6 bug cases.
+- `absent_only` fails the two cases with a partial cache object.
+
+Evidence: `RealTask16.test_bundle_reference_patches_and_visible_checks`. Calibration manifest:
+`experiments/real-016-calibration.json`, not yet run.

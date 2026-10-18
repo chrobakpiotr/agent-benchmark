@@ -1,0 +1,26 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-016",
+  "version": "1",
+  "description": "Bug report from a user of agent-harness: an OpenCode run lost all of its token usage. Its step_finish events carry input and output counts, but one step has no cache field, for example {\"type\": \"step_finish\", \"part\": {\"tokens\": {\"input\": 7, \"output\": 2}}}. For that output, execution._opencode_report returns (None, True, None), so the result records no usage at all. Find the problem and fix it. Change src/agent_harness/ only.",
+  "environment": "Python >= 3.13 stdlib; base tree = agent-harness 91bb3e1^ (src, docs, tests, AGENTS.md, CLAUDE.md, LICENSE, README, pyproject, .gitignore) plus the task-owned helper bench_fixtures/oc.py; no repository history",
+  "visible_checks": [
+    "PYTHONPATH=src python -m unittest tests.test_agent_cli (from the workspace root)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:5c7f53f0f1e2fe92740f6cbfbce4ed08f131a07945c78a87a9fb5625660f8738",
+    "hidden_digest": "sha256:bbfd7dbe29ecf89c84bbec7b3ba212e6dedf837b581ee18fc59460ec8dd3e35e",
+    "expected_digest": "sha256:e164e1d370f05b7dcda5636a591dfc00d0a30398fc024fa5816f73beff94b8a7",
+    "scope": [
+      "src/agent_harness/execution.py"
+    ],
+    "hidden_test_count": 12,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: agent-harness commit 91bb3e1 (fix(execution): keep unknown OpenCode cache units null, 2026-10-11); reference/good.patch is that commit's src/ diff; symptom-only description (one step without a cache field); hidden cases authored for agent-benchmark (2026-10-18): a cache object missing one count, an empty cache object, mixed steps, reasoning, plus guards; the rule is in the base's ADR 0002 (a null unit always means unknown, unknown is never 0); a `cache: null` step is excluded as ambiguous; the fix commit changes no ADR, only a work packet line; other reference patches built by build_task.py. Public repository: contamination possible",
+  "license": "MIT (agent-harness, Copyright (c) 2026 PC; base/LICENSE)"
+}

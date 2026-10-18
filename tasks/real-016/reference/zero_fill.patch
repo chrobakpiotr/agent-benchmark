@@ -1,0 +1,15 @@
+diff --git a/src/agent_harness/execution.py b/src/agent_harness/execution.py
+index 3f2fc67..31a7aae 100644
+--- a/src/agent_harness/execution.py
++++ b/src/agent_harness/execution.py
+@@ -849,8 +849,9 @@ def _opencode_report(data):
+         elif kind == "step_finish":
+             try:
+                 tokens = event["part"]["tokens"]
++                cache = tokens.get("cache") or {}
+                 values = (tokens["input"], tokens["output"], tokens.get("reasoning", 0),
+-                          tokens["cache"]["read"], tokens["cache"]["write"])
++                          cache.get("read", 0), cache.get("write", 0))
+             except (KeyError, TypeError):
+                 return None, True, None
+             if any(type(v) is not int or v < 0 for v in values):

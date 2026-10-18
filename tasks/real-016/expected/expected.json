@@ -1,0 +1,126 @@
+{
+ "no_cache_single_step": {
+  "value": [
+   {
+    "input_tokens": 7,
+    "output_tokens": 2,
+    "cache_read_tokens": null,
+    "cache_write_tokens": null
+   },
+   false,
+   null
+  ]
+ },
+ "no_cache_in_one_of_two_steps": {
+  "value": [
+   {
+    "input_tokens": 107,
+    "output_tokens": 22,
+    "cache_read_tokens": null,
+    "cache_write_tokens": null
+   },
+   false,
+   null
+  ]
+ },
+ "cache_without_write": {
+  "value": [
+   {
+    "input_tokens": 150,
+    "output_tokens": 24,
+    "cache_read_tokens": 15,
+    "cache_write_tokens": null
+   },
+   false,
+   null
+  ]
+ },
+ "cache_without_read": {
+  "value": [
+   {
+    "input_tokens": 100,
+    "output_tokens": 20,
+    "cache_read_tokens": null,
+    "cache_write_tokens": 3
+   },
+   false,
+   null
+  ]
+ },
+ "cache_empty_object": {
+  "value": [
+   {
+    "input_tokens": 100,
+    "output_tokens": 20,
+    "cache_read_tokens": null,
+    "cache_write_tokens": null
+   },
+   false,
+   null
+  ]
+ },
+ "no_cache_with_reasoning": {
+  "value": [
+   {
+    "input_tokens": 10,
+    "output_tokens": 7,
+    "cache_read_tokens": null,
+    "cache_write_tokens": null
+   },
+   false,
+   null
+  ]
+ },
+ "guard_full_cache_sums": {
+  "value": [
+   {
+    "input_tokens": 150,
+    "output_tokens": 27,
+    "cache_read_tokens": 12,
+    "cache_write_tokens": 1
+   },
+   false,
+   null
+  ]
+ },
+ "guard_negative_input_fails": {
+  "value": [
+   null,
+   true,
+   null
+  ]
+ },
+ "guard_missing_input_fails": {
+  "value": [
+   null,
+   true,
+   null
+  ]
+ },
+ "guard_float_cache_fails": {
+  "value": [
+   null,
+   true,
+   null
+  ]
+ },
+ "guard_error_event_marks_failed": {
+  "value": [
+   {
+    "input_tokens": 100,
+    "output_tokens": 20,
+    "cache_read_tokens": 10,
+    "cache_write_tokens": 1
+   },
+   true,
+   null
+  ]
+ },
+ "guard_no_steps": {
+  "value": [
+   null,
+   true,
+   null
+  ]
+ }
+}

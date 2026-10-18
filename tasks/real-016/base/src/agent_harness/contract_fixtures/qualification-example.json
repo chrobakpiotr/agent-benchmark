@@ -1,0 +1,312 @@
+{
+  "contract_version": 1,
+  "target": "example-not-a-real-target",
+  "policy_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "author": "example-qualifier",
+  "tuple": {
+    "job_id": "example-job-1",
+    "host": "example-host",
+    "kernel": "example-kernel",
+    "engine": "example-engine-0.0.0",
+    "workload_image": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "checks": [
+    {
+      "id": "Q01",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q01.log",
+          "sha256": "sha256:e764f776b3aad69f71acc4aca0e9493e0a1ca91e38188454e50634a7abf1641b",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "Q02",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q02.log",
+          "sha256": "sha256:37847b8f74b14036d5b291c2628e2a65f53e632816df9eec6f6b4b9c08cefdf7",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "Q03",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q03.log",
+          "sha256": "sha256:e0da1dfa7abcb408011f38662c38ccf39023521047d14eefa5696d360313e3d1",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "Q04",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q04.log",
+          "sha256": "sha256:f96cae59ecb62d8a8043c2d324165e13a5b8d4e3fcedc392b93e5b83c93e4d69",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "Q05",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q05.log",
+          "sha256": "sha256:405a84177f9d68f1e016d7d27fa27e8f53f3fdf453bda4d95cf071084f9f3177",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "Q06",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q06.log",
+          "sha256": "sha256:858a5eee52085d407b114ac33c14f4e2d7dccff885097f659b98c6d1a3315ca4",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "Q07",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q07.log",
+          "sha256": "sha256:f1362b1102d8e1d06942194167939f75d7c660c913c941f965d73d8d0eb8d82b",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "Q08",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q08.log",
+          "sha256": "sha256:a05185fb649203117ee55d102dbc2f242bad4659e157c157357cf66b4f81c325",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "Q09",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q09.log",
+          "sha256": "sha256:154c791340e1da33f49703b57605048c1e5167bf2793cd71f07b9069f284872f",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "Q10",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q10.log",
+          "sha256": "sha256:dc197628e242ed7faebf8f6e1d1a40f5492d486e5cb751383c14828504d2237f",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "Q11",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q11.log",
+          "sha256": "sha256:d7c8547ca361057d9af1caf2be2cdab8e828a201c0839f837de2aeff5dcb9531",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "Q12",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q12.log",
+          "sha256": "sha256:959f87e7675a663b4150c98ca0f9beff35f73c04c2c4de2f308a26fa1f53c398",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "Q13",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q13.log",
+          "sha256": "sha256:e7da2005398bb28485e316e0a4b8c964a8ae39f433f09852079ff317d22e7478",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "Q14",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q14.log",
+          "sha256": "sha256:7b8f7f894071d35e95c44b2733ae2ee2bacc3607c580f5d19d94ba5e18e498e2",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "Q15",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q15.log",
+          "sha256": "sha256:364228343dd94e6ba002732f4c722da09ea8fcdd4d3740150c3408d0c3ee4abc",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "Q16",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/Q16.log",
+          "sha256": "sha256:49739f522cf3bd513032f2c3689d34f32ad91a204c717d42c4d609a337c9f985",
+          "size": 25
+        }
+      ]
+    },
+    {
+      "id": "B1",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/B1.log",
+          "sha256": "sha256:52c1fe9a3edbc561561ba77c400d4edaa33ff5d97d491e076613c545a3bb78a5",
+          "size": 24
+        }
+      ]
+    },
+    {
+      "id": "B2",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/B2.log",
+          "sha256": "sha256:9857c245d0fbae3798325db86e517099cfe07d9e9097cc16470fed81abc25a0e",
+          "size": 24
+        }
+      ]
+    },
+    {
+      "id": "B3",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/B3.log",
+          "sha256": "sha256:e55288260506d62abb9fe6b9d77f9ad02f14f923a2b145438b52e74c5ef721b8",
+          "size": 24
+        }
+      ]
+    },
+    {
+      "id": "B4",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/B4.log",
+          "sha256": "sha256:cde38fe83f6a1889b9d1be0d6d02ea86fa6edcf1b44c5cf6b7a6a5ab732ab266",
+          "size": 24
+        }
+      ]
+    },
+    {
+      "id": "B5",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/B5.log",
+          "sha256": "sha256:e02ac6396dbca352e40933eaea6c1b3c5f48e6592a613e0b6e3bd164f6527795",
+          "size": 24
+        }
+      ]
+    },
+    {
+      "id": "B6",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/B6.log",
+          "sha256": "sha256:5423664d61e1304577cf4e600bf35487265381510cbeff729bf3ef51713cdf41",
+          "size": 24
+        }
+      ]
+    },
+    {
+      "id": "B7",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/B7.log",
+          "sha256": "sha256:e87ee5c5bd916a92a325e12cc02aa0b36b1ff68cf5a5d02fffcf1a209241490b",
+          "size": 24
+        }
+      ]
+    },
+    {
+      "id": "B8",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/B8.log",
+          "sha256": "sha256:40dc1af39626d97b7eb887f6f1e6f987e02e27a641d60aaa72240a31ca5dc7c7",
+          "size": 24
+        }
+      ]
+    },
+    {
+      "id": "B9",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/B9.log",
+          "sha256": "sha256:8c047f584409227886bd6a179c834e136536fc0c26f0914a426d2dc57372f513",
+          "size": 24
+        }
+      ]
+    },
+    {
+      "id": "B10",
+      "result": "pass",
+      "evidence": [
+        {
+          "path": "evidence/B10.log",
+          "sha256": "sha256:c47751621e9e66202450f9f5af92f2f80e8c36fbfc229052e4ced7ec86363161",
+          "size": 25
+        }
+      ]
+    }
+  ],
+  "independent_review": {
+    "reviewer": "example-reviewer",
+    "subject": "sha256:84aa310e71adafe48d1f1071519089c64a4df4d245290e2fd65773763fe280bb",
+    "verdict": "fail",
+    "evidence": {
+      "path": "evidence/review.log",
+      "sha256": "sha256:cad9917663633bfc81e9d3fed282fe3674e40a099314f20efc3347b334694e42",
+      "size": 28
+    }
+  },
+  "created_at": "2026-10-06T00:00:00Z"
+}

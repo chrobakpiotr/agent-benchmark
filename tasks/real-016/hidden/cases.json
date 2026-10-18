@@ -1,0 +1,273 @@
+{
+ "module": "bench_fixtures.oc",
+ "cases": [
+  {
+   "id": "no_cache_single_step",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "step_finish",
+      "part": {
+       "tokens": {
+        "input": 7,
+        "output": 2
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "no_cache_in_one_of_two_steps",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "step_finish",
+      "part": {
+       "tokens": {
+        "input": 100,
+        "output": 20,
+        "cache": {
+         "read": 10,
+         "write": 1
+        }
+       }
+      }
+     },
+     {
+      "type": "step_finish",
+      "part": {
+       "tokens": {
+        "input": 7,
+        "output": 2
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "cache_without_write",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "step_finish",
+      "part": {
+       "tokens": {
+        "input": 100,
+        "output": 20,
+        "cache": {
+         "read": 5
+        }
+       }
+      }
+     },
+     {
+      "type": "step_finish",
+      "part": {
+       "tokens": {
+        "input": 50,
+        "output": 4,
+        "cache": {
+         "read": 10,
+         "write": 1
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "cache_without_read",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "step_finish",
+      "part": {
+       "tokens": {
+        "input": 100,
+        "output": 20,
+        "cache": {
+         "write": 3
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "cache_empty_object",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "step_finish",
+      "part": {
+       "tokens": {
+        "input": 100,
+        "output": 20,
+        "cache": {}
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "no_cache_with_reasoning",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "step_finish",
+      "part": {
+       "tokens": {
+        "input": 10,
+        "output": 2,
+        "reasoning": 5
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "guard_full_cache_sums",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "step_finish",
+      "part": {
+       "tokens": {
+        "input": 100,
+        "output": 20,
+        "cache": {
+         "read": 10,
+         "write": 1
+        }
+       }
+      }
+     },
+     {
+      "type": "step_finish",
+      "part": {
+       "tokens": {
+        "input": 50,
+        "output": 4,
+        "reasoning": 3,
+        "cache": {
+         "read": 2,
+         "write": 0
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "guard_negative_input_fails",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "step_finish",
+      "part": {
+       "tokens": {
+        "input": -1,
+        "output": 2,
+        "cache": {
+         "read": 10,
+         "write": 1
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "guard_missing_input_fails",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "step_finish",
+      "part": {
+       "tokens": {
+        "output": 2,
+        "cache": {
+         "read": 0,
+         "write": 0
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "guard_float_cache_fails",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "step_finish",
+      "part": {
+       "tokens": {
+        "input": 1,
+        "output": 1,
+        "cache": {
+         "read": 1.5,
+         "write": 0
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  {
+   "id": "guard_error_event_marks_failed",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "step_finish",
+      "part": {
+       "tokens": {
+        "input": 100,
+        "output": 20,
+        "cache": {
+         "read": 10,
+         "write": 1
+        }
+       }
+      }
+     },
+     {
+      "type": "error"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "guard_no_steps",
+   "function": "report",
+   "args": [
+    [
+     {
+      "type": "text"
+     }
+    ]
+   ]
+  }
+ ]
+}

@@ -1,0 +1,28 @@
+{
+  "check_id": "Q16",
+  "details": {
+    "container_id": "47400aead0c19585eb2a3651b993faa4f2b4cb6b423fec77405889031f6f3b96",
+    "container_pid": 0,
+    "container_status": "exited",
+    "controller_killed": true,
+    "controller_pid": 78743,
+    "controller_pids": [
+      78719,
+      78732,
+      78743
+    ],
+    "execution_id": "84243343b6b3484585dab18974516696",
+    "generation": 1,
+    "launch_admitted": false,
+    "relaunch_attempted": true,
+    "terminal_record_fsynced": true,
+    "terminal_restart_rejected": true
+  },
+  "job_id": "ref-20261011T082417Z",
+  "name": "RESTART_DRAINED",
+  "reason_code": "RESTART_DRAINED",
+  "status": "pass",
+  "stderr": "",
+  "stdout": "",
+  "target_id": "showcase-docker-desktop-linux-guest"
+}
