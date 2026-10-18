@@ -1,0 +1,57 @@
+{
+  "schema_version": "agent-benchmark/manifest/v2",
+  "experiment_id": "ab5-07-prompt-addendum-v1-codex-real-012",
+  "task": {
+    "path": "../tasks/real-012/task.json",
+    "digest": "sha256:b384125a19fb5b6c2ddea23515a594c2a3aa4adf9069a053bef7b2f2c48b6006"
+  },
+  "configs": [
+    {
+      "config_id": "codex-sol-pinned",
+      "model_requested": "gpt-6.1-sol",
+      "model_resolved": null,
+      "cli": "codex",
+      "cli_version": "codex-cli 0.160.0",
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 1800
+      },
+      "isolation_track": "controlled-host"
+    },
+    {
+      "config_id": "codex-sol-pinned-check-related",
+      "model_requested": "gpt-6.1-sol",
+      "model_resolved": null,
+      "cli": "codex",
+      "cli_version": "codex-cli 0.160.0",
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 1800
+      },
+      "isolation_track": "controlled-host",
+      "prompt_addendum": "The report shows one example. The same underlying problem may show up with other inputs: before you finish, find them and make sure they are fixed too, without changing behaviour that was correct."
+    }
+  ],
+  "repetitions": 15,
+  "seed": 903,
+  "retry_policy": {
+    "max_attempts": 1
+  },
+  "exclusions": [
+    {
+      "outcome": "error",
+      "reason": "provider or quota error before a result; predeclared, analysed as excluded"
+    }
+  ],
+  "executor": {
+    "kind": "agent-cli"
+  }
+}
