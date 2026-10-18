@@ -258,7 +258,8 @@ def run(manifest_path, out_dir, execute=None):
                                    "manifest_digest": digest(manifest_bytes), "task_digest": digest(task_bytes),
                                    "executor": {"kind": manifest["executor"]["kind"],
                                                 **({} if manifest["executor"]["kind"] == "fake"
-                                                   else {"cli_versions": cli_versions(manifest)}),
+                                                   else {"cli_versions": cli_versions(manifest),
+                                                         "harness": harness_port.harness_identity()}),
                                                 "track": FAKE_TRACK if manifest["executor"]["kind"] == "fake"
                                                 else CONTROLLED_TRACK},
                                    "plan": [f"{c}/r{r}" for c, r in plan]})
@@ -282,6 +283,10 @@ def resume(run_dir, replace_unknown=False, execute=None):
     if recorded is not None and cli_versions(manifest) != recorded:  # keep one run on one set of CLI versions
         raise ValidationError(f"CLI versions changed since the run started ({recorded} -> {cli_versions(manifest)}); "
                               "start a new run instead of resuming")
+    recorded = events[0]["executor"].get("harness")
+    if recorded is not None and harness_port.harness_identity() != recorded:  # one run, one harness version
+        raise ValidationError(f"agent-harness changed since the run started ({recorded} -> "
+                              f"{harness_port.harness_identity()}); start a new run instead of resuming")
     execute = execute or EXECUTORS[manifest["executor"]["kind"]]
     rows = {r["trial_id"]: r for r in reduce_events(events)["trials"]}
     plan = plan_trials(manifest)

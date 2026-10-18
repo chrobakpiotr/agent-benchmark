@@ -412,5 +412,12 @@ class BundlesAreTracked(unittest.TestCase):
         hidden = [f for f in p.stdout.splitlines() if "__pycache__" not in f and not f.endswith(".pyc")]
         self.assertEqual(hidden, [], "add them with git add -f")
 
+    def test_every_bundle_matches_its_pinned_digests(self):
+        """Task bases are frozen snapshots of upstream trees (some contain agent-harness source); they are inputs,
+        never the runtime dependency, and must not change without a new task version and digest."""
+        for path in sorted((ROOT / "tasks").glob("*/task*.json")):
+            task = validate_task(json.loads(path.read_text()))
+            verify_bundle(task, path.parent)
+
 if __name__ == "__main__":
     unittest.main()

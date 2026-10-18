@@ -17,6 +17,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+import agent_harness  # noqa: E402
 from agent_benchmark import harness_port, runner  # noqa: E402
 from agent_benchmark.report import load_run, reduce_events, write_report  # noqa: E402
 from agent_benchmark.schema import ValidationError, validate_manifest  # noqa: E402
@@ -191,6 +192,19 @@ class AgentCliRun(unittest.TestCase):
         self.assertEqual(started["executor"]["cli_versions"], {"codex": "codex-cli 0.0-fake"})
         with mock.patch.dict(os.environ, {"FAKE_CODEX_VERSION": "codex-cli 9.9-fake"}):
             with self.assertRaisesRegex(ValidationError, "CLI versions changed"):
+                runner.resume(self.root / "run")
+
+    def test_harness_identity_is_recorded_reported_and_resume_refuses_a_changed_harness(self):
+        with mock.patch.dict(os.environ, {"FAKE_CODEX_LIMIT": "1"}):
+            with self.assertRaises(ValidationError):
+                runner.run(self.reviewer_manifest(), self.root / "run")
+        started = json.loads((self.root / "run" / "events.jsonl").read_text().splitlines()[0])
+        self.assertEqual(started["executor"]["harness"], harness_port.harness_identity())
+        self.assertEqual(started["executor"]["harness"]["version"], agent_harness.__version__)
+        write_report(self.root / "run")
+        self.assertIn(f"- agent-harness: {agent_harness.__version__}", (self.root / "run" / "report.md").read_text())
+        with mock.patch.object(harness_port, "harness_identity", return_value={"version": "9.9.9", "commit": None}):
+            with self.assertRaisesRegex(ValidationError, "agent-harness changed"):
                 runner.resume(self.root / "run")
 
     def test_pinned_cli_version_must_match_the_installed_one(self):

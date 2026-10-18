@@ -289,6 +289,7 @@ def summarize(manifest, task, events, inputs, pricing=None, pricing_digest=None)
         "fake_execution": events[0]["executor"]["kind"] == "fake",
         "banner": FAKE_BANNER if events[0]["executor"]["kind"] == "fake" else CONTROLLED_BANNER,
         "run_id": events[0]["run_id"],
+        "harness": events[0]["executor"].get("harness"),
         "experiment_id": manifest["experiment_id"],
         "run_complete": events[-1]["type"] == "run_finished",
         "input_digests": {**inputs, **({"pricing": pricing_digest} if pricing_digest else {})},
@@ -324,6 +325,7 @@ def _cost_cell(cost):
 def render_markdown(s):
     out = [f"# Benchmark report: {s['experiment_id']}", "", f"> **{s['banner']}**", "",
            f"- run_id: `{s['run_id']}`", f"- run complete: {s['run_complete']}",
+           *([f"- agent-harness: {s['harness']['version']} (commit `{s['harness']['commit']}`)"] if s.get("harness") else []),
            *[f"- input {k} digest: `{v}`" for k, v in s["input_digests"].items()],
            *[f"- grader: `{g['id']}` v{g['version']} `{g['digest']}`" for g in s["graders"]],
            "- operational success denominator: all started trials, incl. reconciled and replaced ones",

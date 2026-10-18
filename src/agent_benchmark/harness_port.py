@@ -21,6 +21,15 @@ from .schema import ValidationError, canonical, digest
 SCRIPTED_ERROR, SCRIPTED_REJECTION = "PROVIDER_ERROR", "BACKEND_UNAVAILABLE"
 
 
+def harness_identity():
+    """Installed agent-harness version and, when installed from git, its commit: part of a run's executor identity."""
+    import json
+    from importlib import metadata
+    dist = metadata.distribution("agent-harness")
+    direct = json.loads(dist.read_text("direct_url.json") or "{}")
+    return {"version": dist.version, "commit": direct.get("vcs_info", {}).get("commit_id")}
+
+
 def utc():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
