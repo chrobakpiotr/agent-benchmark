@@ -157,6 +157,14 @@ def _session(out):
     return _SESSIONS[key]
 
 
+def _ungraded(out, trial_id, exc):
+    """Warn on stderr and keep the reason in the run directory, so it survives truncated console output."""
+    line = f"warning: {trial_id} left ungraded: {exc}"
+    print(line, file=sys.stderr)
+    with open(Path(out) / "warnings.log", "a") as f:
+        f.write(f"{_utc()} {line}\n")
+
+
 def _grade(out, manifest, task, trial_id, cand_digest):
     # Candidate code runs on this host only when it comes from the fake executor's reference set. Agent-written
     # candidates run only on the qualified grading target (harness AH5-04c); if it does not qualify they stay
@@ -167,14 +175,14 @@ def _grade(out, manifest, task, trial_id, cand_digest):
         try:
             session = _session(out)
         except (ValidationError, OSError) as exc:
-            print(f"warning: {trial_id} left ungraded: {exc}", file=sys.stderr)
+            _ungraded(out, trial_id, exc)
             return
         qualified_run = session.run_cases
     try:
         result, criteria = grader.grade(task, out / "candidates", cand_digest, bundle_dir=out / "task",
                                         host_execution_allowed=qualified_run is None, qualified_run=qualified_run)
     except ValidationError as exc:  # the target refused or failed: not the candidate's fault
-        print(f"warning: {trial_id} left ungraded: {exc}", file=sys.stderr)
+        _ungraded(out, trial_id, exc)
         return
     if qualified_run is not None:
         isolation = {**session.isolation, "limit_fired": session.fired[-1] if session.fired else None}

@@ -97,6 +97,8 @@ class AgentCliRun(unittest.TestCase):
         self.assertEqual(json.loads((evidence / "backend-notes.json").read_text()),
                          {"rejection_reason": None, "withheld": None, "error": None, "requests": None})
         self.assertTrue((out / "workspaces" / row["request_id"] / ".git").is_dir())  # beside, not around, evidence
+        self.assertIn(f"{row['trial_id']} left ungraded: grading target did not qualify",
+                      (out / "warnings.log").read_text())  # the reason survives truncated console output
 
     def test_candidate_is_graded_only_through_the_qualified_session(self):
         calls = []
