@@ -362,3 +362,14 @@ Reference patches:
 
 Evidence: `RealTask16.test_bundle_reference_patches_and_visible_checks`. Calibration manifest:
 `experiments/real-016-calibration.json`, not yet run.
+
+## Calibration of `real-016` (2026-10-18, harness v0.12.0)
+
+`~/agent-benchmark-runs/real-016-calibration-2026-10-18`:
+- **Claude: FAIL on all 6 bug cases.** Its patch reads a missing cache count as 0 (`cache.get("read", 0)`), the reading
+  ADR 0002 rules out.
+- **Codex: PASS.**
+
+Both trials were first left ungraded: the qualification probes timed out while another workload held the host load
+near 460 (`warnings.log`). A `resume` graded them after the load fell. The task discriminated in calibration; a
+pre-registered confirmatory run is the next step.
