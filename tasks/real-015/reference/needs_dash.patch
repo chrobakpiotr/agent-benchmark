@@ -1,0 +1,13 @@
+diff --git a/src/mistune/plugins/table.py b/src/mistune/plugins/table.py
+index 2247875..acf70bf 100644
+--- a/src/mistune/plugins/table.py
++++ b/src/mistune/plugins/table.py
+@@ -112,6 +112,8 @@ def _process_thead(header: str, align: str) -> Union[Tuple[None, None], Tuple[Di
+             aligns.append("left")
+         elif ALIGN_RIGHT.match(v):
+             aligns.append("right")
++        elif '-' not in v and v.strip():
++            return None, None
+         else:
+             aligns.append(None)
+ 

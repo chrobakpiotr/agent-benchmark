@@ -1,0 +1,89 @@
+{
+ "module": "bench_fixtures.md",
+ "cases": [
+  {
+   "id": "text_rows_other_words",
+   "function": "table_html",
+   "args": [
+    "a | b\nfoo | bar\n1 | 2"
+   ]
+  },
+  {
+   "id": "bordered_text_row",
+   "function": "table_html",
+   "args": [
+    "| a | b |\n| x | y |"
+   ]
+  },
+  {
+   "id": "one_cell_text",
+   "function": "table_html",
+   "args": [
+    "a | b\n:-: | x"
+   ]
+  },
+  {
+   "id": "spaced_dashes",
+   "function": "table_html",
+   "args": [
+    "a | b\n-- - | ---"
+   ]
+  },
+  {
+   "id": "colons_only",
+   "function": "table_html",
+   "args": [
+    "a | b\n:: | ---"
+   ]
+  },
+  {
+   "id": "single_colon",
+   "function": "table_html",
+   "args": [
+    "a | b\n--- | :"
+   ]
+  },
+  {
+   "id": "equals_signs",
+   "function": "table_html",
+   "args": [
+    "a | b\n=== | ==="
+   ]
+  },
+  {
+   "id": "guard_plain",
+   "function": "table_html",
+   "args": [
+    "a | b\n--- | ---"
+   ]
+  },
+  {
+   "id": "guard_aligned",
+   "function": "table_html",
+   "args": [
+    "a | b\n:-- | --:"
+   ]
+  },
+  {
+   "id": "guard_with_body",
+   "function": "table_html",
+   "args": [
+    "a | b\n---|---\n1 | 2"
+   ]
+  },
+  {
+   "id": "guard_bordered",
+   "function": "table_html",
+   "args": [
+    "| a |\n| --- |"
+   ]
+  },
+  {
+   "id": "guard_padded",
+   "function": "table_html",
+   "args": [
+    "a | b\n --- | --- "
+   ]
+  }
+ ]
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-015",
+  "version": "1",
+  "description": "Bug report from a user of mistune: with the table plugin, the plain text \"Name | Age\\nJohn | 30\\nJane | 25\" is rendered as a table with header \"Name | Age\" and body row \"Jane | 25\"; the line \"John | 30\" disappears from the output. Find the problem and fix it. Change src/mistune/ only.",
+  "environment": "Python >= 3.13 stdlib; base tree = mistune 86f9fd1^ (src, tests, docs, LICENSE, README, pyproject, .gitignore) plus the task-owned helper bench_fixtures/md.py; no repository history",
+  "visible_checks": [
+    "PYTHONPATH=src python -m unittest tests.test_plugins (from the workspace root)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:1a40bcc9ca2eb10595417a50b77c3c5d4b51138dd87b6f87ebbd79fa872fbfe1",
+    "hidden_digest": "sha256:efdb02b1393a5051508d1e16b2c6316c50ad12b08c34588004e44f58cc2a0571",
+    "expected_digest": "sha256:2e7411c5dcffc497a27da3c9429d8efbb9b79d13010eea97960bf75663933bd7",
+    "scope": [
+      "src/mistune/plugins/table.py"
+    ],
+    "hidden_test_count": 12,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: lepture/mistune commit 86f9fd1 (fix(table): reject a non-delimiter second row instead of eating it, 2026-07-19); reference/good.patch is that commit's src/ diff; symptom-only description (one text block with a pipe in each line); hidden cases authored for agent-benchmark (2026-10-18): other second rows that are not GFM delimiter rows (text, bordered, mixed, spaced dashes, colons, equals signs) plus guards; table-or-not of every case agrees with markdown-it-py's GFM tables, and inputs where mistune and markdown-it-py differ (single-dash or empty delimiter cells) are excluded; other reference patches built by build_task.py. Public repository: contamination possible",
+  "license": "BSD-3-Clause (mistune; base/LICENSE)"
+}

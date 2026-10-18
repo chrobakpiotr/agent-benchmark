@@ -1,0 +1,38 @@
+{
+ "text_rows_other_words": {
+  "value": "<p>a | b\nfoo | bar\n1 | 2</p>\n"
+ },
+ "bordered_text_row": {
+  "value": "<p>| a | b |\n| x | y |</p>\n"
+ },
+ "one_cell_text": {
+  "value": "<p>a | b\n:-: | x</p>\n"
+ },
+ "spaced_dashes": {
+  "value": "<p>a | b\n-- - | ---</p>\n"
+ },
+ "colons_only": {
+  "value": "<p>a | b\n:: | ---</p>\n"
+ },
+ "single_colon": {
+  "value": "<p>a | b\n--- | :</p>\n"
+ },
+ "equals_signs": {
+  "value": "<p>a | b\n=== | ===</p>\n"
+ },
+ "guard_plain": {
+  "value": "<table>\n<thead>\n<tr>\n  <th>a</th>\n  <th>b</th>\n</tr>\n</thead>\n<tbody>\n</tbody>\n</table>\n"
+ },
+ "guard_aligned": {
+  "value": "<table>\n<thead>\n<tr>\n  <th style=\"text-align:left\">a</th>\n  <th style=\"text-align:right\">b</th>\n</tr>\n</thead>\n<tbody>\n</tbody>\n</table>\n"
+ },
+ "guard_with_body": {
+  "value": "<table>\n<thead>\n<tr>\n  <th>a</th>\n  <th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n  <td>1</td>\n  <td>2</td>\n</tr>\n</tbody>\n</table>\n"
+ },
+ "guard_bordered": {
+  "value": "<table>\n<thead>\n<tr>\n  <th>a</th>\n</tr>\n</thead>\n<tbody>\n</tbody>\n</table>\n"
+ },
+ "guard_padded": {
+  "value": "<table>\n<thead>\n<tr>\n  <th>a</th>\n  <th>b</th>\n</tr>\n</thead>\n<tbody>\n</tbody>\n</table>\n"
+ }
+}

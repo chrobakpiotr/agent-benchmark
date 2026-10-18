@@ -447,6 +447,30 @@ class RealTask14(unittest.TestCase):
             self.assertEqual((r, got), (result, failed), name)
 
 
+class RealTask15(unittest.TestCase):
+    """real-015: mistune fix 86f9fd1; other second rows that are not GFM delimiter rows are inferred."""
+
+    def test_bundle_reference_patches_and_visible_checks(self):
+        bundle = ROOT / "tasks" / "real-015"
+        task = validate_task(json.loads((bundle / "task.json").read_text()))
+        verify_bundle(task, bundle)
+        punct = ["colons_only", "equals_signs", "single_colon", "spaced_dashes"]
+        want = {"good": ("PASS", []), "noop": ("FAIL", sorted(punct + ["bordered_text_row", "one_cell_text",
+                                                                        "text_rows_other_words"])),
+                "no_alnum": ("FAIL", punct), "needs_dash": ("FAIL", ["spaced_dashes"])}
+        for name, (result, failed) in want.items():
+            data = (bundle / "reference" / f"{name}.patch").read_bytes()
+            with tempfile.TemporaryDirectory() as d:
+                (Path(d) / digest(data).split(":")[1]).write_bytes(data)
+                r, c = grader.grade(task, d, digest(data), bundle_dir=bundle, host_execution_allowed=True)
+            got = next(x["detail"]["failed"] for x in c if x["criterion"] == "hidden_cases_pass")
+            self.assertEqual((r, got), (result, failed), name)
+        p = subprocess.run([sys.executable, "-m", "unittest", "tests.test_plugins"], cwd=bundle / "base",
+                           capture_output=True, text=True,
+                           env={"PATH": "/usr/bin:/bin", "PYTHONPATH": "src", "PYTHONDONTWRITEBYTECODE": "1"})
+        self.assertEqual(p.returncode, 0, p.stderr[-500:])
+
+
 class BundlesAreTracked(unittest.TestCase):
     def test_no_bundle_file_is_hidden_by_a_gitignore(self):
         """A bundle's own .gitignore (e.g. src/*/_version.py) must not keep a needed file out of the repository:

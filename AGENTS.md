@@ -37,7 +37,7 @@ to a verified result, and an independent success rate. This file is a **map**. L
   computed outside the candidate's process).
 - `src/agent_benchmark/pricing.py` - dated pricing snapshots and token cost.
 - `tasks/` - task bundles pinned by digest (`reference-001`: synthetic patch task; `reference-002`: same task for
-  `patch-io`, case inputs and expected values split; `real-001`..`real-004` (+ `real-001-bug`): real agent-harness fixes; `real-005`..`real-007`: real pypa/packaging fixes; `real-008`: real python-semver fix; `real-009`..`real-014`: real semver, humanize, croniter, Python-Markdown, mistune and packaging fixes; all graded by `patch-io`).
+  `patch-io`, case inputs and expected values split; `real-001`..`real-004` (+ `real-001-bug`): real agent-harness fixes; `real-005`..`real-007`: real pypa/packaging fixes; `real-008`: real python-semver fix; `real-009`..`real-015`: real semver, humanize, croniter, Python-Markdown, mistune and packaging fixes; all graded by `patch-io`).
   `tasks/*/base` are frozen snapshots of upstream trees, inputs to agents and graders. Some contain agent-harness
   source; that copy is not the runtime dependency (the pinned `agent-harness` package in `pyproject.toml` is), is never
   imported by the benchmark, and must not be deduplicated or edited; any change needs a new task version and digest.

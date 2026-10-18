@@ -314,3 +314,23 @@ Reference patches:
 
 Evidence: `RealTask14.test_bundle_and_reference_patches`. Calibration manifest: `experiments/real-014-calibration.json`,
 not yet run.
+
+# `real-015` from mistune `86f9fd1` (implemented 2026-10-18)
+
+Report: with the table plugin, three lines of pipe-separated text become a table and the second line is lost. Hidden
+cases (12):
+- 7 bug cases: second rows that are not GFM delimiter rows (text, bordered text, one text cell, spaced dashes, colons
+  only, a lone colon, equals signs);
+- 5 guards: valid delimiter rows.
+
+Each case is a table, or is not one, exactly as markdown-it-py's GFM tables decide. Single-dash and empty delimiter
+cells are excluded, because mistune and markdown-it-py disagree on them.
+
+Reference patches:
+- `good` passes.
+- `no_alnum` fails the 4 punctuation-only cases.
+- `needs_dash` fails spaced dashes.
+- `noop` fails all 7 bug cases.
+
+Evidence: `RealTask15.test_bundle_reference_patches_and_visible_checks`. Calibration manifest:
+`experiments/real-015-calibration.json`, not yet run.
