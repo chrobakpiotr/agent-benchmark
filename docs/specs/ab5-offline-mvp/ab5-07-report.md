@@ -102,3 +102,16 @@ settles and added the second reading's reference patch (`ab5-05a-real-task.md`).
 - **Post-hoc design:** v3 was designed after the v2 runs. Its first numbers came from a re-grade, and the claim rests
   only on the later pre-registered run.
 - **Interim looks and resumes** are disclosed in each test document; no decision depended on them.
+
+## Harness upgrade (2026-10-18)
+
+The pin moved from agent-harness v0.8.4 (`9138648`) to v0.11.0 (`2188c8b`). Compatibility check of the API the
+benchmark uses (`contract`, `execution` with `AgentCliBackend` and `QualifiedDockerBackend`, `qualification`):
+- the full test suite passes;
+- the 40 `real-001-bug` v3 confirmatory candidates re-graded on the qualified target under v0.11.0 give the same
+  40 grades as under v0.8.4;
+- one live Claude trial and one live Codex trial (`compat-harness-v0.11.0-smoke-2026-10-18`) completed and were
+  graded.
+
+Every run now records the harness version and commit in `run_started` and in its report. `resume` refuses a changed
+harness. All results above were recorded under v0.8.4 or earlier.
