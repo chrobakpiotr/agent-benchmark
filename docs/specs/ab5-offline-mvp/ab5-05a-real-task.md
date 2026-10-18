@@ -267,3 +267,9 @@ Script and records: `~/agent-benchmark-runs/regrade-real-001-bug-v3-2026-10-17/`
 
 v3 was designed after the v2 runs. These numbers come from a case added afterwards, which no pre-registration
 covered, so they are a hypothesis for a pre-registered v3 run and not a result.
+
+Note (2026-10-18, from agent-harness): the upstream fix `2ada5ffe` added the rule to ADR 0002 together with the code
+check: "complete requires a summary for every attempt with every unit an integer; otherwise the result is partial or
+unknown". The task base is the tree before that commit, so it carries the earlier, ambiguous wording by design. v2's
+hidden case took its rule from a documentation change that the agents never saw. v3 accepts both readings, which is
+right for a task frozen at that point.
