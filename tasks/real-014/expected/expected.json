@@ -1,0 +1,74 @@
+{
+ "lf_inside_url": {
+  "raises": "InvalidRequirement"
+ },
+ "cr_inside_url": {
+  "raises": "InvalidRequirement"
+ },
+ "crlf_inside_url": {
+  "raises": "InvalidRequirement"
+ },
+ "crlf_after_url": {
+  "raises": "InvalidRequirement"
+ },
+ "lf_before_marker": {
+  "raises": "InvalidRequirement"
+ },
+ "guard_trailing_space": {
+  "value": [
+   "pkg",
+   "https://example.com/pkg-1.0-py3-none-any.whl",
+   [],
+   "",
+   null
+  ]
+ },
+ "guard_trailing_tab": {
+  "value": [
+   "pkg",
+   "https://example.com/pkg-1.0-py3-none-any.whl",
+   [],
+   "",
+   null
+  ]
+ },
+ "guard_marker_after_space": {
+  "value": [
+   "pkg",
+   "https://example.com/pkg-1.0-py3-none-any.whl",
+   [],
+   "",
+   "os_name == \"nt\""
+  ]
+ },
+ "guard_marker_after_tab": {
+  "value": [
+   "pkg",
+   "https://example.com/pkg-1.0-py3-none-any.whl",
+   [],
+   "",
+   "os_name == \"nt\""
+  ]
+ },
+ "guard_extras_file_url": {
+  "value": [
+   "pkg",
+   "file:///tmp/a%20b.whl",
+   [
+    "a",
+    "b"
+   ],
+   "",
+   null
+  ]
+ },
+ "guard_specifier": {
+  "value": [
+   "pkg",
+   null,
+   [],
+   "<2,>=1",
+   null
+  ]
+ }
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": "agent-benchmark/task/v1",
+  "task_id": "real-014",
+  "version": "1",
+  "description": "Bug report from a user of packaging: Requirement(\"name @ https://example.com/name.whl\\nevil==1\") is accepted. Its url is \"https://example.com/name.whl\\nevil==1\", and str() of the requirement writes \"evil==1\" as a second line, which a requirements file reads as another requirement. Find the problem and fix it. Change src/packaging/ only.",
+  "environment": "Python >= 3.13 stdlib; base tree = pypa/packaging 2602dd0^ (src, tests, LICENSE*, README, pyproject, .gitignore) plus the task-owned helper bench_fixtures/req.py; no repository history; the project's own test suite needs pytest, which is not installed",
+  "visible_checks": [
+    "python -c \"from src.packaging.requirements import Requirement; print(Requirement('name @ https://example.com/name.whl ; os_name == \\\"nt\\\"'))\" (from the workspace root; pytest is not available)"
+  ],
+  "grader": {
+    "id": "patch-io",
+    "version": "1"
+  },
+  "bundle": {
+    "base_digest": "sha256:4eef466d5c7ca919a814ec828cf12f14b1f4decc7692f321c974230e77fe7fbf",
+    "hidden_digest": "sha256:33050f50976a930d56175ac1900db24244fa9fbbe629c8de94f8bc5155e1db17",
+    "expected_digest": "sha256:9ac6fd934098e2226f17978f70964dc17a52f1dc1774e2f34e1602cb04ad0157",
+    "scope": [
+      "src/packaging/_tokenizer.py",
+      "src/packaging/_parser.py",
+      "src/packaging/requirements.py"
+    ],
+    "hidden_test_count": 11,
+    "timeout_seconds": 30
+  },
+  "provenance": "real fix: pypa/packaging commit 2602dd0 (fix(parser): reject whitespace in the URL token, #1379, 2026-10-01); reference/good.patch is that commit's src/ diff; symptom-only description (one URL with an embedded LF); hidden cases authored for agent-benchmark (2026-10-18): CR, CRLF and LF in other positions plus guards; only line breaks are tested, because the base's tests already reject a line-break suffix and its grammar's whitespace is space and tab (other whitespace is an undocumented choice); other reference patches built by build_task.py. Public repository: contamination possible",
+  "license": "Apache-2.0 or BSD-2-Clause (packaging; base/LICENSE*)"
+}

@@ -296,3 +296,21 @@ Reference patches (`build_task.py`):
 
 Evidence: `RealTask13.test_bundle_reference_patches_and_visible_checks`. Calibration manifest:
 `experiments/real-013-calibration.json`, 1 trial per agent, not yet run.
+
+# `real-014` from pypa/packaging `2602dd0` (implemented 2026-10-18)
+
+Report: a requirement whose URL embeds an LF is accepted, and `str()` writes a second requirement line. Hidden cases
+(11):
+- 5 bug cases: CR and CRLF inside the URL, CRLF after it, and LF before a marker;
+- 6 guards: trailing space or tab, markers, extras, a file URL, a plain specifier.
+
+Only line breaks are tested. The base's tests already reject a line-break suffix, and the grammar's whitespace is
+space and tab. Rejecting a form feed or a Unicode space is a choice the base does not document, so no case requires it.
+
+Reference patches:
+- `good` (upstream `\S+`) passes.
+- `lf_only` fails the CR case.
+- `strip_url` (truncating the URL) and `noop` fail all 5 bug cases.
+
+Evidence: `RealTask14.test_bundle_and_reference_patches`. Calibration manifest: `experiments/real-014-calibration.json`,
+not yet run.

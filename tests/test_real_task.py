@@ -428,6 +428,25 @@ class RealTask13(unittest.TestCase):
         self.assertEqual(p.returncode, 0, p.stderr[-500:])
 
 
+class RealTask14(unittest.TestCase):
+    """real-014: pypa/packaging fix 2602dd0; CR and CRLF inside a URL are inferred from an LF report."""
+
+    def test_bundle_and_reference_patches(self):
+        bundle = ROOT / "tasks" / "real-014"
+        task = validate_task(json.loads((bundle / "task.json").read_text()))
+        verify_bundle(task, bundle)
+        bugs = ["cr_inside_url", "crlf_after_url", "crlf_inside_url", "lf_before_marker", "lf_inside_url"]
+        want = {"good": ("PASS", []), "noop": ("FAIL", bugs), "strip_url": ("FAIL", bugs),
+                "lf_only": ("FAIL", ["cr_inside_url"])}
+        for name, (result, failed) in want.items():
+            data = (bundle / "reference" / f"{name}.patch").read_bytes()
+            with tempfile.TemporaryDirectory() as d:
+                (Path(d) / digest(data).split(":")[1]).write_bytes(data)
+                r, c = grader.grade(task, d, digest(data), bundle_dir=bundle, host_execution_allowed=True)
+            got = next(x["detail"]["failed"] for x in c if x["criterion"] == "hidden_cases_pass")
+            self.assertEqual((r, got), (result, failed), name)
+
+
 class BundlesAreTracked(unittest.TestCase):
     def test_no_bundle_file_is_hidden_by_a_gitignore(self):
         """A bundle's own .gitignore (e.g. src/*/_version.py) must not keep a needed file out of the repository:

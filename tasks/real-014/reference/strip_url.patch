@@ -1,0 +1,13 @@
+diff --git a/src/packaging/requirements.py b/src/packaging/requirements.py
+index adcc8ad..25b510e 100644
+--- a/src/packaging/requirements.py
++++ b/src/packaging/requirements.py
+@@ -86,7 +86,7 @@ class Requirement:
+             raise InvalidRequirement(str(e)) from e
+ 
+         self.name: str = parsed.name
+-        self.url: str | None = parsed.url or None
++        self.url: str | None = parsed.url.split()[0] if parsed.url else None
+         self.extras: set[str] = set(parsed.extras)
+         try:
+             self.specifier: SpecifierSet = SpecifierSet(parsed.specifier)

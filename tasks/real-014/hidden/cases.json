@@ -1,0 +1,82 @@
+{
+ "module": "bench_fixtures.req",
+ "cases": [
+  {
+   "id": "lf_inside_url",
+   "function": "req",
+   "args": [
+    "pkg @ https://example.com/pkg-1.0-py3-none-any.whl\nother==2"
+   ]
+  },
+  {
+   "id": "cr_inside_url",
+   "function": "req",
+   "args": [
+    "pkg @ https://example.com/pkg-1.0-py3-none-any.whl\rother==2"
+   ]
+  },
+  {
+   "id": "crlf_inside_url",
+   "function": "req",
+   "args": [
+    "pkg @ https://example.com/pkg-1.0-py3-none-any.whl\r\nother==2"
+   ]
+  },
+  {
+   "id": "crlf_after_url",
+   "function": "req",
+   "args": [
+    "pkg @ https://example.com/pkg-1.0-py3-none-any.whl\r\n"
+   ]
+  },
+  {
+   "id": "lf_before_marker",
+   "function": "req",
+   "args": [
+    "pkg @ https://example.com/pkg-1.0-py3-none-any.whl\n ; os_name == \"nt\""
+   ]
+  },
+  {
+   "id": "guard_trailing_space",
+   "function": "req",
+   "args": [
+    "pkg @ https://example.com/pkg-1.0-py3-none-any.whl "
+   ]
+  },
+  {
+   "id": "guard_trailing_tab",
+   "function": "req",
+   "args": [
+    "pkg @ https://example.com/pkg-1.0-py3-none-any.whl\t"
+   ]
+  },
+  {
+   "id": "guard_marker_after_space",
+   "function": "req",
+   "args": [
+    "pkg @ https://example.com/pkg-1.0-py3-none-any.whl ; os_name == \"nt\""
+   ]
+  },
+  {
+   "id": "guard_marker_after_tab",
+   "function": "req",
+   "args": [
+    "pkg @ https://example.com/pkg-1.0-py3-none-any.whl\t; os_name == \"nt\""
+   ]
+  },
+  {
+   "id": "guard_extras_file_url",
+   "function": "req",
+   "args": [
+    "pkg[a,b] @ file:///tmp/a%20b.whl"
+   ]
+  },
+  {
+   "id": "guard_specifier",
+   "function": "req",
+   "args": [
+    "pkg>=1,<2"
+   ]
+  }
+ ]
+}
