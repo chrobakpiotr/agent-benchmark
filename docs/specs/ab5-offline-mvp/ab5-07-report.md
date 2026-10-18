@@ -1,108 +1,100 @@
-# AB5-07 - final pilot report (2026-10-10 to 2026-10-13)
+# AB5-07 - pilot report (2026-10-10 to 2026-10-18)
 
-Zero-spend live pilot comparing agent-CLI configurations on real bug-fix tasks. Sources: the run records under
-`~/agent-benchmark-runs/` (events, evidence, grade records with B10 isolation evidence); task specs in
-`ab5-05a-real-task.md`; the pre-registered test in `ab5-07-confirmatory.md`.
+Zero-spend live pilot comparing agent-CLI configurations on real bug-fix tasks. This report describes the current
+state. Earlier versions, including the withdrawn reading of `real-001-bug` v2, are in git history. Sources:
+- run records under `~/agent-benchmark-runs/` (events, evidence, grade records with B10 isolation evidence);
+- task specs in `ab5-05a-real-task.md`;
+- the pre-registered tests named below.
 
 ## Method
 
-- Configurations: `claude -p` (Claude Code 2.1.289, Sonnet 5.5) on Claude Pro; `codex exec` (codex-cli 0.160.0,
-  gpt-6.1-sol) on ChatGPT Plus; OpenCode 1.19.0 with `nvidia/nemotron-3-super-120b-a12b:free` on a zero-limit
-  OpenRouter key. Every run passed the zero-spend preflight; nothing was paid.
-- Execution: agent-harness `AgentCliBackend` (v0.6.1-v0.8.4), controlled track: each CLI in its own sandbox,
-  shell without network or DNS, prompt on stdin, candidate = workspace diff sealed by the harness.
-- Grading: `patch-io` on the qualified Docker target (one qualification session per run): only case inputs enter
-  the container; the verdict is computed outside from the answers file against expected values that never enter it.
-- Tasks: 12 valid real tasks from agent-harness, pypa/packaging, python-semver, python-humanize and croniter, each
-  with reference patches for every plausible reading and (from real-009 on) a calibration trial before the full run.
-- Records: 305 agent trials in total; 266 graded; 27 invalidated through correction records (task defects,
-  quota artefacts); 10 ended in provider or quota errors (never graded).
+- **Configurations:**
+  - `claude -p` (Claude Code 2.1.289, Sonnet 5.5) on Claude Pro;
+  - `codex exec` (codex-cli 0.160.0, gpt-6.1-sol) on ChatGPT Plus;
+  - OpenCode 1.19.0 with `nvidia/nemotron-3-super-120b-a12b:free` on a zero-limit OpenRouter key.
 
-## Results (valid grades only)
+  Every run passed the zero-spend preflight; nothing was paid.
+- **Execution:** agent-harness `AgentCliBackend` (v0.6.1-v0.8.4), controlled track. Each CLI runs in its own sandbox
+  with a shell that has no network or DNS. The prompt goes in on stdin, and the candidate is the workspace diff, sealed
+  by the harness.
+- **Grading:** `patch-io` on the qualified Docker target. Only case inputs enter the container; the verdict is computed
+  outside, from the answers file, against expected values that never enter it.
+- **Tasks:** real fixes from agent-harness, pypa/packaging, python-semver, python-humanize, croniter and
+  Python-Markdown. Each task has one reference patch per plausible reading and, from `real-009` on, a calibration trial
+  before the full run. Most descriptions state symptoms only: one example, no general rule.
+- **Statistics:** claims rest only on pre-registered tests (Fisher exact two-sided, Bonferroni where several tests
+  share a question). Exclusions are predeclared (provider/quota `error`), and interim looks and resumes are disclosed.
+  Everything else is descriptive.
+
+## Results: agents without instructions
 
 | task | description | Claude Sonnet (Pro) | Codex gpt-6.1-sol (Plus) | median trial s (C / X) |
 |---|---|---|---|---|
 | real-001 | spec | 5/5 | 5/5 | 21 / 44 |
 | real-002 | spec | 4/4 | 4/4 | 14 / 49 |
-| real-002-bug | symptom | 4/4 | 4/4 | 20 / 56 |
-| real-003 | symptom | 2/2 | 4/4 | 20 / 66 |
-| real-005 v3 | symptom | 4/4 | 4/4 | 19 / 50 |
-| real-006 | symptom | 4/4 | 4/4 | 17 / 43 |
-| real-007 | symptom | 4/4 | 4/4 | 20 / 49 |
-| real-008 | symptom | 4/4 | 4/4 | 21 / 61 |
-| real-009 v2 | symptom | 4/4 | 4/4 | 22 / 65 |
-| real-010 | symptom | 4/4 | 4/4 | 16 / 120 |
-| real-011 | symptom | 4/4 | 4/4 | 20 / 76 |
-| **real-001-bug v2, confirmatory** (ambiguous, see correction) | symptom, rule only in the contract's meaning | **8/49** | **25/47** | 22 / 120 |
-| **real-012, confirmatory** (Python-Markdown) | symptom, other shapes of the same bug | **7/19** | **20/20** | ~30 / ~100 |
+| real-002-bug, 003, 005 v3, 006-011 (9 tasks) | symptom | 34/34 | 36/36 | 16-22 / 43-120 |
+| **real-012** (`ab5-07-confirmatory-real-012.md`) | symptom; other forms of the same bug | **7/19** | **20/20** | ~30 / ~100 |
+| **real-001-bug v3** (`ab5-07-confirmatory-real-001-bug-v3.md`) | symptom; rule in ADR 0002 | **7/20** | **20/20** | 33 / 68 |
 
-- The only discriminating task was decided by the pre-registered test: Fisher exact two-sided p = 0.0002, Wilson
-  intervals [0.09, 0.29] vs [0.39, 0.67]. Every failure is the same unstated rule.
-- On the other 11 tasks both configurations passed every valid trial, including rules taken from well-known specs
-  (SemVer), Python's data model and a project convention stated in a code comment.
-- Claude was 2.5-4x faster on every task (Codex 43-120 s, Claude 14-22 s per trial).
-- Builder/reviewer on real-001-bug: Codex builds + Claude reviews 3/4; Claude builds + Codex reviews 0/3. A reviewer
-  given the same report did not add the unstated rule.
-- OpenCode + nemotron (free): real-001 1/1; real-001-bug 0/2 graded, failing the same rule and also rejecting a valid
-  result; 20-40 requests per trial, so 1-2 trials per day on the free tier.
+- **Two confirmed discriminating tasks.** Each was decided by a pre-registered test: Fisher p = 1.3e-5 on both.
+- **On both, Claude's fix diverges from the documented behaviour on inputs the report does not show:**
+  - `real-012`: it misses other forms of the bug.
+  - `real-001-bug` v3: it rejects a valid result, one whose authoritative summary overrides a stream event with a
+    null unit.
+  - Every Claude FAIL is in this class, and Codex passed every trial.
+- **On the other 11 tasks both agents passed every valid trial.** These include rules from well-known specs
+  (SemVer), Python's data model, and a convention stated in a code comment.
+- **Claude was about 2-4x faster on every task.**
+- **OpenCode + nemotron (free):** `real-001` 1/1; `real-001-bug` 0/2 under both v2 and v3 grading. A trial uses 20-40
+  requests, so the free tier allows 1-2 trials per day.
+
+## Results: one general instruction
+
+Instruction v1 (config `prompt_addendum`, names no case): "The report shows one example. The same underlying problem
+may show up with other inputs: before you finish, find them and make sure they are fixed too, without changing
+behaviour that was correct."
+
+| experiment | baseline | with instruction | p |
+|---|---|---|---|
+| Claude, `real-012` (`ab5-07-prompt-addendum.md`) | 2/19 | 16/20 | 1.7e-5 |
+| Claude, 9 symptom tasks it already passed (`ab5-07-prompt-addendum-safety.md`) | 27/27 | 26/26 | 1.0; 1.47x slower |
+| Claude and Codex, both confirmed tasks (`ab5-07-prompt-addendum-v1-confirmed-tasks.md`) | pending | pending | pending |
+
+- **Instruction v2 did not help both agents** (`ab5-07-prompt-addendum-docs.md`). v2 added "take the correct
+  behaviour from the project's documentation and contracts". It gave Claude a smaller gain than v1 and, on the
+  ambiguous v2 task, drove Codex to the reading the docs permit: 0/15.
+- **What the instructions do.** They make an agent search more widely. They do not settle which reading of the newly
+  found cases is right; that has to come from the task.
+
+## `real-001-bug` v2 was ambiguous
+
+The v2 hidden case `complete_without_summary` expected a stream-only result marked `complete` to be rejected. ADR
+0002 says only that a summary, *if present*, is authoritative. "Without a summary, the streams are the usage" was
+therefore a valid reading, and no reference patch covered it. Every v2 FAIL in every run was that case, so v2 results
+measure a reading preference, not correctness. They include:
+- the earlier confirmatory Claude 8/49 vs Codex 25/47;
+- builder/reviewer;
+- the instruction experiments on v2: Claude up with v1, Codex down from 16/20 to 3/20 with v1 and to 0/15 with v2.
+
+The grades are kept as records of that choice and are not invalidated. v3 replaced the case with two cases the ADR
+settles and added the second reading's reference patch (`ab5-05a-real-task.md`).
 
 ## What the pilot shows and does not show
 
-- It shows that the pipeline works end to end at zero cost: subscription CLIs, sandboxed execution, harness-sealed
-  candidates, qualified grading, correction records, pooled and pre-registered analysis.
-- It shows one established difference between two configurations on one task. It does not rank the configurations
-  in general: 11 of 12 tasks did not discriminate.
-- Task design is the bottleneck. Five task versions were defective (ambiguous descriptions, a missing `.gitignore`,
-  library conventions that admit two readings); calibration trials and one reference patch per plausible reading now
-  catch most of this before a full run. Discriminating tasks need a rule that is not visible in or near the code.
+- **The pipeline works end to end at zero cost:** subscription CLIs, sandboxed execution, harness-sealed candidates,
+  qualified grading, correction records, offline re-grading against a new task version, and pre-registered analysis.
+- **It shows a consistent difference on two of 13 tasks:** Claude handles inputs the report does not show less often
+  than Codex. It does not rank the configurations in general.
+- **Task design is the bottleneck.**
+  - Six task versions were defective, among them `real-001-bug` v2, which was found only after many runs. The flaw
+    showed when one agent, pointed at the docs, chose the other reading every time.
+  - A useful check: when every FAIL is the same hidden case, look for a second reading of that case in the base's
+    documentation before drawing conclusions.
 
 ## Threats to validity
 
-- Contamination: all sources are public; fixes from 2026-06 to 2026-10 may still be known to the models.
-- One machine, one time window; durations depend on provider load (Codex saw capacity errors).
-- Exploratory pools mixed harness versions (harness confirmed identical agent inputs); the confirmatory run used one
-  pinned version of every component.
-- Interim looks during the confirmatory run were disclosed; no decision depended on them.
-
-## Next
-
-Find more tasks whose correct behaviour is defined only in project documentation (ADRs, format specs), measure cost
-and time on the existing set, and continue the free third configuration at its daily pace.
-
-## Addendum (2026-10-13): a second discriminating task
-
-`real-012` (Python-Markdown `7c265bc`, unterminated end tags drop the rest of the document) discriminated in its
-calibration and full run (Claude 0/5, Codex 5/5) and was then tested with a pre-registered confirmatory run
-(`ab5-07-confirmatory-real-012.md`): Claude 7/19 vs Codex 20/20, Fisher p = 1.3e-5. Both discriminating tasks point the
-same way: Codex covers unstated parts of a reported bug more often, Claude is several times faster. Two tasks out of
-13 are still a narrow base.
-
-## Addendum (2026-10-13): one general instruction closes most of the gap
-
-A pre-registered experiment (`ab5-07-prompt-addendum.md`) added one sentence to Claude's prompt asking it to find
-other inputs with the same underlying problem. Against a same-run baseline it raised PASS from 2/19 to 16/20 on
-`real-012` (Fisher p = 1.7e-5) and from 3/20 to 16/19 on `real-001-bug` (p = 1.9e-5), with each p below the
-Bonferroni threshold of 0.025. The difference between the agents on these tasks is mostly a default level of
-thoroughness that one instruction can change, not a difference in what they can fix.
-A pre-registered safety check (`ab5-07-prompt-addendum-safety.md`) ran the same instruction on the nine symptom tasks
-Claude already passed: 26/26 with the instruction and 27/27 without it. The cost is time: the median PASS was
-1.06-2.01x slower (median 1.47x).
-The same instruction **lowered** Codex on `real-001-bug` from 16/20 to 3/20 (pre-registered, Fisher p = 8.8e-5,
-`ab5-07-prompt-addendum-codex.md`). With it, Codex nearly always also accepted results that have no usage summary,
-which the contract rejects. So the instruction's effect depends on the agent. It makes an agent search more widely,
-but it does not tell the agent which reading of the newly found cases is correct. The earlier "mostly thoroughness"
-reading holds for Claude only.
-
-## Correction (2026-10-17): `real-001-bug` v2 measures a reading preference
-
-The `complete_without_summary` case has a second plausible reading that no reference patch covers. Its input has `usage_completeness: "complete"` and one `stream` event with integer units and no `summary`. ADR 0002 in the base says only that a summary, *if present*, is authoritative and that stream events are informational. Neither the base code nor its docs say that `complete` requires a summary. "Without a summary, the stream events are the usage" is therefore consistent with the docs, and patches that read it that way fail this case. Every real-001-bug FAIL in every run fails exactly this case. All `real-001-bug` results in this report (confirmatory 8/49 vs 25/47, builder/reviewer, nemotron, both
-instruction experiments) are therefore about which reading an agent picks: the upstream fix's or the stream-fallback
-one. They are not about correctness. `real-012` is not affected and is the only confirmed discriminating task: there,
-Claude covers fewer forms of the bug than Codex, and the check-related instruction closes that gap.
-
-## Addendum (2026-10-17): `real-001-bug` v3
-
-v3 removes the ambiguous case and adds two cases that ADR 0002 settles. It was then tested in a pre-registered run
-(`ab5-07-confirmatory-real-001-bug-v3.md`): Claude 7/20 vs Codex 20/20, Fisher p = 1.3e-5. Every Claude FAIL rejects
-a valid result in which a summary overrides a stream event with a null unit. `real-001-bug` v3 and `real-012` are the
-two confirmed discriminating tasks.
+- **Contamination:** all sources are public; fixes from 2026-06 to 2026-10 may still be known to the models.
+- **Environment:** one machine and one time window. Durations depend on provider load.
+- **Post-hoc design:** v3 was designed after the v2 runs. Its first numbers came from a re-grade, and the claim rests
+  only on the later pre-registered run.
+- **Interim looks and resumes** are disclosed in each test document; no decision depended on them.
