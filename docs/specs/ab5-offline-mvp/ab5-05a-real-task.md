@@ -334,3 +334,10 @@ Reference patches:
 
 Evidence: `RealTask15.test_bundle_reference_patches_and_visible_checks`. Calibration manifest:
 `experiments/real-015-calibration.json`, not yet run.
+
+## Calibration of `real-013`..`real-015` (2026-10-18, harness v0.11.0)
+
+One trial per agent and task (`~/agent-benchmark-runs/real-01{3,4,5}-calibration-2026-10-18`): all 6 completed and
+passed every hidden case. Median trial time was Claude 18-30 s and Codex 40-57 s. None of the three tasks
+discriminated in calibration. The cases are spec-backed forms of the same bug, and both agents covered them without
+being asked.
