@@ -138,3 +138,23 @@ Second upgrade (2026-10-18): the pin moved to v0.12.0 (`1c569f2`).
 
 So far a rule written only in the project's own documentation has separated the agents. Rules from well-known public
 specs have not.
+
+AH5-12b compatibility check (2026-10-19), against agent-harness `757b16f` (branch `ah5-12b-agent-launch`, version
+0.13.0, not released), installed in a scratch environment. The pin stays v0.12.0 until the release.
+- **Full suite:** passes, apart from the expected version-pin assertion.
+- **One test-double change:** the fake `codex sandbox` now runs its command and blocks the write. 12b's new isolation
+  check rightly refused the old fake, which exited 0 without running anything. The change works on v0.12.0 too.
+- **Scenarios** (fake Codex, our runner, grading target stubbed):
+
+| scenario | harness result | benchmark classification |
+|---|---|---|
+| exit 0, output over 8 MiB | `completed`, exit 0, no candidate, `withheld` (OUTPUT_LIMIT_EXCEEDED, size 9437319, limit 8388608) | INVALID, `candidate_published: false` with the withheld note |
+| exit 0, credential-shaped candidate | `completed`, exit 0, no candidate, `withheld` (CREDENTIAL_SHAPED_OUTPUT) | INVALID with the note |
+| non-zero exit | `completed`, exit 3, candidate published | graded as usual |
+| non-zero exit, credential-shaped output | `completed`, exit 3, no candidate, `withheld` | INVALID with the note |
+| empty patch | `completed`, candidate published, no `withheld` artifact | graded as usual |
+| only stderr withheld | `completed`, candidate published, `withheld` artifact | graded as usual |
+| timeout (5 s budget) | `timeout`, drain `unconfirmed`, no candidate | counted, ungraded |
+
+The `withheld` note is found by artifact name. Only its non-content fields (with `details[]`) are kept, and `note` and
+any excerpt are dropped. No scenario stopped the run. Historical `error`/`PROVIDER_ERROR` results read as before.

@@ -30,8 +30,14 @@ if args[:2] == ["login", "status"]:
     print("Logged in using ChatGPT"); sys.exit(0)
 if args == ["--version"]:
     print(os.environ.get("FAKE_CODEX_VERSION", "codex-cli 0.0-fake")); sys.exit(0)
-if args and args[0] == "sandbox":
-    sys.exit(1 if os.environ.get("FAKE_CODEX_NO_SANDBOX") else 0)  # the CLI is installed but its sandbox fails
+if args and args[0] == "sandbox":  # runs the command like a sandbox that blocks writes outside the workspace
+    if os.environ.get("FAKE_CODEX_NO_SANDBOX"):  # the CLI is installed but its sandbox fails
+        sys.exit(1)
+    import re, subprocess
+    cmd = args[args.index("--") + 1:]
+    if cmd[:2] == ["sh", "-c"]:
+        cmd = ["sh", "-c", re.sub(r"echo x > \S+", "true", cmd[2])]  # the write the sandbox would block
+    sys.exit(subprocess.run(cmd).returncode)
 if args and args[0] == "exec":
     prompt = sys.stdin.read()
     if os.environ.get("FAKE_CODEX_LIMIT"):  # the subscription limit is exhausted mid-run
