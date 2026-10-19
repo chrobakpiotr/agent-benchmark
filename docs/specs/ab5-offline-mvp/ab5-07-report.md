@@ -35,8 +35,10 @@ state. Earlier versions, including the withdrawn reading of `real-001-bug` v2, a
 | real-002-bug, 003, 005 v3, 006-011 (9 tasks) | symptom | 34/34 | 36/36 | 16-22 / 43-120 |
 | **real-012** (`ab5-07-confirmatory-real-012.md`) | symptom; other forms of the same bug | **7/19** | **20/20** | ~30 / ~100 |
 | **real-001-bug v3** (`ab5-07-confirmatory-real-001-bug-v3.md`) | symptom; rule in ADR 0002 | **7/20** | **20/20** | 33 / 68 |
+| **real-016** (`ab5-07-confirmatory-real-016.md`) | symptom; ADR 0002: unknown is never 0 | **2/19** | **16/19** | 70 / 60 |
 
-- **Two confirmed discriminating tasks.** Each was decided by a pre-registered test: Fisher p = 1.3e-5 on both.
+- **Three confirmed discriminating tasks.** Each was decided by a pre-registered test: Fisher p = 1.3e-5, 1.3e-5
+  and 1.0e-5. On `real-016`, most failing patches read a missing count as 0.
 - **On both, Claude's fix diverges from the documented behaviour on inputs the report does not show:**
   - `real-012`: it misses other forms of the bug.
   - `real-001-bug` v3: it rejects a valid result, one whose authoritative summary overrides a stream event with a
@@ -123,3 +125,13 @@ Second upgrade (2026-10-18): the pin moved to v0.12.0 (`1c569f2`).
 - The full suite passes, and the 40 `real-001-bug` v3 candidates re-graded on the qualified target under v0.12.0 again
   give the recorded 40 grades.
 - No live trial was repeated, because the code paths are identical.
+
+## Tasks added 2026-10-18
+
+- **`real-013`..`real-015`** (mistune, packaging): rules from public specs (CommonMark, GFM, URI). Both agents passed
+  their calibration trials, so they were not run further.
+- **`real-016`, `real-017`** (agent-harness): `real-017` passed for both agents in calibration. `real-016`
+  discriminated and was confirmed (table above).
+
+So far a rule written only in the project's own documentation has separated the agents. Rules from well-known public
+specs have not.
