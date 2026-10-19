@@ -158,3 +158,10 @@ AH5-12b compatibility check (2026-10-19), against agent-harness `757b16f` (branc
 
 The `withheld` note is found by artifact name. Only its non-content fields (with `details[]`) are kept, and `note` and
 any excerpt are dropped. No scenario stopped the run. Historical `error`/`PROVIDER_ERROR` results read as before.
+
+Rerun on `bf8d085` (12b after its evaluation: quoted probe target, Claude file tools denied the evidence root): same
+results.
+- The full suite passes, apart from the version-pin assertion.
+- All 7 scenarios classify as in the table above.
+- The fake `codex sandbox` handles the quoted target without change.
+- The Claude `--settings` deny rule only shows in a live Claude run; the live trial per CLI at re-pin covers it.
