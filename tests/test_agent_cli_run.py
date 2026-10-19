@@ -31,7 +31,7 @@ if args[:2] == ["login", "status"]:
 if args == ["--version"]:
     print(os.environ.get("FAKE_CODEX_VERSION", "codex-cli 0.0-fake")); sys.exit(0)
 if args and args[0] == "sandbox":
-    sys.exit(0)
+    sys.exit(1 if os.environ.get("FAKE_CODEX_NO_SANDBOX") else 0)  # the CLI is installed but its sandbox fails
 if args and args[0] == "exec":
     prompt = sys.stdin.read()
     if os.environ.get("FAKE_CODEX_LIMIT"):  # the subscription limit is exhausted mid-run
@@ -195,6 +195,13 @@ class AgentCliRun(unittest.TestCase):
         with mock.patch.dict(os.environ, {"FAKE_CODEX_VERSION": "codex-cli 9.9-fake"}):
             with self.assertRaisesRegex(ValidationError, "CLI versions changed"):
                 runner.resume(self.root / "run")
+
+    def test_a_sandbox_the_harness_rejects_stops_the_run(self):
+        with mock.patch.dict(os.environ, {"FAKE_CODEX_NO_SANDBOX": "1"}):
+            with self.assertRaisesRegex(ValidationError, "CAPABILITY_UNSUPPORTED.*run stopped"):
+                runner.run(MANIFEST, self.root / "run")
+        rows = reduce_events(load_run(self.root / "run")[2])["trials"]
+        self.assertEqual([(r["outcome"], r["error_code"]) for r in rows], [("rejected", "CAPABILITY_UNSUPPORTED")])
 
     def test_harness_identity_is_recorded_reported_and_resume_refuses_a_changed_harness(self):
         with mock.patch.dict(os.environ, {"FAKE_CODEX_LIMIT": "1"}):

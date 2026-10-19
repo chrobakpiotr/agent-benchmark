@@ -237,6 +237,11 @@ def _execute(out, manifest, task, task_digest, todo, execute):
             _append(events, {"type": "usage", "trial_id": trial_id, **u})
         if terminal["candidate_digest"] and terminal["outcome"] == "completed":  # an aborted run's leftovers are no candidate
             _grade(out, manifest, task, trial_id, terminal["candidate_digest"])
+        if manifest["executor"]["kind"] != "fake" and terminal["outcome"] == "rejected":
+            # the host cannot run the agent as configured (e.g. its sandbox fails the harness check): every further
+            # trial would be rejected the same way, so stop and fix the host instead of recording a column of rejections
+            raise ValidationError(f"{trial_id}: rejected before launch ({terminal['error_code']}); run stopped, "
+                                  "fix the host and `resume`")
         if manifest["executor"]["kind"] != "fake" and terminal["error_code"] == "PROVIDER_ERROR":
             # e.g. the subscription limit is exhausted: stop instead of burning the remaining trials; no paid fallback
             notes = evidence / "backend-notes.json"
