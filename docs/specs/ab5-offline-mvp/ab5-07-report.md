@@ -192,3 +192,33 @@ The flags, the denials and the evidence-immutability check are kept in
 route to the network is blocked. The scope is this candidate, this CLI version and this host only. With this result, the effectiveness of the denied file
 tools and the disallowed tools is confirmed on this host for that candidate. A changed Claude CLI version needs the
 check again.
+
+## Re-pin to agent-harness v0.14.0 (2026-10-20)
+
+The pin moved from v0.12.0 (`1c569f2`) to v0.14.0 (`cc9d33a4feac3f1462e7fe65cdabec3389a70f3a`). `src/` and `tests/` are
+identical to the checked candidate `161a25f`; only release docs differ. The re-pin check:
+- **Full suite:** 160 tests pass, including the version-pin test, now at 0.14.0.
+- **Re-grade on the qualified target:** the 40 `real-001-bug` v3 confirmatory candidates give the same 40 grades as
+  recorded (`~/agent-benchmark-runs/compat-harness-v0.14.0-2026-10-20`).
+- **One live trial per CLI:** each completed and was graded on the qualified target, at host load about 4-5.
+  - `compat-harness-v0.14.0-smoke-2026-10-20`, on `real-001-bug` v3: Claude Code 2.1.289 FAIL (one hidden case) and
+    codex-cli 0.160.0 PASS.
+  - `compat-harness-v0.14.0-opencode-2026-10-20`, on `real-001`: OpenCode 1.19.0 with
+    `nvidia/nemotron-3-super-120b-a12b:free`, FAIL (two hidden cases). OpenRouter usage stayed 0.
+- **Fingerprint on the released install:** `sha256:8c69cedd…` (method `record-listed-files-content-sha256/v1`), not
+  null. It is recorded in both runs' `run_started`, and the resume identity check passes against it.
+- **Old runs are not resumed:** `resume` of a run started on 0.12.0 is refused with "agent-harness changed". No run
+  started on 0.12.0 was resumed under 0.14.0.
+- **Claude restrictions:** the live check was not repeated, because the mechanism is unchanged since `161a25f`.
+
+**Rollback:** set the pin back to `1c569f2` (`pyproject.toml`, the version-pin test, the `harness_port` docstring).
+The benchmark-side 12b integration (the `withheld.json` reader, INVALID classification, the write-blocking fake
+sandbox and the fingerprint) works on v0.12.0 too, so it stays. Results and evidence are kept.
+
+**Behaviour new in 0.14.0 for the external handbook (delta only; the handbook itself is not updated):**
+- Output withheld (over 8 MiB or credential-shaped) gives a real `completed` outcome with no candidate plus a
+  `withheld.json` artifact; the benchmark grades it INVALID with the reason.
+- A non-zero exit is `completed` with its real exit code.
+- An `agent-stderr` artifact may appear.
+- Before launch, a sandbox isolation probe has to show that a write into the evidence root is blocked.
+- Claude's `--settings` deny Edit/Write/NotebookEdit on the evidence root.

@@ -1,0 +1,35 @@
+{
+  "schema_version": "agent-benchmark/manifest/v2",
+  "experiment_id": "compat-harness-v0.14.0-opencode",
+  "task": {
+    "path": "../tasks/real-001/task.json",
+    "digest": "sha256:d35e3f16221432f501fdf47cea8a1c4b13ccd83be437f50d81356621e4bbb003"
+  },
+  "configs": [
+    {
+      "config_id": "opencode-nemotron-free",
+      "model_requested": "nvidia/nemotron-3-super-120b-a12b:free",
+      "model_resolved": null,
+      "cli": "opencode",
+      "cli_version": null,
+      "prompt_digest": null,
+      "reasoning": null,
+      "sampling": null,
+      "tool_permissions": [],
+      "workflow": "single-agent",
+      "budget": {
+        "max_wall_seconds": 1800
+      },
+      "isolation_track": "controlled-host"
+    }
+  ],
+  "repetitions": 1,
+  "seed": 1401,
+  "retry_policy": {
+    "max_attempts": 1
+  },
+  "exclusions": [],
+  "executor": {
+    "kind": "agent-cli"
+  }
+}
