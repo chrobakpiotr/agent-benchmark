@@ -60,7 +60,10 @@ detected. Every arm has at least the required number of non-excluded trials.
 - Both runs started without sleep prevention. The host slept from about 10:30 to 15:43 CEST. A Codex trial running
   across the sleep ended as a provider error and is excluded as predeclared. The resumes ran under `caffeinate -i`.
 - Claude stopped once on its usage limit and was resumed.
-- Six trials were first left ungraded because a shared harness rehearsal held the host load at about 140-290. Each is
-  in `warnings.log` with its load and job id. All were graded later by `resume`, as separate grade records.
+- Four trials were first left ungraded because a shared harness rehearsal held the host load at about 140-290:
+  `claude-sonnet-pinned-check-related/r1`, `claude-sonnet-pinned/r9`, `codex-sol-pinned-check-related/r1` and
+  `codex-sol-pinned-check-related/r8`. That produced six `warnings.log` lines, because two trials failed
+  qualification twice. All four were graded later by `resume`, as separate grade records. (An earlier version of
+  this line said "six trials"; corrected 2026-10-19.)
 - Harness paused its rehearsal (SIGSTOP) from about 07:55Z, and again from about 14:10Z after it had resumed.
 - Interim counts were looked at during the run; the analysis was not changed.
