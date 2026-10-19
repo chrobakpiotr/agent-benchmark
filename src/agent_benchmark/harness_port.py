@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import uuid
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from agent_harness import contract, execution, qualification
 
@@ -22,13 +22,41 @@ from .schema import ValidationError, canonical, digest
 SCRIPTED_ERROR, SCRIPTED_REJECTION = "PROVIDER_ERROR", "BACKEND_UNAVAILABLE"
 
 
+FINGERPRINT_METHOD = "record-listed-files-content-sha256/v1"
+_INSTALL_SPECIFIC = {"RECORD", "INSTALLER", "REQUESTED", "direct_url.json"}  # differ per install, not per code
+
+
+def harness_fingerprint(dist):
+    """Digest of the actual content of every file the distribution's RECORD lists, by relative path. The RECORD's own
+    hashes are not trusted (a file can change without RECORD changing). Excluded: compiled caches, files outside the
+    install root (console scripts carry the interpreter path) and install-specific dist-info files. None when a listed
+    file is missing or unreadable: then the installation cannot be identified reliably."""
+    import csv
+    record = dist.read_text("RECORD")  # parsed directly: importlib's `files` silently drops missing files
+    if not record:
+        return None
+    lines = []
+    for row in csv.reader(record.splitlines()):
+        rel = row[0] if row else ""
+        parts = PurePosixPath(rel).parts
+        if (not rel or rel.startswith("../") or "__pycache__" in parts or rel.endswith(".pyc")
+                or parts[-1] in _INSTALL_SPECIFIC):
+            continue
+        try:
+            lines.append(f"{rel} {digest(Path(dist.locate_file(rel)).read_bytes())}\n")
+        except OSError:
+            return None
+    return digest("".join(sorted(lines)).encode()) if lines else None
+
+
 def harness_identity():
-    """Installed agent-harness version and, when installed from git, its commit: part of a run's executor identity."""
-    import json
+    """Installed agent-harness: version, the commit when installed from git, and a content fingerprint. Part of a
+    run's executor identity; `resume` refuses a different or unidentifiable installation."""
     from importlib import metadata
     dist = metadata.distribution("agent-harness")
     direct = json.loads(dist.read_text("direct_url.json") or "{}")
-    return {"version": dist.version, "commit": direct.get("vcs_info", {}).get("commit_id")}
+    return {"version": dist.version, "commit": direct.get("vcs_info", {}).get("commit_id"),
+            "fingerprint": {"method": FINGERPRINT_METHOD, "digest": harness_fingerprint(dist)}}
 
 
 def utc():

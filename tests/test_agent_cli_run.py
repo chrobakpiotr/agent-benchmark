@@ -257,9 +257,50 @@ class AgentCliRun(unittest.TestCase):
         self.assertEqual(started["executor"]["harness"]["version"], agent_harness.__version__)
         write_report(self.root / "run")
         self.assertIn(f"- agent-harness: {agent_harness.__version__}", (self.root / "run" / "report.md").read_text())
-        with mock.patch.object(harness_port, "harness_identity", return_value={"version": "9.9.9", "commit": None}):
+        real = harness_port.harness_identity()
+        self.assertEqual(real["fingerprint"]["method"], harness_port.FINGERPRINT_METHOD)
+        edited = {**real, "fingerprint": {**real["fingerprint"], "digest": "sha256:" + "e" * 64}}  # same version/commit
+        with mock.patch.object(harness_port, "harness_identity", return_value=edited):
             with self.assertRaisesRegex(ValidationError, "agent-harness changed"):
                 runner.resume(self.root / "run")
+        unknown = {**real, "fingerprint": {**real["fingerprint"], "digest": None}}
+        with mock.patch.object(harness_port, "harness_identity", return_value=unknown):
+            with self.assertRaisesRegex(ValidationError, "cannot be identified"):
+                runner.resume(self.root / "run")
+        runner._check_harness_unchanged(started["executor"]["harness"])  # the unchanged installation may resume
+
+    def test_resume_of_a_run_recorded_before_fingerprints(self):
+        """Old runs keep their record; they resume only if version and git commit match, never on version alone."""
+        real = harness_port.harness_identity()
+        runner._check_harness_unchanged({"version": real["version"], "commit": real["commit"]})
+        with self.assertRaisesRegex(ValidationError, "no commit and no fingerprint"):
+            runner._check_harness_unchanged({"version": real["version"], "commit": None})
+        with self.assertRaisesRegex(ValidationError, "changed"):
+            runner._check_harness_unchanged({"version": real["version"], "commit": "0" * 40})
+
+    def test_fingerprint_reads_file_content_not_record_hashes(self):
+        from importlib.metadata import PathDistribution
+        site = self.root / "site"
+        info = site / "agent_harness-9.9.dist-info"
+        (site / "agent_harness" / "__pycache__").mkdir(parents=True)
+        info.mkdir()
+        (site / "agent_harness" / "contract.py").write_text("RULE = 1\n")
+        (site / "agent_harness" / "__pycache__" / "contract.cpython-313.pyc").write_bytes(b"cache")
+        (info / "METADATA").write_text("Name: agent-harness\nVersion: 9.9\n")
+        (info / "INSTALLER").write_text("pip\n")
+        (info / "RECORD").write_text("agent_harness/contract.py,sha256=stale,9\n"
+                                     "agent_harness/__pycache__/contract.cpython-313.pyc,,\n"
+                                     "agent_harness-9.9.dist-info/METADATA,,\nagent_harness-9.9.dist-info/INSTALLER,,\n"
+                                     "agent_harness-9.9.dist-info/RECORD,,\n../../../bin/agent-harness,,\n")
+        dist = PathDistribution(info)
+        before = harness_port.harness_fingerprint(dist)
+        (site / "agent_harness" / "__pycache__" / "contract.cpython-313.pyc").write_bytes(b"other cache")
+        (info / "INSTALLER").write_text("uv\n")
+        self.assertEqual(harness_port.harness_fingerprint(dist), before)  # caches and install details do not count
+        (site / "agent_harness" / "contract.py").write_text("RULE = 2\n")  # same RECORD, changed code
+        self.assertNotEqual(harness_port.harness_fingerprint(dist), before)
+        (site / "agent_harness" / "contract.py").unlink()
+        self.assertIsNone(harness_port.harness_fingerprint(dist))  # cannot be identified
 
     def test_pinned_cli_version_must_match_the_installed_one(self):
         m = json.loads(MANIFEST.read_text())

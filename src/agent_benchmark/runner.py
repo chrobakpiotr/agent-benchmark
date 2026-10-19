@@ -290,6 +290,28 @@ def run(manifest_path, out_dir, execute=None):
     return out
 
 
+def _check_harness_unchanged(recorded):
+    """One run, one harness installation. Runs recorded without a fingerprint (before 2026-10-19) are compared on
+    version and git commit, and refused when there is no commit to compare (identity not reliably established).
+    Nothing is written back into an old run."""
+    if recorded is None:  # fake executor runs record no harness
+        return
+    current = harness_port.harness_identity()
+    if "fingerprint" in recorded:
+        if recorded["fingerprint"].get("digest") is None or current["fingerprint"]["digest"] is None:
+            raise ValidationError("agent-harness installation cannot be identified (fingerprint unavailable); "
+                                  "start a new run instead of resuming")
+        same = recorded == current
+    else:
+        if recorded.get("commit") is None:
+            raise ValidationError("agent-harness identity of this run has no commit and no fingerprint, so an "
+                                  "unchanged installation cannot be shown; start a new run instead of resuming")
+        same = (recorded["version"], recorded["commit"]) == (current["version"], current["commit"])
+    if not same:
+        raise ValidationError(f"agent-harness changed since the run started ({recorded} -> {current}); "
+                              "start a new run instead of resuming")
+
+
 def resume(run_dir, replace_unknown=False, execute=None):
     """Continue an interrupted run without re-running anything that may already have been launched.
 
@@ -305,10 +327,7 @@ def resume(run_dir, replace_unknown=False, execute=None):
     if recorded is not None and cli_versions(manifest) != recorded:  # keep one run on one set of CLI versions
         raise ValidationError(f"CLI versions changed since the run started ({recorded} -> {cli_versions(manifest)}); "
                               "start a new run instead of resuming")
-    recorded = events[0]["executor"].get("harness")
-    if recorded is not None and harness_port.harness_identity() != recorded:  # one run, one harness version
-        raise ValidationError(f"agent-harness changed since the run started ({recorded} -> "
-                              f"{harness_port.harness_identity()}); start a new run instead of resuming")
+    _check_harness_unchanged(events[0]["executor"].get("harness"))
     execute = execute or EXECUTORS[manifest["executor"]["kind"]]
     rows = {r["trial_id"]: r for r in reduce_events(events)["trials"]}
     plan = plan_trials(manifest)
