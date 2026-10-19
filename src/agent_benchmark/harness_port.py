@@ -5,6 +5,7 @@ its candidate into the trial's evidence root; the only backend the runner uses i
 built from the manifest script (`isolation_level: fake`). A result that fails contract validation is recorded as
 outcome `unknown`, never as success.
 """
+import json
 import os
 import shutil
 import subprocess
@@ -183,6 +184,24 @@ def _read_ref(evidence_root, ref):
         return None
     data = path.read_bytes()
     return data if len(data) == ref["size"] and digest(data) == ref["sha256"] else None
+
+
+WITHHELD_FIELDS = ("reason_code", "artifacts", "size", "limit", "size_is_lower_bound")
+
+
+def withheld_summary(result, evidence_root):
+    """The harness's withheld-output note (artifact named `withheld`, AH5-12b), found by name, not position; only
+    its non-content fields are kept. None when the result has no such artifact."""
+    if not isinstance(result, dict):
+        return None
+    ref = next((a for a in result.get("artifacts") or [] if isinstance(a, dict)
+                and a.get("name") in ("withheld", "withheld.json")), None)
+    data = _read_ref(evidence_root, ref) if ref else None
+    try:
+        doc = json.loads(data) if data is not None else None
+    except ValueError:
+        return {"reason_code": None, "unreadable": True}
+    return {k: doc.get(k) for k in WITHHELD_FIELDS} if isinstance(doc, dict) else None
 
 
 def unknown_terminal(error):

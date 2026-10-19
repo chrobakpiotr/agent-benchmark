@@ -20,7 +20,7 @@ sys.path.insert(0, str(ROOT / "src"))
 import agent_harness  # noqa: E402
 from agent_benchmark import harness_port, runner  # noqa: E402
 from agent_benchmark.report import load_run, reduce_events, write_report  # noqa: E402
-from agent_benchmark.schema import ValidationError, validate_manifest  # noqa: E402
+from agent_benchmark.schema import ValidationError, digest, validate_manifest  # noqa: E402
 
 MANIFEST = ROOT / "tests" / "fixtures" / "manifest-agent-cli.json"
 FAKE_CODEX = r"""#!/usr/bin/env python3
@@ -195,6 +195,38 @@ class AgentCliRun(unittest.TestCase):
         with mock.patch.dict(os.environ, {"FAKE_CODEX_VERSION": "codex-cli 9.9-fake"}):
             with self.assertRaisesRegex(ValidationError, "CLI versions changed"):
                 runner.resume(self.root / "run")
+
+    def test_a_completed_trial_without_a_published_candidate_is_invalid_with_the_reason(self):
+        real = harness_port.import_result
+
+        def withheld(*args):  # the harness withheld the agent's output (AH5-12b): completed, no candidate
+            terminal, usage = real(*args)
+            return {**terminal, "candidate_digest": None}, usage
+        note = {"reason_code": "OUTPUT_LIMIT_EXCEEDED", "artifacts": ["candidate", "agent-output"],
+                "size": 9000000, "limit": 8388608, "size_is_lower_bound": True}
+        with mock.patch.object(harness_port, "import_result", side_effect=withheld), \
+                mock.patch.object(harness_port, "withheld_summary", return_value=note):
+            out = runner.run(MANIFEST, self.root / "run")
+        row = reduce_events(load_run(out)[2])["trials"][0]
+        self.assertEqual((row["outcome"], row["grade"]), ("completed", "INVALID"))  # never PASS, never a grader FAIL
+        grade = [json.loads(l) for l in (out / "events.jsonl").read_text().splitlines() if '"grade"' in l][0]
+        self.assertEqual(grade["criteria"], [{"criterion": "candidate_published", "passed": False,
+                                              "detail": {"withheld": note}}])
+        s = write_report(out)["configs"][0]
+        self.assertEqual((s["started"], s["operational_success"]["pass"]), (1, 0))  # stays in the denominator
+
+    def test_withheld_note_is_found_by_artifact_name_and_keeps_no_content(self):
+        ev = self.root / "ev"
+        ev.mkdir()
+        body = json.dumps({"reason_code": "CREDENTIAL_SHAPED_OUTPUT", "artifacts": ["agent-stderr"], "size": 12,
+                           "limit": None, "size_is_lower_bound": False, "match": "sk-secret"}).encode()
+        (ev / "withheld.json").write_bytes(body)
+        ref = {"name": "withheld", "path": "withheld.json", "size": len(body), "sha256": digest(body)}
+        other = {"name": "agent-stderr", "path": "x", "size": 1, "sha256": "sha256:" + "0" * 64}
+        got = harness_port.withheld_summary({"artifacts": [other, ref]}, ev)
+        self.assertEqual(got["reason_code"], "CREDENTIAL_SHAPED_OUTPUT")
+        self.assertNotIn("match", got)
+        self.assertIsNone(harness_port.withheld_summary({"artifacts": [other]}, ev))
 
     def test_a_sandbox_the_harness_rejects_stops_the_run(self):
         with mock.patch.dict(os.environ, {"FAKE_CODEX_NO_SANDBOX": "1"}):

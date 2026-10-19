@@ -211,6 +211,7 @@ def _execute(out, manifest, task, task_digest, todo, execute):
                          "request_id": request["request_id"], "request_digest": digest(canonical(request)),
                          "replaces": replaces, "started_utc": _utc()})
         t0 = time.monotonic_ns()
+        withheld = None
         try:
             entry = script[(cid, rep)] if manifest["executor"]["kind"] == "fake" else configs[cid]
             result = execute(request, task, entry, out / "task", evidence)
@@ -229,6 +230,7 @@ def _execute(out, manifest, task, task_digest, todo, execute):
                 usage += [{**u, "attempt_id": pre + u["attempt_id"], "usage_event_id": pre + u["usage_event_id"]}
                           for u in used]
                 evidence = ev  # backend notes of the last launch explain a provider error
+                withheld = harness_port.withheld_summary(res, ev)
             terminal["attempts"] = attempts
         duration_ms = (time.monotonic_ns() - t0) // 1_000_000
         _append(events, {"type": "trial_finished", "trial_id": trial_id, "request_id": request["request_id"],
@@ -237,6 +239,15 @@ def _execute(out, manifest, task, task_digest, todo, execute):
             _append(events, {"type": "usage", "trial_id": trial_id, **u})
         if terminal["candidate_digest"] and terminal["outcome"] == "completed":  # an aborted run's leftovers are no candidate
             _grade(out, manifest, task, trial_id, terminal["candidate_digest"])
+        elif terminal["outcome"] == "completed" and manifest["executor"]["kind"] != "fake":
+            # completed, but nothing was published to grade (e.g. the harness withheld the agent's output, AH5-12b):
+            # INVALID with the reason, never PASS and never a grader FAIL; it stays in the denominator. A published
+            # empty patch is a candidate and is graded as usual.
+            _append(events, {"type": "grade", "trial_id": trial_id, "candidate_digest": None,
+                             "grader": grader.identity(task["grader"]["id"]), "result": "INVALID",
+                             "criteria": [{"criterion": "candidate_published", "passed": False,
+                                           "detail": {"withheld": withheld}}],
+                             "isolation": None})
         if manifest["executor"]["kind"] != "fake" and terminal["outcome"] == "rejected":
             # the host cannot run the agent as configured (e.g. its sandbox fails the harness check): every further
             # trial would be rejected the same way, so stop and fix the host instead of recording a column of rejections
