@@ -13,9 +13,11 @@ to a verified result, and an independent success rate. This file is a **map**. L
 
 ## Git mutation policy (repeated locally on purpose)
 
-- Do not push, force-push, merge, open a pull request, or mutate remotes unless a human explicitly requests it.
+- Standing authorization (owner, 2026-10-19): after the checks below pass, commit locally and push directly to
+  `main`; do not ask again for an ordinary direct push. If branch protection blocks a push, report the exact blocker.
+- Still not authorized: force push, rewriting or deleting history, changing branch protection or other repository
+  security settings, tags or releases, merging, opening pull requests, other remotes or other repositories.
 - Do not create or switch branches unless the active task protocol requires it.
-- Local commit only when a human explicitly asks or the accepted task protocol requires it.
 - Never amend, squash, rewrite, or delete history unless explicitly authorized.
 - Before any allowed commit: run the tests below and `git diff --check`; afterwards report SHA and tree status.
 

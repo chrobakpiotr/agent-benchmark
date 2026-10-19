@@ -185,6 +185,10 @@ report each. Evidence is under `~/agent-benchmark-runs/claude-restrictions-161a2
 | Write tool in the workspace (control) | `PROBE_REPORT.md` written and present in the sealed candidate | allowed |
 
 The launch argv shows the restrictions came from the adapter: `--settings` with `sandbox.filesystem.denyWrite` set to
-the evidence root, plus `--disallowedTools WebFetch,WebSearch`. With this result, the effectiveness of the denied file
+the evidence root, plus `--disallowedTools WebFetch,WebSearch`. Host: macOS 15.8.1 (24H32), Darwin 24.6.0 x86_64.
+The flags, the denials and the evidence-immutability check are kept in
+`evidence/ah5-12b-claude-restriction-161a25f.json`, next to the probe script
+(`evidence/ah5-12b-claude-restriction-probe.py`). WebFetch and WebSearch being unavailable does not show that every
+route to the network is blocked. The scope is this candidate, this CLI version and this host only. With this result, the effectiveness of the denied file
 tools and the disallowed tools is confirmed on this host for that candidate. A changed Claude CLI version needs the
 check again.
