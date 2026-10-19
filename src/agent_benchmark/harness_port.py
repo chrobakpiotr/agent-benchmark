@@ -186,7 +186,9 @@ def _read_ref(evidence_root, ref):
     return data if len(data) == ref["size"] and digest(data) == ref["sha256"] else None
 
 
-WITHHELD_FIELDS = ("reason_code", "artifacts", "size", "limit", "size_is_lower_bound")
+WITHHELD_FIELDS = ("schema_version", "reason_code", "artifacts", "size", "limit", "size_is_lower_bound",
+                   "secret_detected")
+WITHHELD_DETAIL_FIELDS = ("artifact", "reason_code", "size", "limit", "size_is_lower_bound")
 
 
 def withheld_summary(result, evidence_root):
@@ -201,7 +203,11 @@ def withheld_summary(result, evidence_root):
         doc = json.loads(data) if data is not None else None
     except ValueError:
         return {"reason_code": None, "unreadable": True}
-    return {k: doc.get(k) for k in WITHHELD_FIELDS} if isinstance(doc, dict) else None
+    if not isinstance(doc, dict):
+        return None
+    details = doc.get("details") if isinstance(doc.get("details"), list) else []  # per artifact (AH5-12b d43aee2)
+    return {**{k: doc.get(k) for k in WITHHELD_FIELDS},
+            "details": [{k: d.get(k) for k in WITHHELD_DETAIL_FIELDS} for d in details if isinstance(d, dict)]}
 
 
 def unknown_terminal(error):

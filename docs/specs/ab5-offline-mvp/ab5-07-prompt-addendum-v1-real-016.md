@@ -33,3 +33,34 @@ itself.
 - Power (Monte Carlo, 2000 draws, alpha 0.025):
   - Claude, n = 20: 99% for 0.10 -> 0.80, 64% for 0.10 -> 0.50.
   - Codex, n = 15: a drop is detected with 52% probability for 0.85 -> 0.40 and 13% for 0.85 -> 0.60.
+
+## Result (runs 2026-10-19, harness v0.12.0)
+
+| run | baseline PASS | with instruction | Fisher p | median PASS s baseline / instruction |
+|---|---|---|---|---|
+| Claude `real-016` | 4/19 (1 excluded, quota) | 5/20 | 1.0 | 81.8 / 91.9 |
+| Codex `real-016` | 11/15 | 9/14 (1 excluded, provider error) | 0.70 | 76.0 / 92.5 |
+
+**Primary analysis** (alpha 0.025 per run): the Claude run is not higher, and the Codex run is not lower. The verdict
+is therefore **not "lifts Claude"**: on `real-016` the instruction did not help Claude, and no harm to Codex was
+detected. Every arm has at least the required number of non-excluded trials.
+
+**Secondary:**
+- Without the instruction, 11 of 15 Claude FAILs read a missing count as 0. With it, 14 of 15 do, and every FAIL with
+  the instruction fails all 6 bug cases.
+- The instruction widened what Claude handled (absent, partial and empty cache objects) but gave each case the value
+  ADR 0002 rules out.
+- All 4 Codex baseline FAILs and 4 of 5 Codex FAILs with the instruction also read a missing count as 0.
+- The instruction cuts in two directions:
+  - On `real-012` and `real-001-bug` v3, Claude's gap was coverage, and the instruction closed it.
+  - On `real-016` the gap is the documented value for unknown, and the instruction does not supply it. That matches
+    what the instruction did for Codex on `real-001-bug` v2 (`ab5-07-prompt-addendum-codex.md`).
+
+**Deviations:**
+- Both runs started without sleep prevention. The host slept from about 10:30 to 15:43 CEST. A Codex trial running
+  across the sleep ended as a provider error and is excluded as predeclared. The resumes ran under `caffeinate -i`.
+- Claude stopped once on its usage limit and was resumed.
+- Six trials were first left ungraded because a shared harness rehearsal held the host load at about 140-290. Each is
+  in `warnings.log` with its load and job id. All were graded later by `resume`, as separate grade records.
+- Harness paused its rehearsal (SIGSTOP) from about 07:55Z, and again from about 14:10Z after it had resumed.
+- Interim counts were looked at during the run; the analysis was not changed.

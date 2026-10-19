@@ -218,14 +218,21 @@ class AgentCliRun(unittest.TestCase):
     def test_withheld_note_is_found_by_artifact_name_and_keeps_no_content(self):
         ev = self.root / "ev"
         ev.mkdir()
-        body = json.dumps({"reason_code": "CREDENTIAL_SHAPED_OUTPUT", "artifacts": ["agent-stderr"], "size": 12,
-                           "limit": None, "size_is_lower_bound": False, "match": "sk-secret"}).encode()
+        body = json.dumps({"schema_version": 1, "reason_code": "CREDENTIAL_SHAPED_OUTPUT", "artifacts": ["agent-stderr"],
+                           "size": 12, "limit": None, "size_is_lower_bound": False, "secret_detected": False,
+                           "note": "free text", "match": "sk-secret",
+                           "details": [{"artifact": "agent-stderr", "reason_code": "CREDENTIAL_SHAPED_OUTPUT",
+                                        "size": 12, "limit": None, "size_is_lower_bound": False, "excerpt": "x"}]}
+                          ).encode()
         (ev / "withheld.json").write_bytes(body)
         ref = {"name": "withheld", "path": "withheld.json", "size": len(body), "sha256": digest(body)}
         other = {"name": "agent-stderr", "path": "x", "size": 1, "sha256": "sha256:" + "0" * 64}
         got = harness_port.withheld_summary({"artifacts": [other, ref]}, ev)
         self.assertEqual(got["reason_code"], "CREDENTIAL_SHAPED_OUTPUT")
         self.assertNotIn("match", got)
+        self.assertNotIn("note", got)
+        self.assertEqual(got["details"], [{"artifact": "agent-stderr", "reason_code": "CREDENTIAL_SHAPED_OUTPUT",
+                                           "size": 12, "limit": None, "size_is_lower_bound": False}])
         self.assertIsNone(harness_port.withheld_summary({"artifacts": [other]}, ev))
 
     def test_a_sandbox_the_harness_rejects_stops_the_run(self):

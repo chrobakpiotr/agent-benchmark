@@ -63,6 +63,9 @@ behaviour that was correct."
 | Claude, `real-001-bug` v3 (`ab5-07-prompt-addendum-v1-confirmed-tasks.md`) | 7/20 | 19/20 | 1.4e-4 |
 | Codex, `real-001-bug` v3 / `real-012` (same document) | 15/15, 15/15 | 15/15, 14/14 | 1.0, 1.0; up to 1.7x slower |
 
+- **On `real-016` the instruction did not help Claude** (4/19 -> 5/20, `ab5-07-prompt-addendum-v1-real-016.md`).
+  With it, Claude handled more inputs, but almost always gave them the 0 that ADR 0002 rules out. Codex: 11/15 ->
+  9/14, no harm detected. The instruction closes a coverage gap. It does not supply a documented value.
 - **Instruction v2 did not help both agents** (`ab5-07-prompt-addendum-docs.md`). v2 added "take the correct
   behaviour from the project's documentation and contracts". It gave Claude a smaller gain than v1 and, on the
   ambiguous v2 task, drove Codex to the reading the docs permit: 0/15.
