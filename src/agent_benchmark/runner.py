@@ -157,9 +157,14 @@ def _session(out):
     return _SESSIONS[key]
 
 
+def _host_load():
+    """1/5/15-minute load average of the host: a shared, loaded host can fail grading-target qualification."""
+    return [round(x, 2) for x in os.getloadavg()]
+
+
 def _ungraded(out, trial_id, exc):
     """Warn on stderr and keep the reason in the run directory, so it survives truncated console output."""
-    line = f"warning: {trial_id} left ungraded: {exc}"
+    line = f"warning: {trial_id} left ungraded: {exc} (host load {_host_load()})"
     print(line, file=sys.stderr)
     with open(Path(out) / "warnings.log", "a") as f:
         f.write(f"{_utc()} {line}\n")
@@ -185,7 +190,8 @@ def _grade(out, manifest, task, trial_id, cand_digest):
         _ungraded(out, trial_id, exc)
         return
     if qualified_run is not None:
-        isolation = {**session.isolation, "limit_fired": session.fired[-1] if session.fired else None}
+        isolation = {**session.isolation, "limit_fired": session.fired[-1] if session.fired else None,
+                     "host_load": _host_load()}
     _append(out / "events.jsonl", {"type": "grade", "trial_id": trial_id, "candidate_digest": cand_digest,
                                    "grader": grader.identity(gid), "result": result, "criteria": criteria,
                                    "isolation": isolation})

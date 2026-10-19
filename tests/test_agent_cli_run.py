@@ -100,6 +100,7 @@ class AgentCliRun(unittest.TestCase):
         self.assertTrue((out / "workspaces" / row["request_id"] / ".git").is_dir())  # beside, not around, evidence
         self.assertIn(f"{row['trial_id']} left ungraded: grading target did not qualify",
                       (out / "warnings.log").read_text())  # the reason survives truncated console output
+        self.assertIn("(host load [", (out / "warnings.log").read_text())
 
     def test_candidate_is_graded_only_through_the_qualified_session(self):
         calls = []
@@ -122,6 +123,7 @@ class AgentCliRun(unittest.TestCase):
                   if json.loads(l)["type"] == "grade"]
         self.assertEqual([(g["result"], g["isolation"]["track"]) for g in grades], [("FAIL", "qualified")])
         self.assertEqual(grades[0]["isolation"]["limit_fired"], None)
+        self.assertEqual(len(grades[0]["isolation"]["host_load"]), 3)  # shared-host load at grading time
         self.assertEqual(len(calls), 1)
         self.assertEqual(calls[0][0], "cases.json")
 

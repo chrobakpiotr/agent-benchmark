@@ -398,3 +398,19 @@ Evidence: `RealTask17.test_bundle_reference_patches_and_visible_checks`. Calibra
 `~/agent-benchmark-runs/real-017-calibration-2026-10-18`: Claude PASS (19 s) and Codex PASS (47 s). The task did not
 discriminate in calibration, so no confirmatory run is planned. The report names the new field, and both agents kept a
 turn without it as unknown.
+
+### `real-016` calibration: grading record and shared-host window
+
+The run directory is append-only. The first, ungraded state of both trials is kept as recorded and was not
+overwritten:
+- `claude-sonnet-pinned/r1`: ungraded at 2026-10-18T20:45:42Z. Grading job `grade-17cc5087-f0397fd5` did not qualify
+  (B1 and B8 `DockerCommandTimeout`, B10 container exit 137). Its qualification evidence is kept under
+  `qualification/grade-17cc5087-f0397fd5`.
+- `codex-sol-pinned/r1`: ungraded at 20:59:22Z under job `grade-17cc5087-3e4a7c4f`, for the same cause.
+- Cause, confirmed by agent-harness: the shared host was running the harness's Showcase cutover rehearsal and an
+  evaluation, with a load average of about 460.
+- Both trials were graded later, as separate `grade` events after `run_resumed` (21:05:40Z), under the new job
+  `grade-17cc5087-4df93ded`, with the host load at about 9-40.
+
+From 2026-10-18 on, every grade record stores the host load at grading time (`isolation.host_load`, 1/5/15-minute
+averages), and every ungraded warning in `warnings.log` names it too.
