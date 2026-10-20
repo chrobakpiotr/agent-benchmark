@@ -1,6 +1,6 @@
 # AB5-07 - pilot report (2026-10-10 to 2026-10-18)
 
-Zero-spend live pilot comparing agent-CLI configurations on real bug-fix tasks. This report describes the current
+Live pilot, with no pay-per-use billing, comparing agent-CLI configurations on real bug-fix tasks. This report describes the current
 state. Earlier versions, including the withdrawn reading of `real-001-bug` v2, are in git history. Sources:
 - run records under `~/agent-benchmark-runs/` (events, evidence, grade records with B10 isolation evidence);
 - task specs in `ab5-05a-real-task.md`;
@@ -13,7 +13,13 @@ state. Earlier versions, including the withdrawn reading of `real-001-bug` v2, a
   - `codex exec` (codex-cli 0.160.0, gpt-6.1-sol) on ChatGPT Plus;
   - OpenCode 1.19.0 with `nvidia/nemotron-3-super-120b-a12b:free` on a zero-limit OpenRouter key.
 
-  Every run passed the zero-spend preflight; nothing was paid.
+  Every run passed the zero-spend preflight. It shows that no route to pay-per-use billing was open: no API-key
+  variables, subscription logins, and an OpenRouter key with a 0 credit limit. What that does and does not establish:
+  - No pay-per-use charge was incurred.
+  - This is **not** a zero cost of use. Claude and Codex trials used the Claude Pro and ChatGPT Plus subscriptions,
+    whose per-trial cost is unknown and is reported as "subscription, not priced".
+  - OpenRouter cost is measured: `GET https://openrouter.ai/api/v1/key` reported `usage: 0` with `limit: 0`, read on
+    2026-10-11 and again after the 0.14.0 re-pin trial on 2026-10-20.
 - **Execution:** agent-harness `AgentCliBackend` (v0.6.1-v0.8.4), controlled track. Each CLI runs in its own sandbox
   with a shell that has no network or DNS. The prompt goes in on stdin, and the candidate is the workspace diff, sealed
   by the harness.
@@ -204,7 +210,9 @@ identical to the checked candidate `161a25f`; only release docs differ. The re-p
   - `compat-harness-v0.14.0-smoke-2026-10-20`, on `real-001-bug` v3: Claude Code 2.1.289 FAIL (one hidden case) and
     codex-cli 0.160.0 PASS.
   - `compat-harness-v0.14.0-opencode-2026-10-20`, on `real-001`: OpenCode 1.19.0 with
-    `nvidia/nemotron-3-super-120b-a12b:free`, FAIL (two hidden cases). OpenRouter usage stayed 0.
+    `nvidia/nemotron-3-super-120b-a12b:free`, FAIL (two hidden cases). Measured OpenRouter cost: key `usage: 0`,
+    `limit: 0` (`GET /api/v1/key` after the trial). The Claude and Codex trials ran on subscriptions with no
+    pay-per-use route open (preflight); their cost of use is unknown, not zero.
 - **Fingerprint on the released install:** `sha256:8c69cedd…` (method `record-listed-files-content-sha256/v1`), not
   null. It is recorded in both runs' `run_started`, and the resume identity check passes against it.
 - **Old runs are not resumed:** `resume` of a run started on 0.12.0 is refused with "agent-harness changed". No run
